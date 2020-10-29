@@ -12,16 +12,27 @@ function test_vem_v3
         ];
     
     % Deformed vertices
+%     V1= [ 
+%          1 3;
+%          2 3.5;
+%          3 3;
+%          3 2;
+%          3 1;
+%          2 0.5;
+%          1 1;
+%          1 2;
+%         ];
     V1= [ 
-         1 3;
+         1 3.5;
          2 3.5;
-         3 3;
+         3 3.5;
          3 2;
          3 1;
          2 0.5;
          1 1;
          1 2;
         ];
+    
     
     % Edges
     E=[ 1 2;
@@ -43,15 +54,18 @@ function test_vem_v3
     V=V0;
     
     X_com = mean(V0,1)';    % undeformed center of mass
-    x_com = mean(V1,1)';    % deformed center of mass
     
+    x = 1:0.1:3;
+    y = 1:0.1:3;
+    [X,Y] = meshgrid(x,y);
+    plot(X(:),Y(:),'o','Color',[0.5 0.5 0.5],'MarkerSize',10);
+    X=[X(:) Y(:)];
     k=6;
     
-    % Compute monomial basis for each vertex
-    M=zeros(size(V,1), k);
-    for i = 1:size(V,1)
-        X=V(i,:)';
-        q=(X-X_com)';
+    % Compute monomial basis for each query point
+    M=zeros(size(X,1), k);
+    for i = 1:size(X,1)
+        q=(X(i,:)'-X_com)';
         Mi = [1 q(1) q(2) q(1).^2 q(2).^2 q(1)*q(2)];
         M(i,:) = Mi;
     end
@@ -59,7 +73,7 @@ function test_vem_v3
     % pseudo-inverse for M
     Pm = pinv(M);
         
-    ProjX = zeros(size(E,1),size(V,1),2);
+    ProjX = zeros(size(E,1),size(X,1),2);
     
     P = zeros(size(E,1), k, 1);
     
@@ -67,19 +81,20 @@ function test_vem_v3
     for i = 1:size(E,1)
 %         u = [V(E(i,1),:); V(E(i,2),:)]';
         u = V(i,:)';
+        
         Pu = pinv(u)';
         
-        p = Pm*V*Pu;
+        p = Pm*X*Pu;
         x=M*p*u';
         ProjX(i,:,:) = x;
         P(i,:,:)=p;
     end
     
     % Compute weighting terms
-    a = zeros(size(V,1), size(E,1));
-    for i = 1:size(V,1)
+    a = zeros(size(X,1), size(E,1));
+    for i = 1:size(X,1)
         C = squeeze(ProjX(:,i,:))';
-        d = V(i,:)';
+        d = X(i,:)';
         
         % All weights non-negative
         A = -eye(size(E,1));
@@ -89,24 +104,22 @@ function test_vem_v3
         Aeq = ones(1,size(E,1));
         beq = 1;
         
-        size(lsqlin(C,d,A,b,Aeq,beq))
         a(i,:) = lsqlin(C,d,A,b,Aeq,beq);
     end
     
     % Compute deformed positions from 
-    for i=1:size(V,1)
+    for i=1:size(X,1)
         x = [0 0];
         
         for j=1:size(E,1)
-%             u = [V1(E(i,1),:); V1(E(i,2),:)]';
-            u = V1(i,:); % Deformed DOF values
+%             u = [V1(E(j,1),:); V1(E(j,2),:)]';
+            u = V1(j,:); % Deformed DOF values
             size(squeeze(P(j,:,:)))
             x = x + a(i,j) * M(i,:) * squeeze(P(j,:,:))' * u;
+            x
         end
         plot(x(1),x(2),'.','Color','r','MarkerSize',15);
         hold on
-        plot(V(i,1),V(i,2),'o','Color',[0.5 0.5 0.5],'MarkerSize',15);
-        hold on;
     end
         % All undeformed positions
 %     n=10;
