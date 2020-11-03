@@ -1,4 +1,4 @@
-function test_vem_v3
+function test_vem_v5
     % Undeformed vertices
     V0= [ 
          1 3;
@@ -33,6 +33,7 @@ function test_vem_v3
          1 2;
         ];
     
+    
     % Edges
     E=[ 1 2;
         2 3;
@@ -55,37 +56,44 @@ function test_vem_v3
     X_com = mean(V0,1)';    % undeformed center of mass
     x_com = mean(V1,1)';    % deformed center of mass
     
-    x = 1:0.1:3;
-    y = 1:0.1:3;
+    x = 1:0.5:3;
+    y = 1:0.5:3;
     [X,Y] = meshgrid(x,y);
     plot(X(:),Y(:),'o','Color',[0.5 0.5 0.5],'MarkerSize',10);
     X=[X(:) Y(:)];
-    k=6;
     
+    k=2;
     % Compute monomial basis for each query point
-    M=zeros(size(X,1), k);
+    M=zeros(2*size(X,1), k);
     for i = 1:size(X,1)
         q=(X(i,:)'-X_com)';
-        Mi = [1 q(1) q(2) q(1).^2 q(2).^2 q(1)*q(2)];
-        M(i,:) = Mi;
+        Mi = [1 1; q;]';
+        M(2*i-1:2*i,:) = Mi;
     end
     
     % pseudo-inverse for M
     Pm = pinv(M);
         
-    ProjX = zeros(size(E,1),size(X,1),2);
-    
-    P = zeros(size(E,1), k, 1);
+    ProjX = zeros(2*size(X,1),size(V,1));
+    X_flat = X';
+    X_flat = X_flat(:);
+    P = zeros(size(E,1), k, 2);
     
     % Compute per-edge projection matrix
     for i = 1:size(E,1)
-%         u = [V(E(i,1),:); V(E(i,2),:)]';
-        u = V(i,:)'-X_com;
+        u = [V(E(i,1),:) V(E(i,2),:)]';
+%         u = V(E(i,:),:)';
+%         u = V(i,:)';
         
-        Pu = pinv(u)';
+        Pu = pinv(u);
         
-        p = Pm*X*Pu;
-        x=M*p*u';
+        p = Pm*X_flat*Pu;
+        
+        fun = @(r)M*r*u - X_flat;
+        pf = lsqnonlin(fun,[1 0 0 0; 0 1 0 0])
+        xx = M*pf*u;
+        x=M*p*u;
+        norm(xx-x)
         ProjX(i,:,:) = x;
         P(i,:,:)=p;
     end
@@ -113,7 +121,7 @@ function test_vem_v3
         
         for j=1:size(E,1)
 %             u = [V1(E(j,1),:); V1(E(j,2),:)]';
-            u = V1(j,:)-x_com'; % Deformed DOF values
+            u = V1(j,:); % Deformed DOF values
             size(squeeze(P(j,:,:)))
             x = x + a(i,j) * M(i,:) * squeeze(P(j,:,:))' * u;
             x
