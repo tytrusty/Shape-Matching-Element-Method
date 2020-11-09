@@ -32,7 +32,16 @@ function test_shape_vem2
          1 1;
          1.2 2;
         ];
-    
+        V1= [ 
+         1 6;
+         2 3;
+         3 5;
+         3 2;
+         3 1.8;
+         2 1;
+         1 1;
+         0 2;
+        ];
     
     % Edges
     E=[ 1 2;
@@ -43,6 +52,15 @@ function test_shape_vem2
         6 7;
         7 8;
         8 1 ];
+    E1=[ 8 1 2;
+    1 2 3;
+    2 3 4;
+    3 4 5;
+    4 5 6;
+    5 6 7;
+    6 7 8;
+    7 8 1 ];
+%     E1=E;
     % Plotting surface
     fig=figure(1)
     clf;
@@ -50,8 +68,8 @@ function test_shape_vem2
 %     hold on;
     hold on;
     
-    x = 1:0.2:3;
-    y = 1:0.2:3;
+    x = 1:0.1:3;
+    y = 1:0.1:3;
     [X,Y] = meshgrid(x,y);
     X=[X(:) Y(:)];
     k=6;
@@ -60,12 +78,13 @@ function test_shape_vem2
     p1 = plot(X(:,1),X(:,2),'.','Color','m','MarkerSize',15);
     hold on
     p2 = plot([V0(E(:,1),1)'; V0(E(:,2),1)'], [V0(E(:,1),2)'; V0(E(:,2),2)'],'Color','b');
-    xlim([0 4]);
-    ylim([0 5]);
+    xlim([-0.5 3.5]);
+%     axis equal;
+    ylim([0 7]);
 
     V=V0;
     
-    n=50;
+    n=100;
     dV = (V1-V0)/n;
     Vt = V0 + dV;
     for ii=1:n
@@ -78,21 +97,30 @@ function test_shape_vem2
         X_com = mean(V0,1)';    % undeformed center of mass
         x_com = mean(Vt,1)';    % deformed center of mass
 
-
-        % Compute monomial basis for each query point
-        M=zeros(size(X,1), k);
-        for i = 1:size(X,1)
-            q=(X(i,:)'-X_com)';
-            Mi = [1 q(1) q(2) q(1).^2 q(2).^2 q(1)*q(2)];
-            M(i,:) = Mi;
-        end
-
-        P = zeros(size(E,1),2,2);
+        k=5;
+%         k=2;
+        P = zeros(size(E1,1),2,k);
         % Computing shape matching matrix for each shape (edge in this case)
-        for i =1:size(E,1)
-            q = V0(E(i,:),:)' - X_com;
-            p = Vt(E(i,:),:)' - x_com;
-            P(i,:,:) = p * q' / (q * q');
+        for i =1:size(E1,1)
+            q = V0(E1(i,:),:)' - X_com;
+                    
+            q_ = zeros(5, size(q,2));
+            q_(1:2,:) = q;
+            q_(3,:) = q(1,:).^2;
+            q_(4,:) = q(2,:).^2;
+            q_(5,:) = q(1,:).*q(2,:);
+            q=q_;
+
+            [SU, S, SV] = svd(q*q');
+            S = diag(S);
+            S = 1./ max(S, 1e-4);
+            Aqq = SV * diag(S) * SU';
+            
+            
+            
+            p = Vt(E1(i,:),:)' - x_com;
+            % P(i,:,:) = p * q' / (q * q');
+            P(i,:,:) = (p*q') * Aqq;
         end
 
         % Compute weighting coefficients
@@ -119,17 +147,26 @@ function test_shape_vem2
             x = [0 0];
             x2 = [0 0];
 
-            for j=1:size(E,1)
+            for j=1:size(E1,1)
                 x = x + a(i,j) * Vt(j,:);
-                g = squeeze(P(j,:,:)) * (X(i,:)'-X_com) + x_com;
+                
+                q = X(i,:)' - X_com;
+                q_ = zeros(5, size(q,2));
+                q_(1:2,:) = q;
+                q_(3,:) = q(1,:).^2;
+                q_(4,:) = q(2,:).^2;
+                q_(5,:) = q(1,:).*q(2,:);
+                q=q_;
+
+                g = squeeze(P(j,:,:)) * q + x_com;
                 x2 = x2 + a(i,j) * g';
             end
             p1.XData(i) = x2(1);
             p1.YData(i) = x2(2);
         end
         drawnow;
-%         fn=sprintf('output_png\\out2_%03d.png',ii)
-%         saveas(fig,fn);
+        fn=sprintf('output_png\\quad_%03d.png',ii)
+        saveas(fig,fn);
 %         
         Vt = Vt + dV;
         

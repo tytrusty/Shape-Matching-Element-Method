@@ -1,4 +1,4 @@
-function test_shape_vem
+function test_vem_stretch
     % Undeformed vertices
     V0= [ 
          1 3;
@@ -10,36 +10,10 @@ function test_shape_vem
          1 1;
          1 2;
         ];
-    
-    % Deformed vertices
-    % Diamond
-    V1= [ 
-         1 6;
-         2 3;
-         3 5;
-         3 2;
-         3 1.8;
-         2 1;
-         1 1;
-         0 2;
-        ];
-    
-%     theta = 45; % to rotate 90 counterclockwise
-%     R = [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
-%     R = [1 0.25; 0.25 1];
-%     V1 = V0 - [2 2]; % fix to origin
-%     for i=1:size(V1,1)
-%         V1(i,:) = (R*V1(i,:)')';
-%     end
-%     V1 = V1 + [2 2]; % translate back
-%     
-      V1= [1 3; 4 3; 7 3; 7 2; 7 1; 4 1; 1 1;1 2;]; % stretch x-axis
-%     V1=circshift(V0,2);                   % rotate 90    
-%     V1 = ((V0 - [2 2]) .* 1.3) + [2 2]    % scale
-%     V1 = V0 + repmat([0.5 0.2], 8,1);     % translate
-    
-
         
+    V1= [1 3; 4 3; 7 3; 7 2; 7 1; 4 1; 1 1;1 2;]; % stretch x-axis
+%     V1= [1 3; 2 3; 7 3; 7 2; 7 1; 2 1; 1 1;1 2;]; % stretch x-axis
+    
     % Edges
     E=[ 1 2;
         2 3;
@@ -49,36 +23,16 @@ function test_shape_vem
         6 7;
         7 8;
         8 1 ];
+    E1=[1 2 3 4 5 6 7 8];
     
-    E1=[ 8 1 2;
-    1 2 3;
-    2 3 4;
-    3 4 5;
-    4 5 6;
-    5 6 7;
-    6 7 8;
-    7 8 1 ];
-%     E1=[ 8 1 2 3;
-%     1 2 3 4;
-%     2 3 4 5;
-%     3 4 5 6;
-%     4 5 6 7;
-%     5 6 7 8;
-%     6 7 8 1;
-%     7 8 1 2];
-%     E1=[ 7 8 1 2 3;
-%     8 1 2 3 4;
-%     1 2 3 4 5;
-%     2 3 4 5 6;
-%     3 4 5 6 7;
-%     4 5 6 7 8;
-%     5 6 7 8 1;
-%     6 7 8 1 2];
-%     E1=[1 2 3 4;
-%         2 3 4 5;
-%         3 4 5 6;
-%         7 8 1 2;
-%         8 1 2 3;]
+%     E1=[ 8 1 2;
+%     1 2 3;
+%     2 3 4;
+%     3 4 5;
+%     4 5 6;
+%     5 6 7;
+%     6 7 8;
+%     7 8 1 ];
 %     E1=E;
 
     % Plotting surface
@@ -96,36 +50,35 @@ function test_shape_vem
     x_com = mean(V1,1)';    % deformed center of mass
     
     x = 1:0.1:3;
-    y = 1:0.1:3;
+    y = 1:0.2:3;
     [X,Y] = meshgrid(x,y);
     X=[X(:) Y(:)];
 
     k=5;
-    k=2;
+%     k=2;
+    
     P = zeros(size(E1,1),2,k);
     % Computing shape matching matrix for each shape (edge in this case)
     for i =1:size(E1,1)
         q = V0(E1(i,:),:)' - X_com;
-        
         
         q_ = zeros(5, size(q,2));
         q_(1:2,:) = q;
         q_(3,:) = q(1,:).^2;
         q_(4,:) = q(2,:).^2;
         q_(5,:) = q(1,:).*q(2,:);
-%         q=q_;
+        q=q_;
         
         [SU, S, SV] = svd(q*q');
         S = diag(S);
-        S = 1./ max(S, 1e-4);
+        S = 1 ./ max(S, 1e-4);
         Aqq = SV * diag(S) * SU';
         
         
         p = V1(E1(i,:),:)' - x_com;
         P(i,:,:) = (p*q') * Aqq;
-%         P(i,:,:) = p * q' / (q * q');
     end
-   
+
     % Compute weighting coefficients
     a = zeros(size(X,1), size(E,1));
     options = optimoptions('lsqlin','Display', 'off');
@@ -158,19 +111,20 @@ function test_shape_vem
             q_(3,:) = q(1,:).^2;
             q_(4,:) = q(2,:).^2;
             q_(5,:) = q(1,:).*q(2,:);
-%             q=q_;
+            q=q_;
         
             g = squeeze(P(j,:,:)) * q + x_com;
-            x2 = x2 + a(i,j) * g';
+            x2 = x2 + 1 * g';
         end
 %         plot(x(1),x(2),'.','Color','r','MarkerSize',15);
         plot(x2(1),x2(2),'.','Color','m','MarkerSize',15);
         hold on
     end
 
-    plot(X_com(1), X_com(2),'x','MarkerSize',10,'Color','r');
+    plot(X_com(1), X_com(2),'x','MarkerSize',10,'Color',[0.5 0.5 0.5]);
+    plot(x_com(1), x_com(2),'x','MarkerSize',10,'Color','b');
     xlim([0 8]);
 %     ylim([0 4]);
     axis equal
-
+    plot([V1(E(:,1),1)'; V1(E(:,2),1)'], [V1(E(:,1),2)'; V1(E(:,2),2)'],'.','MarkerSize', 25, 'Color','b');
 end
