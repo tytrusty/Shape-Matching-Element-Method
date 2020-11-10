@@ -22,5 +22,5 @@ function M = vem_mass_matrix_func(n)
     dT_dqdot = gradient(T,qdot);
     M = jacobian(dT_dqdot,qdot)
 %     M = double(subs(M, BM, B));
-%     matlabFunction(M, 'vars', {BM}, 'File','mass_matrix_n','Comments','Version: 1.0')
+    matlabFunction(M, 'vars', {BM}, 'File','mass_matrix_36','Comments','Version: 1.0')
 end
