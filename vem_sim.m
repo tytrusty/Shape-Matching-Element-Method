@@ -1,12 +1,13 @@
 function vem_sim
+    % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
+    C = 0.5 * 17;   	% Lame parameter 1
+    D = 0.5 * 150;   	% Lame parameter 2
     gravity = -500;
-    order = 2;
     k_error = 10000;
+    order = 2;
     rho = 100;
-    
+    save_output = 1;
     
    % Load mesh
     [V,F] = readOBJ('plane.obj');
@@ -20,17 +21,21 @@ function vem_sim
         
     % Get undeformed boundary vertices
     x0 = V(unique([E(:,1) E(:,2)]),:);
-    x0 = x0(:,1:2)';
-    min_I = find(x0(2,:) == max(x0(2,:)));
-    min_I = [2];
+%     x0 = x0(:,1:2)';
+%     min_I = find(x0(2,:) == max(x0(2,:)));
+%     min_I = find(x0(1,:) == max(x0(1,:)));
+    min_I = [3 4];
     x0 = [0 0; 0 2;  2 2; 2 0; ]';
+    
+    % Initial deformed positions and velocities
     x = x0;
     v = zeros(size(x));
 
+    % Create plots.
     E_plot = plot([x(1,:) x(1,1)],[x(2,:) x(2,1)],'o','LineWidth',2, 'Color', 'm');
     axis equal
-%     xlim([-1 3])
-    ylim([-2 2.5])
+    % xlim([-1 3])
+    ylim([-4 2.5])
     
     % Constraint matrix for boundary conditions.
 	% P = fixed_point_constraint_matrix(x0', [2 3]');
@@ -73,14 +78,14 @@ function vem_sim
     end
     
     % Computing inverted mass matrices
-%     M = zeros(numel(x0),numel(x0));
-%     for i = 1:size(Q,2)
-%         BM = B * Q(:,i);
-% %         M = M +  mass_matrix_n(BM);
-%         M = M +  mass_matrix_36(BM);
-%         
-%     end
-%     M = M * rho;
+    %     M = zeros(numel(x0),numel(x0));
+    %     for i = 1:size(Q,2)
+    %         BM = B * Q(:,i);
+    % %         M = M +  mass_matrix_n(BM);
+    %         M = M +  mass_matrix_36(BM);
+    %         
+    %     end
+    %     M = M * rho;
     M = rho * eye(numel(x0));
 
     ii=1;
@@ -102,11 +107,11 @@ function vem_sim
         	factor = (m-1)/m;
             dM_dX = factor * eye(2);
             if order == 2
-                dM_dX = zeros(5,2);
+                dM_dX = zeros(5,2); 
                 dM_dX(1:2,:) = factor * eye(2);
-                dM_dX(3,:) = [2*factor*V(i,1) 0];
-                dM_dX(4,:) = [0 2*factor*V(i,2)];
-                dM_dX(5,:) = [V(i,2)*factor V(i,1)*factor];
+                dM_dX(3,:) = [2*factor*Q(1,i) 0];
+                dM_dX(4,:) = [0 2*factor*Q(2,i)];
+                dM_dX(5,:) = [Q(2,i)*factor Q(1,i)*factor];
             end
            
             % Deformation Gradient
@@ -149,8 +154,10 @@ function vem_sim
         X_plot.YData = Points(2,:);
         drawnow
         
-        fn=sprintf('output_png\\quad_%03d.png',ii)
-        saveas(fig,fn);
+        if save_output
+            fn=sprintf('output_png\\qcube_%03d.png',ii)
+            saveas(fig,fn);
+        end
         ii=ii+1;
     end
 end
