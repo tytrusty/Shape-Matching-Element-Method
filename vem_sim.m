@@ -3,7 +3,7 @@ function vem_sim
     dt = 0.01;      	% timestep
     C = 0.5 * 17;   	% Lame parameter 1
     D = 0.5 * 150;   	% Lame parameter 2
-    gravity = -500;
+    gravity = -400;
     k_error = 10000;
     order = 2;
     rho = 100;
@@ -24,7 +24,7 @@ function vem_sim
 %     x0 = x0(:,1:2)';
 %     min_I = find(x0(2,:) == max(x0(2,:)));
 %     min_I = find(x0(1,:) == max(x0(1,:)));
-    min_I = [3 4];
+    min_I = [1 2];
     x0 = [0 0; 0 2;  2 2; 2 0; ]';
     
     % Initial deformed positions and velocities
@@ -87,7 +87,28 @@ function vem_sim
     %     end
     %     M = M * rho;
     M = rho * eye(numel(x0));
-
+    
+    m = size(Q,2);
+    
+    % Forming gradient of monomial basis w.r.t X
+    if order == 1
+       dM_dX = zeros(m,2,2); 
+    else
+       dM_dX = zeros(m,5,2);  
+    end
+    for i = 1:m
+        factor = (m-1)/m;
+        dMi_dX = factor * eye(2);
+        if order == 2
+            dMi_dX = zeros(5,2); 
+            dMi_dX(1:2,:) = factor * eye(2);
+            dMi_dX(3,:) = [2*factor*Q(1,i) 0];
+            dMi_dX(4,:) = [0 2*factor*Q(2,i)];
+            dMi_dX(5,:) = [Q(2,i)*factor Q(1,i)*factor];
+        end
+        dM_dX(i,:,:) = dMi_dX;
+    end
+    
     ii=1;
     for t=0:dt:30
         x_com = mean(x,2);
@@ -95,31 +116,21 @@ function vem_sim
         % Compute global shape matching matrix
         p = x - x_com;
         A = p * B;
-        % A = A / sqrt(det(A*A')^(1/2)); % preserve volume
+        %A = A / sqrt(det(A*A')^(1/2)); % preserve volume
 
         dV_dq = zeros(numel(x),1);     % force vector
         K = zeros(numel(x), numel(x)); % stiffness matrix
         
         % Computing force dV/dq for each point.
-        m = size(Q,2);
         for i = 1:m
-            % Forming gradient of monomial basis w.r.t X
-        	factor = (m-1)/m;
-            dM_dX = factor * eye(2);
-            if order == 2
-                dM_dX = zeros(5,2); 
-                dM_dX(1:2,:) = factor * eye(2);
-                dM_dX(3,:) = [2*factor*Q(1,i) 0];
-                dM_dX(4,:) = [0 2*factor*Q(2,i)];
-                dM_dX(5,:) = [Q(2,i)*factor Q(1,i)*factor];
-            end
+            dMi_dX = squeeze(dM_dX(i,:,:));
            
             % Deformation Gradient
-            F = A * dM_dX;
+            F = A * dMi_dX;
            
             % Force vector
             dV_dF = neohookean_dF(F,C,D);
-            dF_dq = vem_dF_dq(B, dM_dX);
+            dF_dq = vem_dF_dq(B, dMi_dX);
             dV_dq = dV_dq + dF_dq' * dV_dF; % assuming constant area
 
             % Stiffness matrix
@@ -147,6 +158,7 @@ function vem_sim
         % Update plot.
         E_plot.XData = [x(1,:) x(1,1)];
         E_plot.YData = [x(2,:) x(2,1)];
+        
         % Different 'F' for each x, so this need to be in the loop
         % Points = F *(V'-x0_com) + x_com;
         Points = A * Q + x_com;
@@ -155,7 +167,7 @@ function vem_sim
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\qcube_%03d.png',ii)
+            fn=sprintf('output_png\\side_pin_quad_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;
