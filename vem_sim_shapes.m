@@ -1,12 +1,12 @@
 function vem_sim_shapes
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 80;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
+    C = 0.5 * 1700;   	% Lame parameter 1
+    D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -500;
     k_error = 10000;
-    order = 2;
-    rho = 100;
+    order = 1;
+    rho = 10;
     save_output = 0;
     
    % Load mesh
@@ -31,20 +31,22 @@ function vem_sim_shapes
 %     min_I = find(x0(2,:) == max(x0(2,:)));
     min_I = find(x0(1,:) == min(x0(1,:)));
     min_I = [1 ];
-    x0 = [0 0; 0 2;  2 2; 2 0; ]';
+%     x0 = [0 0; 0 2;  2 2; 2 0; ]';
     
     % E is our set of shapes
-    E = [1 2; 2 3; 3 4; 4 1];
+%     E = [1 2; 2 3; 3 4; 4 1];
 %     E = [1 2 3; 2 3 4; 3 4 1; 4 1 2];
-    E = [1 2 3 4];
+%     E = [1 2 3 4];
     
     % Form selection matrices for each shape.
     S = zeros(numel(x0), size(E,2)*2, size(E,1));
+    S = cell(size(E,1),1);
     for i=1:size(E,1)
-       for j=1:size(E,2)
-           idx = E(i,j);
-           S(2*idx-1:2*idx,2*j-1:2*j, i) = eye(2);
-       end
+        S{i} = sparse(zeros(numel(x0), size(E,2)*2));
+        for j=1:size(E,2)
+            idx = E(i,j);
+            S{i}(2*idx-1:2*idx,2*j-1:2*j) = eye(2);
+        end
     end
     
     % Midpoints of each shape
@@ -58,8 +60,8 @@ function vem_sim_shapes
     v = zeros(size(x));
 
     % Create plots.
-    E_plot = plot([x(1,:) x(1,1)],[x(2,:) x(2,1)],'o','LineWidth',3, 'Color', 'm');
-%     E_lines = plot([x0(1,E(:,1)); x0(1,E(:,2))], [x0(2,E(:,1)); x0(2,E(:,2))],'LineWidth',3);
+%     E_plot = plot([x(1,:) x(1,1)],[x(2,:) x(2,1)],'o','LineWidth',3, 'Color', 'm');
+    E_lines = plot([x0(1,E(:,1)); x0(1,E(:,2))], [x0(2,E(:,1)); x0(2,E(:,2))],'LineWidth',3);
 
     axis equal
     % xlim([-1 3])
@@ -126,6 +128,8 @@ function vem_sim_shapes
         dM_dX(i,:,:) = dMi_dX;
     end
     
+    dP_dq = vem_dP_dq(size(B,1), 2);
+    
     ii=1;
     for t=0:dt:30
         x_com = mean(x,2);
@@ -152,9 +156,9 @@ function vem_sim_shapes
             % Per-shape forces & stiffness contribution.
             for j = 1:size(E,1)
                 % Deformation Gradient
-                F = squeeze(A(:,:,j)) * dMi_dX;
-                Bi = squeeze(B(:,:,j));
-                Si = squeeze(S(:,:,j));
+                F = A(:,:,j) * dMi_dX;
+                Bi = B(:,:,j);
+                Si = S{j};
                 %det(F)
                 
 %                 Points(:,i) = Points(:,i) + a(i,j) * F * V(i,:)' + x_com;
@@ -163,8 +167,12 @@ function vem_sim_shapes
                 
                 % Force vector
                 dV_dF = neohookean_dF(F,C,D);
+                % dF_dq = vem_dF_dq(Bi, dMi_dX);
                 
-                dF_dq = vem_dF_dq(Bi, dMi_dX);
+                dF_dq = dP_dq * Bi * dMi_dX; 
+                dF_dq = permute( reshape(dF_dq',2,2,4), [2 1 3]);
+                dF_dq = reshape(dF_dq,4,4);
+
                 dV_dq = dV_dq + a(i,j) * Si * dF_dq' * dV_dF; % assuming constant area
                 
                 % Stiffness matrix
@@ -176,7 +184,8 @@ function vem_sim_shapes
         % Error correction force
         f_error = zeros(numel(x),1);
         for j = 1:size(E,1)
-            Si = squeeze(S(:,:,j));
+%             Si = squeeze(S(:,:,j));
+            Si = S{j};
             x_pred = squeeze(A(:,:,j)) * squeeze(Q0(:,:,j)) + x_com;
             x_actual = x(:,E(j,:));
             diff = x_pred - x_actual;
@@ -198,14 +207,14 @@ function vem_sim_shapes
         x = x + dt*v;
         
         % Update plots
-%         for i = 1:numel(E_lines)
-%             E_lines(i).XData = x(1,E(i,:)); 
-%             E_lines(i).YData = x(2,E(i,:)); 
-%         end
+        for i = 1:numel(E_lines)
+            E_lines(i).XData = x(1,E(i,:)); 
+            E_lines(i).YData = x(2,E(i,:)); 
+        end
         % Update plot.
-        E_plot.XData = [x(1,:) x(1,1)];
-        E_plot.YData = [x(2,:) x(2,1)];
-        
+%         E_plot.XData = [x(1,:) x(1,1)];
+%         E_plot.YData = [x(2,:) x(2,1)];
+%         
         X_plot.XData = Points(1,:);
         X_plot.YData = Points(2,:);
         drawnow

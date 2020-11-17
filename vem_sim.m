@@ -7,7 +7,7 @@ function vem_sim
     k_error = 10000;
     order = 2;
     rho = 100;
-    save_output = 1;
+    save_output = 0;
     
    % Load mesh
     [V,F] = readOBJ('plane.obj');

@@ -7,7 +7,7 @@ function vem_sim_3d
     k_error = 10000;
     order = 2;
     rho = 10;
-    save_output = 1;
+    save_output = 0;
     
    % Load mesh
     [V,T,F] = readMESH([data_dir(), '/meshes_mesh/beam.mesh']);
