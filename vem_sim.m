@@ -1,8 +1,8 @@
 function vem_sim
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 17;   	% Lame parameter 1
-    D = 0.5 * 150;   	% Lame parameter 2
+    C = 0.5 * 170;   	% Lame parameter 1
+    D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -400;
     k_error = 10000;
     order = 2;
@@ -20,12 +20,12 @@ function vem_sim
     hold on;
         
     % Get undeformed boundary vertices
-    x0 = V(unique([E(:,1) E(:,2)]),:);
+    x0 = V(unique([E(:,1) E(:,2)]),:)';
 %     x0 = x0(:,1:2)';
 %     min_I = find(x0(2,:) == max(x0(2,:)));
-%     min_I = find(x0(1,:) == max(x0(1,:)));
-    min_I = [1 2];
-    x0 = [0 0; 0 2;  2 2; 2 0; ]';
+    min_I = find(x0(1,:) == max(x0(1,:)));
+%     min_I = [1 2];
+%     x0 = [0 0; 0 2;  2 2; 2 0; ]';
     
     % Initial deformed positions and velocities
     x = x0;
@@ -77,17 +77,14 @@ function vem_sim
         Q=Q_;
     end
     
-    % Computing inverted mass matrices
-    %     M = zeros(numel(x0),numel(x0));
-    %     for i = 1:size(Q,2)
-    %         BM = B * Q(:,i);
-    % %         M = M +  mass_matrix_n(BM);
-    %         M = M +  mass_matrix_36(BM);
-    %         
-    %     end
-    %     M = M * rho;
-    M = rho * eye(numel(x0));
-    
+    % Mass matrix;
+    n = size(x0,2);
+    d = size(x0,1);
+    M = vem_mass_matrix(B, Q, n, d);
+    ME = vem_error_matrix(B, Q0, n, d);
+        %M = M * rho;
+    M = rho * (M + 1*ME);
+    % M = rho * eye(numel(x0));
     m = size(Q,2);
     
     % Forming gradient of monomial basis w.r.t X
