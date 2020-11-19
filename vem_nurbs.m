@@ -1,11 +1,11 @@
 function vem_nurbs
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
+    C = 0.5 * 17000;   	% Lame parameter 1
+    D = 0.5 * 1500000;   	% Lame parameter 2
     gravity = -100;
     k_error = 10000;
-    order = 1;
+    order = 2;
     rho = 1;
     save_output = 0;
     
@@ -13,7 +13,7 @@ function vem_nurbs
     function nurbs = plot_srf(nurbs)
             for ii = 1:numel(nurbs)
                 xi = reshape(nurbs{ii}.x0, 3, nurbs{ii}.subd(1), nurbs{ii}.subd(2));
-                plt = surf(squeeze(xi(1,:,:)),squeeze(xi(2,:,:)),squeeze(xi(3,:,:)));
+                plt = surf(squeeze(xi(1,:,:)),squeeze(xi(2,:,:)),squeeze(xi(3,:,:)),'FaceAlpha',0.8,'EdgeColor','none');
                 hold on;
                 nurbs{ii}.plt=plt;
             end
@@ -31,9 +31,9 @@ function vem_nurbs
     V(3,:) = -V(3,:);
 
     % Read in NURBs 
-    figure(1);
+    fig=figure(1);
     clf;
-    part=nurbs_from_iges('rounded_cube.iges',4);
+    part=nurbs_from_iges('rounded_cube.iges',6);
     part=plot_srf(part);
     
     % Plot
@@ -41,10 +41,45 @@ function vem_nurbs
     set(gcf,'color','w');
     axis equal
     lighting gouraud;
-    %lightangle(gca,-35,15)
+%     shading interp
     
+    lightangle(gca,-15,20)
+    zlim([-10 150]);
     x0 = zeros(3,0);
+    
+    q_size = 0;
+    J_size = 0;
+    
     % build global position vectors
+    for i=1:numel(part)
+        idx1=q_size+1;
+    	q_size = q_size + size(part{i}.p,1);
+        J_size = J_size + size(part{i}.J_flat,2) * size(part{i}.J_flat,3);
+        idx2=q_size;
+        
+        % indices into global configuration vector
+        part{i}.idx1=idx1;
+        part{i}.idx2=idx2;
+    end
+    
+    q = zeros(q_size,1);
+    J = zeros(J_size,q_size);
+    J_idx = [0 0];
+    for i=1:numel(part)
+        q(part{i}.idx1:part{i}.idx2,1) = part{i}.p;
+        Ji = part{i}.J_flat(:,:)';
+        
+        % Block indices
+        I1=J_idx(1)+1:J_idx(1)+size(Ji,1);
+        I2=J_idx(2)+1:J_idx(2)+size(Ji,2);
+        
+        % Subsitute block into global NURBs jacobian (J) matrix
+        J(I1,I2) = Ji;
+        J_idx = J_idx + size(Ji);
+    end
+    J = sparse(J);
+    qdot=zeros(size(q));
+    
     for i=1:numel(part)
         idx1=size(x0,2)+1;
         x0 = [x0 part{i}.x0];
@@ -54,13 +89,15 @@ function vem_nurbs
         part{i}.idx1=idx1;
         part{i}.idx2=idx2;
     end
-    
+
     % Initial deformed positions and velocities
     x = x0;
-    v = zeros(size(x));
     
     % Setup pinned vertices constraint matrix
     pin_I = find(x0(3,:) > 140);
+    pin_I = intersect(find(x0(1,:) < -30), find(x0(2,:) > 55));
+    %pin_I = find(x0(3,:) < 65);
+    %pin_I = find(x0(1,:) < -40)
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Gravity force vector.
@@ -108,6 +145,13 @@ function vem_nurbs
     
     M = rho * eye(numel(x0));
     
+    % Fixed x values.
+    x_fixed = zeros(size(x0));
+    for i = 1:numel(pin_I)
+        x_fixed(:,pin_I(i))=x0(:,pin_I(i));
+    end
+    
+    J = P * J;
     m = size(Q,2);
     
     % Forming gradient of monomial basis w.r.t X
@@ -131,14 +175,12 @@ function vem_nurbs
         end
         dM_dX(i,:,:) = dMi_dX;
     end
-    
-    
-            
+             
     % Plot all vertices
-    X_plot=plot3(V(1,:),V(2,:),V(3,:),'.');
+%     X_plot=plot3(V(1,:),V(2,:),V(3,:),'.');
+%     hold on;
+    X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
-    e_plot=plot3(x0(1,:),x0(2,:),x0(3,:),'.','Color','r','MarkerSize',30);
-    
     
     ii=1;
     for t=0:dt:30
@@ -160,12 +202,12 @@ function vem_nurbs
             F = A * dMi_dX;
            
             % Force vector
-            dV_dF = neohookean_tet_dF(F,C,D);
+            dV_dF = SNH_tet_dF(F,C,D);
             dF_dq = vem_dF_dq(B, dMi_dX);
             dV_dq = dV_dq + dF_dq' * dV_dF; % assuming constant area
 
             % Stiffness matrix
-            d2V_dF2 = neohookean_tet_dF2(F,C,D);
+            d2V_dF2 = SNH_tet_dF2(F,C,D);
             K = K - dF_dq' * d2V_dF2 * dF_dq;
         end
         
@@ -177,30 +219,40 @@ function vem_nurbs
         f_internal = -dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
-        lhs = P*(M - dt*dt*K)*P';
-        rhs = P*M*v(:) + f_internal + f_gravity + f_error;
+        lhs = J' * (P*(M - dt*dt*K)*P') * J;
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;   % perform solve
-        qdot = P'*qdot;     % unproject velocities
-        v = reshape(qdot,3,[]);
 
         % Update position
-        x = x + dt*v;
+        q = q + dt*qdot;
+        x = reshape(P'*J*q,3,[]) + x_fixed;
         
         % Update plot.
-        e_plot.XData = x(1,:);
-        e_plot.YData = x(2,:);
-        e_plot.ZData = x(3,:);
+%         e_plot.XData = x(1,:);
+%         e_plot.YData = x(2,:);
+%         e_plot.ZData = x(3,:);
         
         % Different 'F' for each x, so this need to be in the loop
         % Points = F *(V'-x0_com) + x_com;
-        Points = A * Q + x_com;
-        X_plot.XData = Points(1,:);
-        X_plot.YData = Points(2,:);
-        X_plot.ZData = Points(3,:);
+%         Points = A * Q + x_com;
+%         X_plot.XData = Points(1,:);
+%         X_plot.YData = Points(2,:);
+%         X_plot.ZData = Points(3,:);
+        
+        % Update NURBs surfaces
+        x_idx=0;
+        for i=1:numel(part)
+            x_sz = size(part{i}.x0,2);
+            xi = reshape(x(:,x_idx+1:x_idx+x_sz), 3, part{i}.subd(1), part{i}.subd(2));
+            part{i}.plt.XData = squeeze(xi(1,:,:));
+            part{i}.plt.YData = squeeze(xi(2,:,:));
+            part{i}.plt.ZData = squeeze(xi(3,:,:));
+            x_idx = x_idx+x_sz;
+        end
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\3d_pin_sides_%03d.png',ii)
+            fn=sprintf('output_png\\3d_pin_corner_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;
