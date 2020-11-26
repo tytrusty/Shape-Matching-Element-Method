@@ -1,5 +1,5 @@
 function neohookean_func
-d=2;
+d=3;
 F=sym('F', [d,d]);
 assume(F,'real');
 J=det(F);

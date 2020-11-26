@@ -2,12 +2,12 @@ function vem_sim
     % Simulation parameters
     dt = 0.01;      	% timestep
     C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
-    gravity = -400;
+    D = 0.5 * 1500;   	% Lame parameter 2
+    gravity = -600;
     k_error = 10000;
     order = 2;
-    rho = 100;
-    save_output = 0;
+    rho = 1;
+    save_output = 1;
     
    % Load mesh
     [V,F] = readOBJ('plane.obj');
@@ -23,7 +23,7 @@ function vem_sim
     x0 = V(unique([E(:,1) E(:,2)]),:)';
 %     x0 = x0(:,1:2)';
 %     min_I = find(x0(2,:) == max(x0(2,:)));
-    min_I = find(x0(1,:) == max(x0(1,:)));
+    min_I = find(x0(2,:) == max(x0(2,:)));
 %     min_I = [1 2];
 %     x0 = [0 0; 0 2;  2 2; 2 0; ]';
     
@@ -83,8 +83,8 @@ function vem_sim
     M = vem_mass_matrix(B, Q, n, d);
     ME = vem_error_matrix(B, Q0, n, d);
         %M = M * rho;
-    M = rho * (M + 1*ME);
-    % M = rho * eye(numel(x0));
+%     M = rho * (M + k_error*ME);
+    M = rho * eye(numel(x0));
     m = size(Q,2);
     
     % Forming gradient of monomial basis w.r.t X
@@ -164,7 +164,7 @@ function vem_sim
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\side_pin_quad_%03d.png',ii)
+            fn=sprintf('output_png\\mass_eye_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;

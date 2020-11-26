@@ -5,7 +5,7 @@ function vem_sim_shapes_fast
     D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -500;
     k_error = 10000;
-    order = 1;
+    order =1;
     rho = 10;
     save_output = 0;
     
@@ -39,7 +39,6 @@ function vem_sim_shapes_fast
 %     E = [1 2 3 4];
     
     % Form selection matrices for each shape.
-    S = zeros(numel(x0), size(E,2)*2, size(E,1));
     S = cell(size(E,1),1);
     for i=1:size(E,1)
         S{i} = sparse(zeros(numel(x0), size(E,2)*2));
@@ -83,15 +82,7 @@ function vem_sim_shapes_fast
     [B,Q0] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
-    Q = V' - x0_com;
-    if order == 2
-        Q_ = zeros(5, size(Q,2));
-        Q_(1:2,:) = Q;
-        Q_(3,:) = Q(1,:).^2;
-        Q_(4,:) = Q(2,:).^2;
-        Q_(5,:) = Q(1,:).*Q(2,:);
-        Q=Q_;
-    end
+    Q = monomial_basis(V', x0_com, order);
     
     % Computing inverted mass matrices
     %     M = zeros(numel(x0),numel(x0));
