@@ -1,11 +1,11 @@
 function vem_sim_shapes
     % Simulation parameters
-    dt = 0.01;      	% timestep
+    dt = 0.005;      	% timestep
     C = 0.5 * 1700;   	% Lame parameter 1
     D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -500;
     k_error = 10000;
-    order = 1;
+    order =1;
     rho = 10;
     save_output = 0;
     
@@ -39,7 +39,6 @@ function vem_sim_shapes
 %     E = [1 2 3 4];
     
     % Form selection matrices for each shape.
-    S = zeros(numel(x0), size(E,2)*2, size(E,1));
     S = cell(size(E,1),1);
     for i=1:size(E,1)
         S{i} = sparse(zeros(numel(x0), size(E,2)*2));
@@ -83,15 +82,7 @@ function vem_sim_shapes
     [B,Q0] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
-    Q = V' - x0_com;
-    if order == 2
-        Q_ = zeros(5, size(Q,2));
-        Q_(1:2,:) = Q;
-        Q_(3,:) = Q(1,:).^2;
-        Q_(4,:) = Q(2,:).^2;
-        Q_(5,:) = Q(1,:).*Q(2,:);
-        Q=Q_;
-    end
+    Q = monomial_basis(V', x0_com, order);
     
     % Computing inverted mass matrices
     %     M = zeros(numel(x0),numel(x0));
@@ -127,9 +118,7 @@ function vem_sim_shapes
         end
         dM_dX(i,:,:) = dMi_dX;
     end
-    
-    dP_dq = vem_dP_dq(size(B,1), 2);
-    
+        
     % Computing each dF_dq
     n = size(B,1);      % # of points per shape
     d = 2;  % dimension (2 or 3)
@@ -156,30 +145,43 @@ function vem_sim_shapes
         
         dV_dq = zeros(numel(x),1);     % force vector
         K = zeros(numel(x), numel(x)); % stiffness matrix
+        K0 = zeros(numel(x), numel(x)); % stiffness matrix
         
         Points = zeros(size(V'));
-
+        
+        %%%%%%%%
+        % TEST %
+        %%%%%%%%
+        dM_dX_flat = dM_dX(:,:);
+        k=2;
+        if order == 2
+            k = 5;
+        end
+        for j = 1:size(E,1)
+            Aj = A(:,:,j);
+            dFj_dq = permute(dF_dq(:,:,:,j), [3 1 2]);
+            dFj_dq=dFj_dq(:,:);
+            w = a(:,j);
+            volume=ones(size(w));
+            params = [C, D];
+            params = repmat(params,numel(w),1);
+            
+            % Force vector
+            dV_dq = dV_dq + S{j} * vem2dmesh_neohookean_dq(Aj, dFj_dq, dM_dX_flat, w, volume, params,k,n);
+            % Stiffness matrix
+            d2V_q2 = vem2dmesh_neohookean_dq2(Aj, dFj_dq, dM_dX_flat, w, volume, params,k,n);
+            K = K - S{j} * d2V_q2 * S{j}';
+        end
+        
+        
         % Computing force dV/dq for each point.
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
-            
             % Per-shape forces & stiffness contribution.
             for j = 1:size(E,1)
                 % Deformation Gradient
                 F = A(:,:,j) * dMi_dX;
-                dFi_dq = dF_dq(:,:,i,j);
-                Sj = S{j};
-                
                 Points(:,i) = Points(:,i) + a(i,j) * (F * Q(1:2,i) + x_com);
-                
-                % Force vector
-                dV_dF = neohookean_dF(F,C,D);
-               
-                dV_dq = dV_dq + a(i,j) * Sj * dFi_dq' * dV_dF; % assuming constant area
-
-                % Stiffness matrix
-                d2V_dF2 = neohookean_dF2(F,C,D);
-                K = K - a(i,j) * Sj * (dFi_dq' * d2V_dF2 * dFi_dq) * Sj';
             end
         end
         

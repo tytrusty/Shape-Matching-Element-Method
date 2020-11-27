@@ -15,7 +15,7 @@ function vem_sim_3d
     
     %triangle areas
     % TODO -- use tetrahedron centroids instead of V.
-    vol = volume(V,T);
+%     vol = volume(V,T);
 
     fig=figure(1);
     clf;
@@ -31,34 +31,34 @@ function vem_sim_3d
     [toreplace, bywhat] = ismember(E, V_bnd);
     E(toreplace) = new_Idx(bywhat(toreplace));
     
-%     % Box vertices
-%     x0 =[-5 -1 -1; % front bl
-%           5 -1 -1; % front br
-%           5 -1  1; % front tr
-%          -5 -1  1; % front tl
-%          -5  1 -1; % back bl
-%          -5  1  1; % back tl
-%           5  1 -1; % back br
-%           5  1  1; % back tr
-%     ]';
-% 
-%     % Box faces
-%     E=[ 1 2 3; % Front 1
-%         1 3 4; % Front 2
-%         1 4 6; % Left 1
-%         1 6 5; % Left 2
-%         4 3 8; % Top 1
-%         8 6 4; % Top 2
-%         1 7 2; % Bottom 1
-%         1 5 7; % Bottom 2
-%         2 7 8; % Right 1
-%         2 8 3; % Right 2
-%         7 5 6; % Back 1
-%         7 6 8; % Back 2
-%         ]; 
+    % Box vertices
+    x0 =[-5 -1 -1; % front bl
+          5 -1 -1; % front br
+          5 -1  1; % front tr
+         -5 -1  1; % front tl
+         -5  1 -1; % back bl
+         -5  1  1; % back tl
+          5  1 -1; % back br
+          5  1  1; % back tr
+    ]';
+
+    % Box faces
+    E=[ 1 2 3; % Front 1
+        1 3 4; % Front 2
+        1 4 6; % Left 1
+        1 6 5; % Left 2
+        4 3 8; % Top 1
+        8 6 4; % Top 2
+        1 7 2; % Bottom 1
+        1 5 7; % Bottom 2
+        2 7 8; % Right 1
+        2 8 3; % Right 2
+        7 5 6; % Back 1
+        7 6 8; % Back 2
+        ]; 
     
-    [x0,E] = readOBJ('beam.obj');
-    x0=x0';
+%     [x0,E] = readOBJ('beam_2.obj');
+%     x0=x0';
     
     min_I = [find(x0(1,:) == min(x0(1,:))) find(x0(1,:) == max(x0(1,:)))] ;
      min_I = find(x0(3,:) == min(x0(3,:)));
@@ -73,9 +73,9 @@ function vem_sim_3d
     % Create plots.
     E_plot = tsurf(E, x0');
     axis equal
-    shading interp
+%     shading interp
 %     lighting gouraud
-    lightangle(gca,43,40)
+%     lightangle(gca,43,40)
     xlabel('x'); ylabel('y'); zlabel('z');
     axis equal
     % xlim([-1 3])
@@ -163,6 +163,17 @@ function vem_sim_3d
         end
         dM_dX(i,:,:) = dMi_dX;
     end
+    
+    % Computing each dF_dq
+    n = size(B,1);      % # of points per shape
+    d = 3;  % dimension (2 or 3)
+    dF_dq = zeros(d*d, d*n, m);
+    for i = 1:m
+        dMi_dX = squeeze(dM_dX(i,:,:));
+        % Per-shape forces & stiffness contribution.
+        dF_dq(:,:,i) = vem_dF_dq(B, dMi_dX);
+    end
+    
             
     ii=1;
     for t=0:dt:30
@@ -175,22 +186,37 @@ function vem_sim_3d
 
         dV_dq = zeros(numel(x),1);     % force vector
         K = zeros(numel(x), numel(x)); % stiffness matrix
+        K0 = zeros(numel(x), numel(x)); % stiffness matrix
+        
+         %%%%%%%%
+        dM_dX_flat = dM_dX(:,:);
+        k=3;
+        if order == 2
+            k = 9;
+        end
+        dFj_dq = permute(dF_dq, [3 1 2]);
+        dFj_dq=dFj_dq(:,:);
+        w = ones(m,1);
+        volume=ones(size(w));
+        params = [C, D];
+        params = repmat(params,numel(w),1);
+
+        % Force vector
+        dV_dq = dV_dq + vem3dmesh_neohookean_dq(A, dFj_dq, dM_dX_flat, w, volume, params,k,n);
+        % Stiffness matrix
+        d2V_q2 = vem3dmesh_neohookean_dq2(A, dFj_dq, dM_dX_flat, w, volume, params,k,n);
+        K = K - d2V_q2;
         
         % Computing force dV/dq for each point.       
         for i = 1:m
-            
             dMi_dX = squeeze(dM_dX(i,:,:));
             % Deformation Gradient
             F = A * dMi_dX;
-           
-            % Force vector
-            dV_dF = neohookean_tet_dF(F,C,D);
-            dF_dq = vem_dF_dq(B, dMi_dX);
-            dV_dq = dV_dq + dF_dq' * dV_dF; % assuming constant area
-
+            dFi_dq = dF_dq(:,:,i);
+            
             % Stiffness matrix
             d2V_dF2 = neohookean_tet_dF2(F,C,D);
-            K = K - dF_dq' * d2V_dF2 * dF_dq;
+            K0 = K0 - dFi_dq' * d2V_dF2 * dFi_dq;
         end
         
         % Error correction force
