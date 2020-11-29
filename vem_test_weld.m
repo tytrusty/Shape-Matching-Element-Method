@@ -1,11 +1,11 @@
-function vem_sim_shapes
+function vem_test_weld
     % Simulation parameters
-    dt = 0.005;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
-    gravity = -500;
+    dt = 0.01;      	% timestep
+    C = 0.5 * 17000;   	% Lame parameter 1
+    D = 0.5 * 150000;   	% Lame parameter 2
+    gravity = -1000;
     k_error = 10000;
-    order =1;
+    order = 1;
     rho = 10;
     save_output = 0;
     
@@ -16,6 +16,8 @@ function vem_sim_shapes
     
     fig=figure(1);
     clf;
+    
+%     V=[0 0; 0 2; 2 0; 2 2; 1 1];
     X_plot = plot(V(:,1),V(:,2),'.');
     hold on;
         
@@ -27,17 +29,27 @@ function vem_sim_shapes
     new_Idx = find(V_bnd);
     [toreplace, bywhat] = ismember(E, V_bnd);
     E(toreplace) = new_Idx(bywhat(toreplace));
-    
-%     min_I = find(x0(2,:) == max(x0(2,:)));
-    min_I = find(x0(1,:) == min(x0(1,:)));
-    min_I = [1 ];
+    E_cell = cell(size(E,1),1);
+    for i =1:size(E,1)
+       E_cell{i} = E(i,:); 
+    end
+    min_I = find(x0(2,:) == max(x0(2,:)));
+%     min_I = find(x0(1,:) == min(x0(1,:)));
+    min_I = [1];
+    %%%% NEW %%%%
+%     min_I = [3 4];
+%     x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
+%     E = [1 2; 3 4; 5 6; 7 8;];
+%     E_cell = {[1 2], [3 4], [5 6], [7 8]};
+
+%     E = [7 1 2; 1 3 4; 3 5 6; 5 7 8;];
+%     E_cell = {[7 1 2], [1 3 4], [3 5 6], [5 7 8]};    
+    %%%% ORIG %%%%
+% 	min_I = [2 3];
 %     x0 = [0 0; 0 2;  2 2; 2 0; ]';
-    
-    % E is our set of shapes
-%     E = [1 2; 2 3; 3 4; 4 1];
-%     E = [1 2 3; 2 3 4; 3 4 1; 4 1 2];
-%     E = [1 2 3 4];
-    
+%     E = [2 1; 3 2; 4 3; 1 4];
+%     E_cell = {[1 2], [2 3], [3 4], [4 1]};
+
     % Form selection matrices for each shape.
     S = cell(size(E,1),1);
     for i=1:size(E,1)
@@ -66,7 +78,7 @@ function vem_sim_shapes
     % xlim([-1 3])
     ylim([-4.5 2.5])
     hold on;
-    plot(0,0,'.','MarkerSize', 30,'Color','r');
+    plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
     
     % Constraint matrix for boundary conditions.
     P = fixed_point_constraint_matrix(x0',sort(min_I)');
@@ -83,15 +95,15 @@ function vem_sim_shapes
     
     % Build Monomial bases for all quadrature points
     Q = monomial_basis(V', x0_com, order);
-    
-    % Computing mass matrices
-    M = rho * eye(numel(x0));
+    Q0x = monomial_basis(x0, x0_com, order);     
     
     m = size(Q,2);
     
     % Compute per-element shape weights.
-    a = compute_weights(E_centroids,E,V');
-
+%     a = compute_weights(E_centroids,E,V');
+    a = compute_projected_weights(x0, E_cell, V');
+    a_x = compute_projected_weights(x0, E_cell, x0);
+    
     % Forming gradient of monomial basis w.r.t X
     if order == 1
        dM_dX = zeros(m,2,2); 
@@ -99,7 +111,7 @@ function vem_sim_shapes
        dM_dX = zeros(m,5,2);  
     end
     for i = 1:m
-        factor = 1.0;%(m-1)/m;
+        factor = 1;%(m-1)/m;
         dMi_dX = factor * eye(2);
         if order == 2
             dMi_dX = zeros(5,2); 
@@ -115,6 +127,8 @@ function vem_sim_shapes
     n = size(B,1);      % # of points per shape
     d = 2;  % dimension (2 or 3)
     dF_dq = zeros(d*d, d*n, m, size(E,1));
+    
+    
     for i = 1:m
         dMi_dX = squeeze(dM_dX(i,:,:));
         % Per-shape forces & stiffness contribution.
@@ -122,6 +136,28 @@ function vem_sim_shapes
             dF_dq(:,:,i,j) = vem_dF_dq(B(:,:,j), dMi_dX);
         end
     end
+ 
+    J = zeros(d,d*n, m, size(E,1));
+    M = zeros(numel(x), numel(x));
+    ME = zeros(numel(x), numel(x));
+    for i = 1:size(E,1)
+        w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
+    	J(:,:,:,i)= vem_jacobian(B(:,:,i),Q,n,d,36); %%%% look at 36 part here.... maybe its all wrong now that we are working on subparts (include selection matrix in symbolic file)
+        M_J = sum(bsxfun(@times, J(:,:,:,i),w_j),3) * S{i}';
+        M = M + M_J'*M_J;
+        
+        % Stability term
+        JE = vem_jacobian(B(:,:,i),Q0x,n,d,36);
+        for j=1:size(x0,2)
+            I = zeros(d,numel(x0));
+            I(:, d*j-1:d*j) = eye(d);
+            ME_J = a_x(j,i) * (I - JE(:,:,j)*S{i}');
+            ME = ME + ME_J'*ME_J;
+            
+        end
+    end
+    M = sparse(rho*M + k_error*ME);
+%     M = rho*eye(numel(x));
     
     ii=1;
     for t=0:dt:30
@@ -137,55 +173,78 @@ function vem_sim_shapes
         
         dV_dq = zeros(numel(x),1);     % force vector
         K = zeros(numel(x), numel(x)); % stiffness matrix
-        K0 = zeros(numel(x), numel(x)); % stiffness matrix
         
         Points = zeros(size(V'));
-        
-        %%%%%%%%
-        % TEST %
-        %%%%%%%%
-        dM_dX_flat = dM_dX(:,:);
-        k=2;
-        if order == 2
-            k = 5;
-        end
-        for j = 1:size(E,1)
-            Aj = A(:,:,j);
-            dFj_dq = permute(dF_dq(:,:,:,j), [3 1 2]);
-            dFj_dq=dFj_dq(:,:);
-            w = a(:,j);
-            volume=ones(size(w));
-            params = [C, D];
-            params = repmat(params,numel(w),1);
-            
-            % Force vector
-            dV_dq = dV_dq + S{j} * vem2dmesh_neohookean_dq(Aj, dFj_dq, dM_dX_flat, w, volume, params,k,n);
-            % Stiffness matrix
-            d2V_q2 = vem2dmesh_neohookean_dq2(Aj, dFj_dq, dM_dX_flat, w, volume, params,k,n);
-            K = K - S{j} * d2V_q2 * S{j}';
-        end
-        
         
         % Computing force dV/dq for each point.
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
-            % Per-shape forces & stiffness contribution.
+            
+            Aij = zeros(size(A(:,:,1)));
+            dFij_dq = zeros(4,numel(x));
             for j = 1:size(E,1)
-                % Deformation Gradient
-                F = A(:,:,j) * dMi_dX;
-                Points(:,i) = Points(:,i) + a(i,j) * (F * Q(1:2,i) + x_com);
+                Aij = Aij + A(:,:,j) * a(i,j);
+                dFij_dq = dFij_dq + dF_dq(:,:,i,j) * a(i,j) * S{j}';
             end
+            
+            % Deformation Gradient
+            F = Aij * dMi_dX;
+
+            Points(:,i) = F * Q(1:2,i) + x_com;
+%             adsf= zeros(2,numel(x));
+%             for j = 1:size(E,1)
+%                 adsf = adsf + a(i,j) * J(:,:,i,j) * S{j}';
+%             end
+                        
+            % Force vector
+            dV_dF = neohookean_dF(F,C,D);
+
+            dV_dq = dV_dq + dFij_dq' * dV_dF; % assuming constant area
+
+            % Stiffness matrix
+            d2V_dF2 = neohookean_dF2(F,C,D);
+            K = K - dFij_dq' * d2V_dF2 * dFij_dq;
+            
+            % Per-shape forces & stiffness contribution.
+%             for j = 1:size(E,1)
+%                 % Deformation Gradient
+%                 F = A(:,:,j) * dMi_dX;
+%                 dFi_dq = dF_dq(:,:,i,j);
+%                 Sj = S{j};
+%                 
+%                 Points(:,i) = Points(:,i) + a(i,j) * (F * Q(1:2,i) + x_com);
+%                 
+%                 % Force vector
+%                 dV_dF = neohookean_dF(F,C,D);
+%                
+%                 dV_dq = dV_dq + a(i,j) * Sj * dFi_dq' * dV_dF; % assuming constant area
+% 
+%                 % Stiffness matrix
+%                 d2V_dF2 = neohookean_dF2(F,C,D);
+%                 K = K - a(i,j) * Sj * (dFi_dq' * d2V_dF2 * dFi_dq) * Sj';
+%             end
         end
         
         % Error correction force
         f_error = zeros(numel(x),1);
-        for j = 1:size(E,1)
-            Sj = S{j};
-            x_pred = squeeze(A(:,:,j)) * squeeze(Q0(:,:,j)) + x_com;
-            x_actual = x(:,E(j,:));
+        for i = 1:size(x0,2)          
+            Aij = zeros(size(A(:,:,1)));
+            for j = 1:size(E,1)
+                Aij = Aij + A(:,:,j) * a_x(i,j);
+            end
+            x_pred = Aij * Q0x(:,i) + x_com;
+            x_actual = x(:,i);
             diff = x_pred - x_actual;
-            f_error = f_error + Sj * diff(:);
+            f_error(2*i-1:2*i) = diff(:);
         end
+        f_error = 2 * ME * x(:);
+%         for j = 1:size(E,1)
+%             Sj = S{j};
+%             x_pred = squeeze(A(:,:,j)) * squeeze(Q0(:,:,j)) + x_com;
+%             x_actual = x(:,E(j,:));
+%             diff = x_pred - x_actual;
+%             f_error = f_error + Sj * diff(:);
+%         end
         f_error = k_error*(dt * P * f_error);
         
         % Force from potential energy.

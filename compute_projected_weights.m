@@ -1,7 +1,7 @@
 function [a] = compute_projected_weights(V, E, X)
 
     m=size(X,2);
-    n=size(E,1);
+    n=numel(E);
 
     % Compute weighting coefficients
     a = zeros(m, n);

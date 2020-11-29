@@ -184,7 +184,7 @@ function vem_nurbs
        dM_dX = zeros(m,9,3);  
     end
     for i = 1:m
-        factor = (m-1)/m;
+        factor = 1;%(m-1)/m;
         dMi_dX = factor * eye(3);
         if order == 2
             dMi_dX = zeros(9,3); 

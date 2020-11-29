@@ -21,8 +21,8 @@ function M = vem_error_matrix(B, Q, n, d)
         % Build new dP_dq mat
         dP = dP_dq;
         idx1 = (i-1)*d;
-        dP(idx1 + 1, n+1)= (n+1)/n;
-        dP(idx1 + 2, 2*(n+1))= (n+1)/n;
+        dP(idx1 + 1, n+1)= (n-1)/n;
+        dP(idx1 + 2, 2*(n+1))= (n-1)/n;
         
         Mi = dP * BM;
         %Mi = dP_dq * BM;

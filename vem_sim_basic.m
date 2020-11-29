@@ -1,8 +1,8 @@
 function vem_sim_basic
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
+    C = 0.5 * 17;   	% Lame parameter 1
+    D = 0.5 * 150;   	% Lame parameter 2
     gravity = -600;
     k_error = 10000;
     order = 2;
@@ -24,7 +24,8 @@ function vem_sim_basic
 %     x0 = x0(:,1:2)';
 %     min_I = find(x0(2,:) == max(x0(2,:)));
     min_I = find(x0(2,:) == max(x0(2,:)));
-%     min_I = [1 2];
+    
+    min_I = [1 2];
 %     x0 = [0 0; 0 2;  2 2; 2 0; ]';
     
     % Initial deformed positions and velocities
@@ -49,15 +50,7 @@ function vem_sim_basic
     x0_com = mean(x0,2);
     
     % Build Monomial bases
-    Q0 = x0 - x0_com;
-    if order == 2
-        Q_ = zeros(5, size(Q0,2));
-        Q_(1:2,:) = Q0;
-        Q_(3,:) = Q0(1,:).^2;
-        Q_(4,:) = Q0(2,:).^2;
-        Q_(5,:) = Q0(1,:).*Q0(2,:);
-        Q0=Q_;
-    end
+    Q0 = monomial_basis(x0, x0_com, order);
     
     % Build 'B' matrices (Aqq in shape matching)
     % Single shape currently.
@@ -67,25 +60,34 @@ function vem_sim_basic
     B = Q0' * (SV * diag(S) * SU');
     
     % Build Monomial bases for all quadrature points
-    Q = V' - x0_com;
-    if order == 2
-        Q_ = zeros(5, size(Q,2));
-        Q_(1:2,:) = Q;
-        Q_(3,:) = Q(1,:).^2;
-        Q_(4,:) = Q(2,:).^2;
-        Q_(5,:) = Q(1,:).*Q(2,:);
-        Q=Q_;
-    end
+    Q = monomial_basis(V', x0_com, order);
     
     % Mass matrix;
     n = size(x0,2);
     d = size(x0,1);
     M = vem_mass_matrix(B, Q, n, d);
     ME = vem_error_matrix(B, Q0, n, d);
-        %M = M * rho;
-%     M = rho * (M + k_error*ME);
-    M = rho * eye(numel(x0));
+    M = rho * (M + k_error*ME);
+%     M = rho * eye(numel(x0));
     m = size(Q,2);
+    
+    J=vem_jacobian(B,Q,n,d);
+    M2=zeros(numel(x));
+    for j=1:size(J,3)
+        M2=M2+J(:,:,j)'*J(:,:,j);
+    end
+    
+    % Stability term
+    Q0x = monomial_basis(x0, x0_com, order);
+    JE = vem_jacobian(B,Q0x,n,d);
+    ME2 = zeros(numel(x0));
+    for j=1:size(x0,2)
+        I = zeros(d,numel(x0));
+        I(:, d*j-1:d*j) = eye(d);
+        ME_J =  I - JE(:,:,j);
+        ME2 = ME2 + ME_J'*ME_J;
+        ME1_CMP = vem_error_matrix(B, Q0(:,j), n, d);
+    end
     
     % Forming gradient of monomial basis w.r.t X
     if order == 1
