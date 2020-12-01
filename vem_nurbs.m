@@ -311,6 +311,9 @@ function vem_nurbs
             part{i}.plt.YData = squeeze(xi(2,:,:));
             part{i}.plt.ZData = squeeze(xi(3,:,:));
             x_idx = x_idx+x_sz;
+            
+            
+            writeOBJ("output_obj/star_" + int2str(ii) + ".obj", p1.Vertices, Fobj{1});
         end
         drawnow
         

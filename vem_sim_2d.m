@@ -1,4 +1,4 @@
-function vem_test_weld
+function vem_sim_2d
     % Simulation parameters
     dt = 0.01;      	% timestep
     C = 0.5 * 10000;   	% Lame parameter 1
