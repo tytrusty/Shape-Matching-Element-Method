@@ -3,11 +3,10 @@ function vem_nurbs
     dt = 0.01;      	% timestep
     C = 0.5 * 17000;   	% Lame parameter 1
     D = 0.5 * 150000;   	% Lame parameter 2
-    gravity = -100;
-    k_error = 10000;
-    k_weld = 10000;
+    gravity = -400;
+    k_error = 1000000;
     order = 2;
-    rho = 1;
+    rho = .1;
     save_output = 0;
     
     % Plot NURBs mesh
@@ -25,8 +24,8 @@ function vem_nurbs
     % Read in tetmesh
     [V,I] = readNODE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.node']);
     [T,~] = readELE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.ele']);
-%     [V,I] = readNODE('C:\Users\TY\Desktop\vem\tetgen1.6.0\build\Release\rocket.1.node');
-%     [T,~]  = readELE('C:\Users\TY\Desktop\vem\tetgen1.6.0\build\Release\rocket.1.ele');
+%     [V,I] = readNODE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.node');
+%     [T,~]  = readELE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.ele');
     E = boundary_faces(T);
     vol = volume(V,T);
        
@@ -40,13 +39,10 @@ function vem_nurbs
     fig=figure(1);
     clf;
         
-%     part=nurbs_from_iges('rocket_4.iges',7,0);
-%     res=repelem(7,14);
-%     res(5)=7; res(1)=11;
-%     part=nurbs_from_iges('rocket_4.iges',res,0);
-%     part=nurbs_from_iges('rocket.iges',res,0);
-    part=nurbs_from_iges('cylinder.iges',14,0);
-%     part=nurbs_from_iges('rounded_cube.iges',5,0);
+    %part=nurbs_from_iges('rocket_4.iges',5,0);
+    %res=repelem(5,14); res(1)=6;
+    %part=nurbs_from_iges('rocket_4.iges',res,0);
+    part=nurbs_from_iges('rounded_cube.iges',5,0);
     part=plot_srf(part);
     
     % Plot
@@ -104,10 +100,6 @@ function vem_nurbs
         part{i}.idx2=idx2;
         E{i}=idx1:idx2;
     end
-    
-    %V=[V x0];
-    V=x0;
-%     plot3(V(1,:),V(2,:),V(3,:),'.');
 
     % Initial deformed positions and velocities
     x = x0;
@@ -115,10 +107,16 @@ function vem_nurbs
     % Setup pinned vertices constraint matrix
     kth_min = mink(x0(3,:),8);
     pin_I = find(x0(3,:) < kth_min(8));
-    %pin_I = intersect(find(x0(1,:) < -30), find(x0(2,:) > 55));
-    %pin_I = find(x0(3,:) < 5);
-    %pin_I = find(x0(1,:) < -40)
+%     pin_I = find(x0(3,:) < 2);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
+    
+    % Plot all vertices
+    X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
+    hold on;
+    %V=[V x0];
+        V=x0;
+    %plot3(V(1,:),V(2,:),V(3,:),'.');
+
     
     % Gravity force vector.
   	f_gravity = repmat([0 0 gravity], size(x0,2),1)';
@@ -130,18 +128,15 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    [B,Q0] = compute_shape_matrices(x0, x0_com, E, order);
-    Q0_stacked = [];
-    for i = 1:numel(Q0)
-        Q0_stacked = [Q0_stacked Q0{i}];
-    end
-    
+    [B,~] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
     Q = monomial_basis(V, x0_com, order);
+    Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
     a = compute_projected_weights(x0, E, V);
+    a_x = compute_projected_weights(x0, E, x0);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -152,22 +147,6 @@ function vem_nurbs
             S{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
         end
     end
-    
-    % Form selection matrices for each shape.
-    S_w = cell(numel(E),1);
-    S_I = identify_seams(part, x0, E,1,100);
-    for i=1:numel(E)
-        S_w{i} = sparse(zeros(numel(x0), numel(S_I{i})*3));
-        for j=1:numel(S_I{i})
-            idx = S_I{i}(j);
-            S_w{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
-        end
-        h1=plot3(x0(1,S_I{i}),x0(2,S_I{i}),x0(3,S_I{i}),'.','Color','m','MarkerSize',30);
-        delete(h1);
-    end
-
-    
-    M = rho * eye(numel(x0));
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -185,7 +164,7 @@ function vem_nurbs
        dM_dX = zeros(m,9,3);  
     end
     for i = 1:m
-        factor = 1;%(m-1)/m;
+        factor = 1;
         dMi_dX = factor * eye(3);
         if order == 2
             dMi_dX = zeros(9,3); 
@@ -202,26 +181,52 @@ function vem_nurbs
     
     % Computing each dF_dq
     d = 3;  % dimension (2 or 3)
-    dF_dq = cell(numel(E),1);
-    % Init cell matrices
-    for i = 1:size(E,1)
-        n=size(B{i},1);
-        dF_dq{i} = zeros(d*d,d*n,m);
-    end
+
+    dFij_dq_orig = zeros(m, d*d,numel(x));
+    dFij_dq = cell(m,1);
+    dFij_dq_sparse = cell(m,1);
     for i = 1:m
+        dFij_dq{i} = zeros(d*d,numel(x));
         dMi_dX = squeeze(dM_dX(i,:,:));
         % Per-shape forces & stiffness contribution.
         for j = 1:size(E,1)
-            dF_dq{j}(:,:,i) = vem_dF_dq(B{j}, dMi_dX);
+            dFij_dq{i} = dFij_dq{i} + a(i,j) * vem_dF_dq(B{j}, dMi_dX) * S{j}';
+        end
+       
+        dFij_dq_sparse{i}=dFij_dq{i};
+        dFij_dq_sparse{i}(dFij_dq_sparse{i} < 1e-8) = 0;
+        %colsum=sum(dFij_dq_sparse{i},1);
+        %nonz=nnz(colsum);
+        %colfind = find(sum(dFij_dq_sparse{i},1) > 0);
+        %colsum2=find(sum(dFij_dq_sparse{i},1) > 1e-8);
+        dFij_dq_sparse{i} = sparse(dFij_dq_sparse{i});
+        dFij_dq_orig(i,:,:) = dFij_dq{i};
+    end
+
+    M = zeros(numel(x), numel(x));
+    ME = zeros(numel(x), numel(x));
+    for i = 1:size(E,1)
+        n=size(B{i},1);
+        w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
+    	MJ = vem_jacobian(B{i},Q,n,d,size(x,2),E{i});
+        MJ = sum(bsxfun(@times, MJ,w_j),3);
+        M = M + MJ'*MJ;
+
+        % Stability term
+        JE = vem_jacobian(B{i},Q0,n,d,size(x,2),E{i});
+        for j=1:size(x0,2)
+            I = zeros(d,numel(x0));
+            I(:, d*j-2:d*j) = eye(d);
+            ME_J = a_x(j,i) * (I - JE(:,:,j));
+            ME = ME + ME_J'*ME_J;
         end
     end
-    
-    
-    % Plot all vertices
-%     X_plot=plot3(V(1,:),V(2,:),V(3,:),'.');
-%     hold on;
-    X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
-    hold on;
+    M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be
+%     save('saveM.mat','M');
+%     save('saveME.mat','ME');
+%     M = matfile('saveM.mat').M;
+%     ME = matfile('saveME.mat').ME;
+%     M = rho * eye(numel(x0));
     
     k=3;
     if order == 2
@@ -244,51 +249,53 @@ function vem_nurbs
         K = zeros(numel(x), numel(x)); % stiffness matrix
         
         % Computing force dV/dq for each point.
+        n=size(x0,2);
         dM_dX_flat = dM_dX(:,:);
-        for j = 1:size(E,1)
-            Aj = A(:,:,j);
-            dFj_dq = permute(dF_dq{j}, [3 1 2]);
-            dFj_dq=dFj_dq(:,:);
-            w = a(:,j);
-            vol=ones(size(w));
-            params = [C, D];
-            params = repmat(params,numel(w),1);
-            n=size(B{j},1);
+        Aij = permute(A, [3 1 2]);
+        Aij = Aij(:,:);        
+        vol=ones(size(a,1),1);
+        params = [C, D];
+        params = repmat(params,size(a,1),1);
+        
+        % Force vector
+        % Stiffness matrix
+        %K0 = -vem3dmesh_neohookean_dq2(Aij, dFij_dq_orig(:,:), dM_dX_flat, a, vol, params,k,n,dFij_dq_sparse);
+
+        % Computing force dV/dq for each point.
+        %tic
+        for i = 1:m
+            dMi_dX = squeeze(dM_dX(i,:,:));
             
+            Aij = zeros(size(A(:,:,1)));
+            
+            for j = 1:size(E,1)
+                Aij = Aij + A(:,:,j) * a(i,j);
+            end
+            
+            % Deformation Gradient
+            F = Aij * dMi_dX;
+                        
             % Force vector
-            dV_dq = dV_dq + S{j} * vem3dmesh_neohookean_dq(Aj, dFj_dq, dM_dX_flat, w, vol, params,k,n);
+            dV_dF = neohookean_tet_dF(F,C,D);
+
+            dV_dq = dV_dq + dFij_dq{i}' * dV_dF; % assuming constant area
+
             % Stiffness matrix
-            d2V_q2 = vem3dmesh_neohookean_dq2(Aj, dFj_dq, dM_dX_flat, w, vol, params,k,n);
-            K = K - S{j} * d2V_q2 * S{j}';
+            d2V_dF2 = neohookean_tet_dF2(F,C,D);
+            K = K - dFij_dq{i}' * d2V_dF2 * dFij_dq{i};
+            %K0 = dFij_dq_sparse{i}' * d2V_dF2 * dFij_dq_sparse{i};
         end
-        
+        %toc
         % Error correction force
-        f_error = zeros(numel(x),1);
-        for j = 1:size(E,1)
-            x_pred = A(:,:,j) * Q0{j} + x_com;
-            x_actual = x(:,E{j});
-            diff = x_pred - x_actual;
-            f_error = f_error + S{j} * diff(:);
-        end
+        f_error = - 2 * ME * x(:);
         f_error = k_error*(dt * P * f_error(:));
-        
-        % Weld force
-        f_weld = zeros(numel(x),1);
-        for j = 1:size(E,1)
-            x_pred = A(:,:,j) * Q0_stacked(:,S_I{j}) + x_com;
-            x_actual = x(:,S_I{j});
-            diff = x_pred - x_actual;
-            f_weld = f_weld + S_w{j} * diff(:);
-        end
-        f_weld = k_weld*(dt * P * f_weld(:));
-        
-        
+              
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - dt*dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_weld);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;   % perform solve
 
         % Update position

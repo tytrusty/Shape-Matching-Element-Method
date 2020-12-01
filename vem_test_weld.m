@@ -1,12 +1,12 @@
 function vem_test_weld
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
+    C = 0.5 * 10000;   	% Lame parameter 1
+    D = 0.5 * 150000;   	% Lame parameter 2
     gravity = -1000;
-    k_error = 100000;
+    k_error = 1000000;
     order = 1;
-    rho = 1;
+    rho = 10;
     save_output = 0;
     
    % Load mesh
@@ -38,9 +38,9 @@ function vem_test_weld
     min_I = [1];
     %%%% NEW %%%%
 %     min_I = [3 4];
-    x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
-    E = [1 2; 3 4; 5 6; 7 8;];
-    E_cell = {[1 2], [3 4], [5 6], [7 8]};
+%     x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
+%     E = [1 2; 3 4; 5 6; 7 8;];
+%     E_cell = {[1 2], [3 4], [5 6], [7 8]};
 
 %     E = [7 1 2; 1 3 4; 3 5 6; 5 7 8;];
 %     E_cell = {[7 1 2], [1 3 4], [3 5 6], [5 7 8]};    
@@ -91,11 +91,11 @@ function vem_test_weld
     x0_com = mean(x0,2);
     
     % Build Monomial bases
-    [B,Q0] = compute_shape_matrices(x0, x0_com, E, order);
+    [B,~] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
     Q = monomial_basis(V', x0_com, order);
-    Q0x = monomial_basis(x0, x0_com, order);     
+    Q0 = monomial_basis(x0, x0_com, order);     
     
     m = size(Q,2);
     
@@ -128,7 +128,6 @@ function vem_test_weld
     d = 2;  % dimension (2 or 3)
     dF_dq = zeros(d*d, d*n, m, size(E,1));
     
-    
     for i = 1:m
         dMi_dX = squeeze(dM_dX(i,:,:));
         % Per-shape forces & stiffness contribution.
@@ -141,12 +140,12 @@ function vem_test_weld
     ME = zeros(numel(x), numel(x));
     for i = 1:size(E,1)
         w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
-    	MJ = vem_jacobian2(B(:,:,i),Q,n,d,size(x,2),E(i,:));
+    	MJ = vem_jacobian(B(:,:,i),Q,n,d,size(x,2),E(i,:));
         MJ = sum(bsxfun(@times, MJ,w_j),3);
         M = M + MJ'*MJ;
         
         % Stability term
-        JE = vem_jacobian2(B(:,:,i),Q0x,n,d,size(x,2),E(i,:));
+        JE = vem_jacobian(B(:,:,i),Q0,n,d,size(x,2),E(i,:));
         for j=1:size(x0,2)
             I = zeros(d,numel(x0));
             I(:, d*j-1:d*j) = eye(d);
@@ -155,7 +154,7 @@ function vem_test_weld
             
         end
     end
-    M = (rho*(1*M + k_error*ME)); %+ or -
+    M = sparse((rho*M + k_error*ME)); %+ or -
 %     M = 1000*eye(numel(x));
     
     ii=1;
@@ -231,7 +230,7 @@ function vem_test_weld
             for j = 1:size(E,1)
                 Aij = Aij + A(:,:,j) * a_x(i,j);
             end
-            x_pred = Aij * Q0x(:,i) + x_com;
+            x_pred = Aij * Q0(:,i) + x_com;
             x_actual = x(:,i);
             diff = x_pred - x_actual;
             f_error(2*i-1:2*i) = diff(:);
