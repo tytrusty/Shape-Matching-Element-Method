@@ -1,12 +1,12 @@
 function vem_test_weld
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 17000;   	% Lame parameter 1
-    D = 0.5 * 150000;   	% Lame parameter 2
+    C = 0.5 * 1700;   	% Lame parameter 1
+    D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -1000;
-    k_error = 10000;
+    k_error = 100000;
     order = 1;
-    rho = 10;
+    rho = 1;
     save_output = 0;
     
    % Load mesh
@@ -34,13 +34,13 @@ function vem_test_weld
        E_cell{i} = E(i,:); 
     end
     min_I = find(x0(2,:) == max(x0(2,:)));
-%     min_I = find(x0(1,:) == min(x0(1,:)));
+    min_I = find(x0(1,:) == min(x0(1,:)));
     min_I = [1];
     %%%% NEW %%%%
 %     min_I = [3 4];
-%     x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
-%     E = [1 2; 3 4; 5 6; 7 8;];
-%     E_cell = {[1 2], [3 4], [5 6], [7 8]};
+    x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
+    E = [1 2; 3 4; 5 6; 7 8;];
+    E_cell = {[1 2], [3 4], [5 6], [7 8]};
 
 %     E = [7 1 2; 1 3 4; 3 5 6; 5 7 8;];
 %     E_cell = {[7 1 2], [1 3 4], [3 5 6], [5 7 8]};    
@@ -75,7 +75,7 @@ function vem_test_weld
     E_lines = plot([x0(1,E(:,1)); x0(1,E(:,2))], [x0(2,E(:,1)); x0(2,E(:,2))],'LineWidth',3);
 
     axis equal
-    % xlim([-1 3])
+%     xlim([-3 3])
     ylim([-4.5 2.5])
     hold on;
     plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
@@ -137,27 +137,26 @@ function vem_test_weld
         end
     end
  
-    J = zeros(d,d*n, m, size(E,1));
     M = zeros(numel(x), numel(x));
     ME = zeros(numel(x), numel(x));
     for i = 1:size(E,1)
         w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
-    	J(:,:,:,i)= vem_jacobian(B(:,:,i),Q,n,d,36); %%%% look at 36 part here.... maybe its all wrong now that we are working on subparts (include selection matrix in symbolic file)
-        M_J = sum(bsxfun(@times, J(:,:,:,i),w_j),3) * S{i}';
-        M = M + M_J'*M_J;
+    	MJ = vem_jacobian2(B(:,:,i),Q,n,d,size(x,2),E(i,:));
+        MJ = sum(bsxfun(@times, MJ,w_j),3);
+        M = M + MJ'*MJ;
         
         % Stability term
-        JE = vem_jacobian(B(:,:,i),Q0x,n,d,36);
+        JE = vem_jacobian2(B(:,:,i),Q0x,n,d,size(x,2),E(i,:));
         for j=1:size(x0,2)
             I = zeros(d,numel(x0));
             I(:, d*j-1:d*j) = eye(d);
-            ME_J = a_x(j,i) * (I - JE(:,:,j)*S{i}');
+            ME_J = a_x(j,i) * (I - JE(:,:,j));
             ME = ME + ME_J'*ME_J;
             
         end
     end
-    M = sparse(rho*M + k_error*ME);
-%     M = rho*eye(numel(x));
+    M = (rho*(1*M + k_error*ME)); %+ or -
+%     M = 1000*eye(numel(x));
     
     ii=1;
     for t=0:dt:30
@@ -237,7 +236,7 @@ function vem_test_weld
             diff = x_pred - x_actual;
             f_error(2*i-1:2*i) = diff(:);
         end
-        f_error = 2 * ME * x(:);
+        f_error = - 2 * ME * x(:);
 %         for j = 1:size(E,1)
 %             Sj = S{j};
 %             x_pred = squeeze(A(:,:,j)) * squeeze(Q0(:,:,j)) + x_com;
@@ -274,7 +273,7 @@ function vem_test_weld
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\cube_1_shapes_%03d.png',ii)
+            fn=sprintf('output_png\\100k_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;

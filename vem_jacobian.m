@@ -1,7 +1,4 @@
-function J = vem_jacobian(B, Q, n, d, nn)
-    if nargin <5
-        nn=n
-    end
+function J = vem_jacobian(B, Q, n, d)
     J = zeros(d,n*d, size(Q,2));
     
     %M = zeros(n*d, n*d);
@@ -12,9 +9,9 @@ function J = vem_jacobian(B, Q, n, d, nn)
     for i = 1:n
         for j = 1:d
             idx = (i-1)*d*(n+1) + (j-1)*(n+1) + 1;
-            dP_dq(j, idx:idx+(n-1)) = -1/nn;
-            dP_dq(j, idx+(i-1)) = (nn-1)/nn;
-            dP_dq(j, idx+n) = 1/nn;
+            dP_dq(j, idx:idx+(n-1)) = -1/n;
+            dP_dq(j, idx+(i-1)) = (n-1)/n;
+            dP_dq(j, idx+n) = 1/n;
         end
     end
     

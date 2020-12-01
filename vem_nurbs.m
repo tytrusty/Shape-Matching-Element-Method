@@ -45,7 +45,8 @@ function vem_nurbs
 %     res(5)=7; res(1)=11;
 %     part=nurbs_from_iges('rocket_4.iges',res,0);
 %     part=nurbs_from_iges('rocket.iges',res,0);
-    part=nurbs_from_iges('rounded_cube.iges',5,0);
+    part=nurbs_from_iges('cylinder.iges',14,0);
+%     part=nurbs_from_iges('rounded_cube.iges',5,0);
     part=plot_srf(part);
     
     % Plot
