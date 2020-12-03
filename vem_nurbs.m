@@ -3,24 +3,14 @@ function vem_nurbs
     dt = 0.01;      	% timestep
     C = 0.5 * 17000;   	% Lame parameter 1
     D = 0.5 * 150000;   	% Lame parameter 2
-    gravity = -400;
+    gravity = -1000;
     k_error = 1000000;
+    k_weld = 0;
     order = 2;
     rho = .1;
     save_output = 0;
-    
-    % Plot NURBs mesh
-    function nurbs = plot_srf(nurbs)
-            cm=jet(numel(nurbs));
-            for ii = 1:numel(nurbs)
-                
-                xi = reshape(nurbs{ii}.x0, 3, nurbs{ii}.subd(1), nurbs{ii}.subd(2));
-                plt = surf(squeeze(xi(1,:,:)),squeeze(xi(2,:,:)),squeeze(xi(3,:,:)),'FaceAlpha',.9,'EdgeColor','black','FaceColor',cm(ii,:));
-                hold on;
-                nurbs{ii}.plt=plt;
-            end
-    end
-    
+    save_obj =1;
+
     % Read in tetmesh
     [V,I] = readNODE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.node']);
     [T,~] = readELE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.ele']);
@@ -33,29 +23,20 @@ function vem_nurbs
     V=V';
     V([2 3],:)=V([3 2],:);
     V(3,:) = -V(3,:);
-%     V = V/20;
 
     % Read in NURBs 
     fig=figure(1);
     clf;
         
     %part=nurbs_from_iges('rocket_4.iges',5,0);
-    %res=repelem(5,14); res(1)=6;
-    %part=nurbs_from_iges('rocket_4.iges',res,0);
+%     res=repelem(5,14); res(1)=6;
+%     part=nurbs_from_iges('rocket_4.iges',res,0);
     part=nurbs_from_iges('rounded_cube.iges',5,0);
-    part=plot_srf(part);
+%     res=[8 20];
+%     part=nurbs_from_iges('mug.iges',res,1);
+    part=plot_nurbs(part);
     
-    % Plot
-
-    set(gcf,'color','w');
-    axis equal
-    lighting gouraud;
-%     shading interp
-    
-    lightangle(gca,72,-4)
-%     zlim([0 90]);
     x0 = zeros(3,0);
-    
     q_size = 0;
     J_size = 0;
     
@@ -96,8 +77,8 @@ function vem_nurbs
         idx2=size(x0,2);
         
         % indices into global configuration vector
-        part{i}.idx1=idx1;
-        part{i}.idx2=idx2;
+        %part{i}.idx1=idx1;
+        %part{i}.idx2=idx2;
         E{i}=idx1:idx2;
     end
 
@@ -105,16 +86,18 @@ function vem_nurbs
     x = x0;
     
     % Setup pinned vertices constraint matrix
-    kth_min = mink(x0(3,:),8);
+    kth_min = mink(x0(3,:),50);
     pin_I = find(x0(3,:) < kth_min(8));
 %     pin_I = find(x0(3,:) < 2);
+%     pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
+%     pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
     %V=[V x0];
-        V=x0;
+       V=x0;
     %plot3(V(1,:),V(2,:),V(3,:),'.');
 
     
@@ -147,6 +130,19 @@ function vem_nurbs
             S{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
         end
     end
+    
+    % Form selection matrices for each shape.
+%     S_w = cell(numel(E),1);
+%     S_I = identify_seams(part, x0, E, 3,100);
+%     for i=1:numel(E)
+%         S_w{i} = sparse(zeros(numel(x0), numel(S_I{i})*3));
+%         for j=1:numel(S_I{i})
+%             idx = S_I{i}(j);
+%             S_w{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
+%         end
+%         h1=plot3(x0(1,S_I{i}),x0(2,S_I{i}),x0(3,S_I{i}),'.','Color','m','MarkerSize',30);
+%         delete(h1);
+%     end
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -181,7 +177,12 @@ function vem_nurbs
     
     % Computing each dF_dq
     d = 3;  % dimension (2 or 3)
-
+                     %(B, dM_dX, E, N, w)
+    dF_dq = vem_dF_dq2(B, dM_dX, E, size(x,2), a);
+    dF_dq = permute(dF_dq, [2 3 1]);
+            m1 = squeeze(dF_dq(:,:,1));
+        max(abs(m1(:)))
+        
     dFij_dq_orig = zeros(m, d*d,numel(x));
     dFij_dq = cell(m,1);
     dFij_dq_sparse = cell(m,1);
@@ -262,7 +263,6 @@ function vem_nurbs
         %K0 = -vem3dmesh_neohookean_dq2(Aij, dFij_dq_orig(:,:), dM_dX_flat, a, vol, params,k,n,dFij_dq_sparse);
 
         % Computing force dV/dq for each point.
-        %tic
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
             
@@ -282,20 +282,32 @@ function vem_nurbs
 
             % Stiffness matrix
             d2V_dF2 = neohookean_tet_dF2(F,C,D);
-            K = K - dFij_dq{i}' * d2V_dF2 * dFij_dq{i};
+            %K = K - dFij_dq{i}' * d2V_dF2 * dFij_dq{i};
+            K = K - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
+            %dF_dq
             %K0 = dFij_dq_sparse{i}' * d2V_dF2 * dFij_dq_sparse{i};
         end
-        %toc
+        
         % Error correction force
         f_error = - 2 * ME * x(:);
         f_error = k_error*(dt * P * f_error(:));
-              
+        
+        % Weld force
+        f_weld = zeros(numel(x),1);
+%         for j = 1:size(E,1)
+%             x_pred = A(:,:,j) * Q0(:,S_I{j}) + x_com;
+%             x_actual = x(:,S_I{j});
+%             diff = x_pred - x_actual;
+%             f_weld = f_weld + S_w{j} * diff(:);
+%         end
+        f_weld = k_weld*(dt * P * f_weld(:));
+
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - dt*dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_weld);
         qdot = lhs \ rhs;   % perform solve
 
         % Update position
@@ -310,12 +322,35 @@ function vem_nurbs
             part{i}.plt.XData = squeeze(xi(1,:,:));
             part{i}.plt.YData = squeeze(xi(2,:,:));
             part{i}.plt.ZData = squeeze(xi(3,:,:));
-            x_idx = x_idx+x_sz;
-            
-            
-            writeOBJ("output_obj/star_" + int2str(ii) + ".obj", p1.Vertices, Fobj{1});
+            x_idx = x_idx+x_sz;   
         end
         drawnow
+        
+        if save_obj
+            faces=[];
+            verts=[];
+            res_obj=24;
+            for i=1:numel(part)
+                obj_u = linspace(part{i}.u_range(1),part{i}.u_range(2),res_obj)';
+                obj_v = linspace(part{i}.v_range(1),part{i}.v_range(2),res_obj)';
+                [~, obj_J] = nurbs_coords(part{i}.nurbs, obj_u, obj_v);
+                obj_J = reshape(obj_J,[],3,size(obj_J,4));
+                obj_J = permute(obj_J,[3 2 1]);
+                obj_q = q(part{i}.idx1:part{i}.idx2);
+                obj_x = squeeze(sum(obj_J .* obj_q,1));
+                obj_x = reshape(obj_x, 3, res_obj, res_obj);
+                
+                plt = surf(squeeze(obj_x(1,:,:)),squeeze(obj_x(2,:,:)),squeeze(obj_x(3,:,:)));
+                fvc = surf2patch(plt);
+                delete(plt);
+                fvc.faces = fvc.faces + size(verts,1);
+                faces=[faces; fvc.faces];
+                verts=[verts; fvc.vertices];
+            end
+            
+            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
+            writeOBJ(obj_fn, verts, faces);
+        end
         
         if save_output
             fn=sprintf('output_png\\pin_bottom_fail_quad_%03d.png',ii)
