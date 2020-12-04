@@ -1,10 +1,10 @@
 function vem_sim_2d
     % Simulation parameters
-    dt = 0.01;      	% timestep
+    dt = 0.002;      	% timestep
     C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 150000;   	% Lame parameter 2
+    D = 0.5 * 15000;   	% Lame parameter 2
     gravity = -1000;
-    k_error = 1000000;
+    k_error = 100000;
     order = 1;
     rho = 10;
     save_output = 0;
@@ -42,13 +42,12 @@ function vem_sim_2d
 %     E = [1 2; 3 4; 5 6; 7 8;];
 %     E_cell = {[1 2], [3 4], [5 6], [7 8]};
 
-%     E = [7 1 2; 1 3 4; 3 5 6; 5 7 8;];
-%     E_cell = {[7 1 2], [1 3 4], [3 5 6], [5 7 8]};    
     %%%% ORIG %%%%
-% 	min_I = [2 3];
-%     x0 = [0 0; 0 2;  2 2; 2 0; ]';
-%     E = [2 1; 3 2; 4 3; 1 4];
-%     E_cell = {[1 2], [2 3], [3 4], [4 1]};
+	min_I = [2 3];
+    x0  = [0 0; 0 2;  2 2; 2 0; ]';
+    V=x0';
+    E = [1 2; 2 3; 3 4; 4 1];
+    E_cell = {[1 2], [2 3], [3 4], [4 1]}';
 
     % Form selection matrices for each shape.
     S = cell(size(E,1),1);
@@ -108,28 +107,13 @@ function vem_sim_2d
     dM_dX = monomial_basis_grad(V', x0_com, order);
         
     % Computing each dF_dq
-    d = 2;              % dimension (2 or 3)
+    d = 2;  % dimension (2 or 3)
     dF_dq = vem_dF_dq(B, dM_dX, E_cell, size(x,2), a);
     dF_dq = permute(dF_dq, [2 3 1]);
  
-    M = zeros(numel(x), numel(x));
-    ME = zeros(numel(x), numel(x));
-    for i = 1:size(E,1)
-        n=size(B{i},1);
-        w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
-    	MJ = vem_jacobian(B{i},Q,n,d,size(x,2),E_cell{i});
-        MJ = sum(bsxfun(@times, MJ,w_j),3);
-        M = M + MJ'*MJ;
-        
-        % Stability term
-        JE = vem_jacobian(B{i},Q0,n,d,size(x,2),E_cell{i});
-        for j=1:size(x0,2)
-            I = zeros(d,numel(x0));
-            I(:, d*j-1:d*j) = eye(d);
-            ME_J = a_x(j,i) * (I - JE(:,:,j));
-            ME = ME + ME_J'*ME_J;
-        end
-    end
+    % Computing mass matrices
+    ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E_cell);
+    M = vem_mass_matrix(B, Q, a, d, size(x,2), E_cell);
     M = sparse((rho*M + k_error*ME));
     %     M = 1000*eye(numel(x));
     k=2;

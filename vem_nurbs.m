@@ -7,7 +7,7 @@ function vem_nurbs
     k_error = 1000000;
     k_weld = 0;
     order = 1;
-    rho = .1;
+    rho = 1;
     save_output = 0;
     save_obj = 0;
 
@@ -28,10 +28,10 @@ function vem_nurbs
     fig=figure(1);
     clf;
         
-    part=nurbs_from_iges('rocket_4.iges',5,0);
+%     part=nurbs_from_iges('rocket_4.iges',5,0);
 %     res=repelem(5,14); res(1)=6;
 %     part=nurbs_from_iges('rocket_4.iges',res,0);
-%     part=nurbs_from_iges('rounded_cube.iges',5,0);
+    part=nurbs_from_iges('rounded_cube.iges',5,0);
 %     res=[8 20];
 %     part=nurbs_from_iges('mug.iges',res,1);
     part=plot_nurbs(part);
@@ -167,25 +167,10 @@ function vem_nurbs
             %colsum2=find(sum(dFij_dq_sparse{i},1) > 1e-8);
     %         dFij_dq_sparse{i} = sparse(dFij_dq_sparse{i});
     %     end
-
-    M = zeros(numel(x), numel(x));
-    ME = zeros(numel(x), numel(x));
-    for i = 1:size(E,1)
-        n=size(B{i},1);
-        w_j = reshape(a(:,i)', [1 1 size(Q,2)]);
-    	MJ = vem_jacobian(B{i},Q,n,d,size(x,2),E{i});
-        MJ = sum(bsxfun(@times, MJ,w_j),3);
-        M = M + MJ'*MJ;
-
-        % Stability term
-        JE = vem_jacobian(B{i},Q0,n,d,size(x,2),E{i});
-        for j=1:size(x0,2)
-            I = zeros(d,numel(x0));
-            I(:, d*j-2:d*j) = eye(d);
-            ME_J = a_x(j,i) * (I - JE(:,:,j));
-            ME = ME + ME_J'*ME_J;
-        end
-    end
+    
+    % Compute mass matrices
+    ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
+    M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be
     %     save('saveM.mat','M');
     %     save('saveME.mat','ME');

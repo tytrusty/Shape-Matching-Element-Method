@@ -1,24 +1,12 @@
-function M = vem_mass_matrix(B, Q, n, d)
-    M = zeros(n*d,n*d);
-    dP_dq = zeros(d*n,d*(n+1));
-    
-    for i = 1:n
-        for j = 1:d
-            idx1 = (i-1)*d + j;
-            idx2 = (j-1)*(n+1) + 1; 
-            dP_dq(idx1,idx2:idx2+(n-1)) = 1/n;
-            dP_dq(idx1,idx2+(i-1)) = -(n-1)/n;
-            
-            % center of mass contribution
-            dP_dq(idx1,idx2+n) = -1/n;
+function M = vem_mass_matrix(B, Q, w, d, N, E)
+    M = zeros(d*N, d*N);
+    for i = 1:size(E,1)
+        n=size(B{i},1);
+
+        J = vem_jacobian(B{i},Q,n,d,N,E{i});
+        for j=1:size(Q,2)
+            Jtmp = w(j,i) * J(:,:,j);
+            M = M + Jtmp'*Jtmp;
         end
     end
-    for i = 1:size(Q,2)
-        BM = [B * Q(:,i); 1]; % Append 1 to BM
-        zero = zeros(size(BM));
-        BM = [BM zero; zero BM];
-        Mi = dP_dq * BM;
-        M = M + Mi*Mi';
-    end
 end
-
