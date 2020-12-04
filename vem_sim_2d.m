@@ -105,23 +105,7 @@ function vem_sim_2d
     a_x = compute_projected_weights(x0, E_cell, x0);
     
     % Forming gradient of monomial basis w.r.t X
-    if order == 1
-       dM_dX = zeros(m,2,2); 
-    else
-       dM_dX = zeros(m,5,2);  
-    end
-    for i = 1:m
-        factor = 1;
-        dMi_dX = factor * eye(2);
-        if order == 2
-            dMi_dX = zeros(5,2); 
-            dMi_dX(1:2,:) = factor * eye(2);
-            dMi_dX(3,:) = [2*factor*Q(1,i) 0];
-            dMi_dX(4,:) = [0 2*factor*Q(2,i)];
-            dMi_dX(5,:) = [Q(2,i)*factor Q(1,i)*factor];
-        end
-        dM_dX(i,:,:) = dMi_dX;
-    end
+    dM_dX = monomial_basis_grad(V', x0_com, order);
         
     % Computing each dF_dq
     d = 2;              % dimension (2 or 3)

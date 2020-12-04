@@ -28,10 +28,10 @@ function vem_nurbs
     fig=figure(1);
     clf;
         
-    %part=nurbs_from_iges('rocket_4.iges',5,0);
+    part=nurbs_from_iges('rocket_4.iges',5,0);
 %     res=repelem(5,14); res(1)=6;
 %     part=nurbs_from_iges('rocket_4.iges',res,0);
-    part=nurbs_from_iges('rounded_cube.iges',5,0);
+%     part=nurbs_from_iges('rounded_cube.iges',5,0);
 %     res=[8 20];
 %     part=nurbs_from_iges('mug.iges',res,1);
     part=plot_nurbs(part);
@@ -95,7 +95,7 @@ function vem_nurbs
     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
     %V=[V x0];
-%        Vs=x0;
+    V=x0;
     %plot3(V(1,:),V(2,:),V(3,:),'.');
 
     % Gravity force vector.
@@ -151,41 +151,22 @@ function vem_nurbs
     m = size(Q,2);
     
     % Forming gradient of monomial basis w.r.t X
-    if order == 1
-       dM_dX = zeros(m,3,3); 
-    else
-       dM_dX = zeros(m,9,3);  
-    end
-    for i = 1:m
-        factor = 1;
-        dMi_dX = factor * eye(3);
-        if order == 2
-            dMi_dX = zeros(9,3); 
-            dMi_dX(1:3,:) = factor * eye(3);
-            dMi_dX(4,:) = [2*factor*Q(1,i) 0 0];
-            dMi_dX(5,:) = [0 2*factor*Q(2,i) 0];
-            dMi_dX(6,:) = [0 0 2*factor*Q(3,i)];
-            dMi_dX(7,:) = [Q(2,i)*factor Q(1,i)*factor 0];
-            dMi_dX(8,:) = [0 Q(3,i)*factor Q(2,i)*factor];
-            dMi_dX(9,:) = [Q(3,i)*factor 0 Q(1,i)*factor];
-        end
-        dM_dX(i,:,:) = dMi_dX;
-    end
+    dM_dX = monomial_basis_grad(V, x0_com, order);
     
     % Computing gradient of deformation gradient w.r.t configuration, q
     d = 3;  % dimension (2 or 3)
     dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), a);
     dF_dq = permute(dF_dq, [2 3 1]);
         
-%     dFij_dq_sparse = cell(m,1);
-%         dFij_dq_sparse{i}=dFij_dq{i};
-%         dFij_dq_sparse{i}(dFij_dq_sparse{i} < 1e-8) = 0;
-        %colsum=sum(dFij_dq_sparse{i},1);
-        %nonz=nnz(colsum);
-        %colfind = find(sum(dFij_dq_sparse{i},1) > 0);
-        %colsum2=find(sum(dFij_dq_sparse{i},1) > 1e-8);
-%         dFij_dq_sparse{i} = sparse(dFij_dq_sparse{i});
-%     end
+    %     dFij_dq_sparse = cell(m,1);
+    %         dFij_dq_sparse{i}=dFij_dq{i};
+    %         dFij_dq_sparse{i}(dFij_dq_sparse{i} < 1e-8) = 0;
+            %colsum=sum(dFij_dq_sparse{i},1);
+            %nonz=nnz(colsum);
+            %colfind = find(sum(dFij_dq_sparse{i},1) > 0);
+            %colsum2=find(sum(dFij_dq_sparse{i},1) > 1e-8);
+    %         dFij_dq_sparse{i} = sparse(dFij_dq_sparse{i});
+    %     end
 
     M = zeros(numel(x), numel(x));
     ME = zeros(numel(x), numel(x));
@@ -206,11 +187,11 @@ function vem_nurbs
         end
     end
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be
-%     save('saveM.mat','M');
-%     save('saveME.mat','ME');
-%     M = matfile('saveM.mat').M;
-%     ME = matfile('saveME.mat').ME;
-%     M = rho * eye(numel(x0));
+    %     save('saveM.mat','M');
+    %     save('saveME.mat','ME');
+    %     M = matfile('saveM.mat').M;
+    %     ME = matfile('saveME.mat').ME;
+    %     M = rho * eye(numel(x0));
     
     k=3;
     if order == 2
