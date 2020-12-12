@@ -1,21 +1,21 @@
 function vem_nurbs
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 17000;   	% Lame parameter 1
-    D = 0.5 * 150000;   	% Lame parameter 2
-    gravity = -1000;
-    k_error = 1000000;
-    k_weld = 0;
+    C = 0.5 * 1700;   	% Lame parameter 1
+    D = 0.5 * 15000;   	% Lame parameter 2
+    gravity = -100;
+    k_error = 100000;
     order = 1;
     rho = 1;
     save_output = 0;
     save_obj = 0;
+    obj_res = 15;
 
     % Read in tetmesh
     [V,I] = readNODE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.node']);
     [T,~] = readELE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.ele']);
-%     [V,I] = readNODE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.node');
-%     [T,~]  = readELE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.ele');
+    %     [V,I] = readNODE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.node');
+    %     [T,~]  = readELE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.ele');
     E = boundary_faces(T);
     vol = volume(V,T);
        
@@ -28,10 +28,11 @@ function vem_nurbs
     fig=figure(1);
     clf;
         
-%     part=nurbs_from_iges('rocket_4.iges',5,0);
-%     res=repelem(5,14); res(1)=6;
+    part=nurbs_from_iges('rocket_4.iges',6,0);
+%     res=repelem(5,14); res(1)=8;
 %     part=nurbs_from_iges('rocket_4.iges',res,0);
-    part=nurbs_from_iges('rounded_cube.iges',5,0);
+%     part=nurbs_from_iges('rounded_cube.iges',6,0);
+%     part=nurbs_from_iges('castle_simple.iges',6,0);
 %     res=[8 20];
 %     part=nurbs_from_iges('mug.iges',res,1);
     part=plot_nurbs(part);
@@ -66,6 +67,7 @@ function vem_nurbs
         % Subsitute block into global NURBs jacobian (J) matrix
         J(I1,I2) = Ji;
         J_idx = J_idx + size(Ji);
+        size(Ji)
     end
     J = sparse(J);
     qdot=zeros(size(q));
@@ -84,11 +86,11 @@ function vem_nurbs
     x = x0;
     
     % Setup pinned vertices constraint matrix
-    kth_min = mink(x0(3,:),50);
-    pin_I = find(x0(3,:) < kth_min(8));
-    %     pin_I = find(x0(3,:) < 2);
-    %     pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
-    %     pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
+    [kth_min,I] = mink(x0(3,:),20);
+    pin_I = I(1:12);
+    % pin_I = find(x0(3,:) < 2);
+    pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
+    % pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -115,8 +117,11 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    a = compute_projected_weights(x0, E, V);
-    a_x = compute_projected_weights(x0, E, x0);
+    % a = compute_projected_weights(x0, E, V);
+    % a_x = compute_projected_weights(x0, E, x0);
+    
+    a = nurbs_diffusion_weights(part, V);
+    a_x = nurbs_diffusion_weights(part, x0);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -127,19 +132,6 @@ function vem_nurbs
             S{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
         end
     end
-    
-    % Form selection matrices for each shape.
-    %     S_w = cell(numel(E),1);
-    %     S_I = identify_seams(part, x0, E, 3,100);
-    %     for i=1:numel(E)
-    %         S_w{i} = sparse(zeros(numel(x0), numel(S_I{i})*3));
-    %         for j=1:numel(S_I{i})
-    %             idx = S_I{i}(j);
-    %             S_w{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
-    %         end
-    %         h1=plot3(x0(1,S_I{i}),x0(2,S_I{i}),x0(3,S_I{i}),'.','Color','m','MarkerSize',30);
-    %         delete(h1);
-    %     end
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -157,25 +149,32 @@ function vem_nurbs
     d = 3;  % dimension (2 or 3)
     dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), a);
     dF_dq = permute(dF_dq, [2 3 1]);
-        
-    %     dFij_dq_sparse = cell(m,1);
-    %         dFij_dq_sparse{i}=dFij_dq{i};
-    %         dFij_dq_sparse{i}(dFij_dq_sparse{i} < 1e-8) = 0;
-            %colsum=sum(dFij_dq_sparse{i},1);
-            %nonz=nnz(colsum);
-            %colfind = find(sum(dFij_dq_sparse{i},1) > 0);
-            %colsum2=find(sum(dFij_dq_sparse{i},1) > 1e-8);
-    %         dFij_dq_sparse{i} = sparse(dFij_dq_sparse{i});
-    %     end
-    
+    SdF = cell(m,1);
+    dF = cell(m,1);
+    dF_I = cell(m,1);
+    for i = 1:m
+       m1 = dF_dq(:,:,i);
+       mm1 = max(abs(m1),[],1);
+       I = find(mm1 > 1e-4);
+       [~,I] = maxk(mm1,60);
+       m1(:,setdiff(1:numel(x),I))=[];
+       sum(mm1 < 1e-4)
+       %sum(mm1 < 1e-5)
+       dF_I{i} = I';
+       SdF{i} = sparse(zeros(numel(I), numel(x)));
+       ind=sub2ind(size(SdF{i}), 1:numel(I),I);
+       SdF{i}(ind)=1;
+       dF{i} = m1;
+    end
+
     % Compute mass matrices
     ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be
-    %     save('saveM.mat','M');
-    %     save('saveME.mat','ME');
-    %     M = matfile('saveM.mat').M;
-    %     ME = matfile('saveME.mat').ME;
+%     save('saveM.mat','M');
+%     save('saveME.mat','ME');
+% 	M = matfile('saveM.mat').M;
+% 	ME = matfile('saveME.mat').ME;
     %     M = rho * eye(numel(x0));
     
     k=3;
@@ -185,6 +184,7 @@ function vem_nurbs
         
     ii=1;
     for t=0:dt:30
+        tic
         x_com = mean(x,2);
         
         % Compute shape matching matrices
@@ -196,10 +196,11 @@ function vem_nurbs
         end
         
         dV_dq = zeros(numel(x),1);     % force vector
-        K = zeros(numel(x), numel(x)); % stiffness matrix
+        K0 = zeros(numel(x), numel(x)); % stiffness matrix
         
         % Computing force dV/dq for each point.
         n=size(x0,2);
+        dF_dqij = permute(dF_dq, [3 1 2]);
         Aij = permute(A, [3 1 2]);
         Aij = Aij(:,:);        
         vol=ones(size(a,1),1);
@@ -207,8 +208,7 @@ function vem_nurbs
         params = repmat(params,size(a,1),1);
         
         % Force vector
-        % Stiffness matrix
-        %K0 = -vem3dmesh_neohookean_dq2(Aij, dFij_dq_orig(:,:), dM_dX(:,:), a, vol, params,k,n,dFij_dq_sparse);
+        K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
 
         % Computing force dV/dq for each point.
         for i = 1:m
@@ -229,31 +229,22 @@ function vem_nurbs
             dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF; % assuming constant area
 
             % Stiffness matrix
-            d2V_dF2 = neohookean_tet_dF2(F,C,D);
-            K = K - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
-            %K0 = dFij_dq_sparse{i}' * d2V_dF2 * dFij_dq_sparse{i};
+            %d2V_dF2 = neohookean_tet_dF2(F,C,D);
+            %K0 = K0 - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
         end
+        %diff = K-K0;
+        %norm(diff(:))
         
         % Error correction force
         f_error = - 2 * ME * x(:);
         f_error = k_error*(dt * P * f_error(:));
-        
-        % Weld force
-        f_weld = zeros(numel(x),1);
-%         for j = 1:size(E,1)
-%             x_pred = A(:,:,j) * Q0(:,S_I{j}) + x_com;
-%             x_actual = x(:,S_I{j});
-%             diff = x_pred - x_actual;
-%             f_weld = f_weld + S_w{j} * diff(:);
-%         end
-        f_weld = k_weld*(dt * P * f_weld(:));
-
+       
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - dt*dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_weld);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;
 
         % Update position
@@ -274,14 +265,15 @@ function vem_nurbs
         
         if save_obj
             obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            nurbs_write_obj(q,part,24,obj_fn);
+            nurbs_write_obj(q,part,obj_res,obj_fn,ii);
         end
         
         if save_output
-            fn=sprintf('output_png\\img_%03d.png',ii)
+            fn=sprintf('output/img/img_%03d.png',ii);
             saveas(fig,fn);
         end
-        ii=ii+1;
+        ii=ii+1
+        toc
     end
 end
 

@@ -1,4 +1,4 @@
-function ME = vem_error_matrix2(B, Q, w, d, N, E)
+function ME = vem_error_matrix(B, Q, w, d, N, E)
     ME = zeros(d*N, d*N);
     
     J = zeros(d,d*N,N);

@@ -13,6 +13,6 @@ function nurbs = plot_nurbs(nurbs)
     %     shading interp
     
 %     lightangle(gca,72,-4)
-    %     zlim([0 90]);
+%         zlim([-70 150]);
     xlabel('x');
 end

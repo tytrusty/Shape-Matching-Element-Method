@@ -10,5 +10,6 @@ echo "copy completed"
 numframes=`./gifsicle.exe $1 -I | grep -P "\d+ images" --only-matching | grep -P "\d+" --only-matching`
 echo "numframes completed"
 # Deletion
-./gifsicle.exe "$1" --colors 250 --unoptimize $(seq -f "#%g" 0 4 $numframes) -O2 -o "$2"
+./gifsicle.exe "$1" --colors 250 --unoptimize $(seq -f "#%g" 0 2 $numframes) -O2 -o "$2"
+#./gifsicle.exe "$1" $(seq -f "#%g" 0 2 $numframes) -o "$2"
 echo "script completed"

@@ -1,4 +1,4 @@
-function M = vem_mass_matrix2(B, Q, w, d, N, E)
+function M = vem_mass_matrix(B, Q, w, d, N, E)
     m = size(Q,2);
     M = zeros(d*N, d*N);
     J = zeros(d,d*N,m);

@@ -1,4 +1,4 @@
-function nurbs_write_obj(q, parts, res, path)
+function nurbs_write_obj(q, parts, res, path, ii)
     faces=[];
     verts=[];
     for i=1:numel(parts)
@@ -19,12 +19,15 @@ function nurbs_write_obj(q, parts, res, path)
         % Convert surface to patch to give us a vertex & face set.
         fvc = surf2patch(plt);
         delete(plt);
-        fvc.faces = fvc.faces + size(verts,1);
-        faces=[faces; fvc.faces]; % sue me
-        verts=[verts; fvc.vertices];
+        %fvc.faces = fvc.faces + size(verts,1);
+        %faces=[faces; fvc.faces]; % sue me
+        %verts=[verts; fvc.vertices];
+        
+        obj_fn = "output/obj/part_" + i + "_" + int2str(ii) + ".obj";
+        writeOBJ(obj_fn, fvc.vertices, fvc.faces);
     end
     
     % you better have gptoolbox, son
-    writeOBJ(path, verts, faces);
+    % writeOBJ(path, verts, faces);
 end
 

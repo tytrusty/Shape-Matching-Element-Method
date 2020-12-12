@@ -1,12 +1,12 @@
 function vem_sim_2d
     % Simulation parameters
-    dt = 0.002;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
-    gravity = -1000;
+    dt = 0.01;      	% timestep
+    C = 0.5 * 17;   	% Lame parameter 1
+    D = 0.5 * 150;   	% Lame parameter 2
+    gravity = -200;
     k_error = 100000;
     order = 1;
-    rho = 10;
+    rho = 1;
     save_output = 0;
     
    % Load mesh
@@ -34,20 +34,20 @@ function vem_sim_2d
        E_cell{i} = E(i,:); 
     end
     min_I = find(x0(2,:) == max(x0(2,:)));
-    min_I = find(x0(1,:) == min(x0(1,:)));
-    min_I = [1];
+%     min_I = find(x0(1,:) == min(x0(1,:)));
+%     min_I = [1];
     %%%% NEW %%%%
 %     min_I = [3 4];
 %     x0 = [0 0;0 2; 0 2; 2 2; 2 2; 2 0; 2 0; 0 0]';
 %     E = [1 2; 3 4; 5 6; 7 8;];
-%     E_cell = {[1 2], [3 4], [5 6], [7 8]};
+%     E_cell = {[1 2], [3 4], [5 6], [7 8]}';
 
     %%%% ORIG %%%%
-	min_I = [2 3];
-    x0  = [0 0; 0 2;  2 2; 2 0; ]';
-    V=x0';
-    E = [1 2; 2 3; 3 4; 4 1];
-    E_cell = {[1 2], [2 3], [3 4], [4 1]}';
+% 	min_I = [2 3];
+%     x0  = [0 0; 0 2;  2 2; 2 0; ]';
+%     V=x0';
+%     E = [1 2; 2 3; 3 4; 4 1];
+%     E_cell = {[1 2], [2 3], [3 4], [4 1]}';
 
     % Form selection matrices for each shape.
     S = cell(size(E,1),1);
@@ -70,11 +70,10 @@ function vem_sim_2d
     v = zeros(size(x));
 
     % Create plots.
-%     E_plot = plot([x(1,:) x(1,1)],[x(2,:) x(2,1)],'o','LineWidth',3, 'Color', 'm');
     E_lines = plot([x0(1,E(:,1)); x0(1,E(:,2))], [x0(2,E(:,1)); x0(2,E(:,2))],'LineWidth',3);
 
     axis equal
-%     xlim([-3 3])
+    %     xlim([-3 3])
     ylim([-4.5 2.5])
     hold on;
     plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
@@ -100,9 +99,12 @@ function vem_sim_2d
     
     % Compute per-element shape weights.
     %     a = compute_weights(E_centroids,E,V');
-    a = compute_projected_weights(x0, E_cell, V');
-    a_x = compute_projected_weights(x0, E_cell, x0);
+    %     a = compute_projected_weights(x0, E_cell, V');
+    %     a_x = compute_projected_weights(x0, E_cell, x0);
     
+    a = compute_diffusion_weights(x0, E_cell, V');
+    a_x = compute_diffusion_weights(x0, E_cell, x0);
+        
     % Forming gradient of monomial basis w.r.t X
     dM_dX = monomial_basis_grad(V', x0_com, order);
         
@@ -143,10 +145,8 @@ function vem_sim_2d
             dMi_dX = squeeze(dM_dX(i,:,:));
             
             Aij = zeros(size(A(:,:,1)));
-            dFij_dq = zeros(4,numel(x));
             for j = 1:size(E,1)
                 Aij = Aij + A(:,:,j) * a(i,j);
-%                 dFij_dq = dFij_dq + dF_dq(:,:,i,j) * a(i,j) * S{j}';
             end
             
             % Deformation Gradient
