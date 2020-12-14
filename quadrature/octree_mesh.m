@@ -1,11 +1,17 @@
-function [bins, face_bins, OT] = octree_mesh(faces, verts, bin_capacity)
+function [face_bins, OT] = octree_mesh(faces, verts, bin_capacity)
     
     % Create octree structure
-    if nargin < 3
-        OT = OcTree(verts);
-    else
-        OT = OcTree(verts,'binCapacity',bin_capacity);
-    end
+    %     if nargin < 3
+    %         OT = OcTree(verts);
+    %     else
+    %         OT = OcTree(verts,'binCapacity',bin_capacity);
+    %     end
+    %     
+    disp('WARNING: octree currently not used since faces are not properly binned!');
+    OT = OcTree(verts,'maxDepth',0);
+    % TODO -- not properly adding faces to octree
+    % Can't just look at what cells the vertices are in...
+    
     
     % Column vector of vertex indices 1:N
     ids = (1:size(verts,1))';
