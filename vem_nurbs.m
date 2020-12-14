@@ -9,34 +9,27 @@ function vem_nurbs
     rho = 1;
     save_output = 0;
     save_obj = 0;
-    obj_res = 15;
+    obj_res = 18;
 
-    % Read in tetmesh
-    [V,I] = readNODE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.node']);
-    [T,~] = readELE([data_dir(), '/meshes_tetgen/Puft/head/coarsest.1.ele']);
-    %     [V,I] = readNODE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.node');
-    %     [T,~]  = readELE('C:\Users\TY\Desktop\tetgen1.6.0\build\Release\rocket.1.ele');
-    E = boundary_faces(T);
-    vol = volume(V,T);
-       
-    % Swap y&z and flip z axis
-    V=V';
-    V([2 3],:)=V([3 2],:);
-    V(3,:) = -V(3,:);
+    % TODO --- use volume of quadrature points ... vol = volume(V,T);
 
     % Read in NURBs 
     fig=figure(1);
     clf;
         
-    part=nurbs_from_iges('rocket_4.iges',6,0);
+%     part=nurbs_from_iges('rocket_4.iges',6,0);
 %     res=repelem(5,14); res(1)=8;
 %     part=nurbs_from_iges('rocket_4.iges',res,0);
-%     part=nurbs_from_iges('rounded_cube.iges',6,0);
+%     part=nurbs_from_iges('puft_simple.iges',6,0);
+    part=nurbs_from_iges('rounded_cube.iges',6,0);
 %     part=nurbs_from_iges('castle_simple.iges',6,0);
-%     res=[8 20];
+%     res=[8 15];
 %     part=nurbs_from_iges('mug.iges',res,1);
-    part=plot_nurbs(part);
     
+    part=plot_nurbs(part);
+    V = raycast_quadrature(part, [6 6], 5)';
+    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
+
     x0 = zeros(3,0);
     q_size = 0;
     J_size = 0;
@@ -87,18 +80,16 @@ function vem_nurbs
     
     % Setup pinned vertices constraint matrix
     [kth_min,I] = mink(x0(3,:),20);
-    pin_I = I(1:12);
-    % pin_I = find(x0(3,:) < 2);
-    pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
+    pin_I = I(1:4);
+%     pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
+%     pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
     % pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
-    %V=[V x0];
-    V=x0;
-    %plot3(V(1,:),V(2,:),V(3,:),'.');
+    % V=x0;
 
     % Gravity force vector.
   	f_gravity = repmat([0 0 gravity], size(x0,2),1)';
@@ -117,8 +108,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    % a = compute_projected_weights(x0, E, V);
-    % a_x = compute_projected_weights(x0, E, x0);
+%     a = compute_projected_weights(x0, E, V);
+%     a_x = compute_projected_weights(x0, E, x0);
     
     a = nurbs_diffusion_weights(part, V);
     a_x = nurbs_diffusion_weights(part, x0);
@@ -158,8 +149,7 @@ function vem_nurbs
        I = find(mm1 > 1e-4);
        [~,I] = maxk(mm1,60);
        m1(:,setdiff(1:numel(x),I))=[];
-       sum(mm1 < 1e-4)
-       %sum(mm1 < 1e-5)
+       %sum(mm1 < 1e-4)
        dF_I{i} = I';
        SdF{i} = sparse(zeros(numel(I), numel(x)));
        ind=sub2ind(size(SdF{i}), 1:numel(I),I);
@@ -269,7 +259,7 @@ function vem_nurbs
         end
         
         if save_output
-            fn=sprintf('output/img/img_%03d.png',ii);
+            fn=sprintf('output/img/fix_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
