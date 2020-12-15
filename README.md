@@ -2,7 +2,7 @@
 
 For continuum mechanics simulation of boundary only representations!
 
-
+vem_sim_2d is a minimal example that *shouldn't* depend on anything... So see if that runs!
 
 ### External Dependencies  ###
 1. [GPToolbox](https://github.com/alecjacobson/gptoolbox) 
@@ -18,10 +18,12 @@ For continuum mechanics simulation of boundary only representations!
 
 ### MATLAB Setup
 To let MATLAB recognize the scripts, we need to add this folder and all the project's subfolders to the MATLAB path. Assuming your installation directory `/usr/local/virtual-element-method/`, then you could issue the following command in the MATLAB command prompt:
+
     addpath(genpath('/usr/local/virtual-element-method/'))
 
 ### C++ MEX Compilation
 **TODO** -- until I add instruction for this you cannot run vem_nurbs.m
+
 Bartels includes MATLAB wrappers for useful functions. To compile the MATLAB wrappers do the following:
 In order to use the C++ implementations of some of the simulation functions, we need to compile the C++ MEX programs.
 
