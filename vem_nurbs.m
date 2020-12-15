@@ -27,6 +27,10 @@ function vem_nurbs
 %     part=nurbs_from_iges('mug.iges',res,1);
     
     part=plot_nurbs(part);
+    
+    %
+    % Raycasting quadrature as described
+    %
     V = raycast_quadrature(part, [6 6], 5)';
     % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
 
@@ -81,9 +85,9 @@ function vem_nurbs
     % Setup pinned vertices constraint matrix
     [kth_min,I] = mink(x0(3,:),20);
     pin_I = I(1:4);
-%     pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
-%     pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
-    % pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
+    %   pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
+    %   pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
+    %   pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -108,8 +112,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-%     a = compute_projected_weights(x0, E, V);
-%     a_x = compute_projected_weights(x0, E, x0);
+    %     a = compute_projected_weights(x0, E, V);
+    %     a_x = compute_projected_weights(x0, E, x0);
     
     a = nurbs_diffusion_weights(part, V);
     a_x = nurbs_diffusion_weights(part, x0);
@@ -160,13 +164,12 @@ function vem_nurbs
     % Compute mass matrices
     ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
-    M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be
-%     save('saveM.mat','M');
-%     save('saveME.mat','ME');
-% 	M = matfile('saveM.mat').M;
-% 	ME = matfile('saveME.mat').ME;
-    %     M = rho * eye(numel(x0));
-    
+    M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
+    %     save('saveM.mat','M');
+    %     save('saveME.mat','ME');
+    % 	M = matfile('saveM.mat').M;
+    % 	ME = matfile('saveME.mat').ME;
+
     k=3;
     if order == 2
         k = 9;
