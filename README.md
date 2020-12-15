@@ -23,8 +23,7 @@ To let MATLAB recognize the scripts, we need to add this folder and all the proj
     savepath
 
 ### C++ MEX Compilation
-**TODO** -- until I add instruction for this you cannot run vem_nurbs.m
-Costly functions are implemented in C++ and executed from Matlab from the C++ MEX API. Compiling these is **required** for the NURBs simulation example. The following steps may be used to compile the C++ files:
+Costly functions are implemented in C++ and executed from Matlab via the C++ MEX API. Compiling these is **required** for the NURBs simulation example. The following steps may be used to compile the C++ files:
 
     cd ${SOURCE_DIRECTORY}/matlab
     mkdir build
