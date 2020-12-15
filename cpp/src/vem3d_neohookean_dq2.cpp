@@ -21,14 +21,5 @@ void sim::vem3d_neohookean_dq2(Eigen::MatrixXx<GradientType> &g,
 
 	//grab per element positions
 	d2psi_neohookean_dF2(d2psi_dF2, unflatten<3, 3>((A * dMi).eval()), params);
-
-	//auto start = std::chrono::high_resolution_clock::now();
-	//Eigen::Map<const Eigen::MatrixXx<DerivedDF>> dFi(dF_dq.data(), 3*3, 3*n);
-	//g = dFi.transpose() * d2psi_dF2 * dFi * volume;
-	//auto stop = std::chrono::high_resolution_clock::now();
-	//std::cout << "DENSE d2spi* dfi: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << std::endl;
-	//start = stop;
 	g = dF_dq_sp.transpose() * d2psi_dF2 * dF_dq_sp * volume;
-	//stop = std::chrono::high_resolution_clock::now();
-	//std::cout << "SPARSE d2spi* dfi: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << std::endl;
 }

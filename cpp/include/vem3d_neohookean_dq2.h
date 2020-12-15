@@ -1,8 +1,6 @@
 #ifndef SIM_VEM3D_NEOHOOKEAN_DQ2_H
 #define SIM_VEM3D_NEOHOOKEAN_DQ2_H
 
-#define EIGEN_USE_MKL_ALL
-
 #include <Eigen/Dense>
 #include <EigenTypes.h>
 

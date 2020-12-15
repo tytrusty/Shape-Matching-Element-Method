@@ -1,12 +1,9 @@
 #ifndef SIM_VEM3DMESH_NEOHOOKEAN_DQ2_H
 #define SIM_VEM3DMESH_NEOHOOKEAN_DQ2_H
 
-#define EIGEN_USE_MKL_ALL
-
 #include <Eigen/Dense>
 #include <EigenTypes.h>
 
-#include <assemble.h>
 #include <vem3d_neohookean_dq2.h>
 
 namespace sim {

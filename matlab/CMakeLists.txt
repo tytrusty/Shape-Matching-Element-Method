@@ -35,7 +35,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
 message(${Matlab_OMP_LIB})
-file(GLOB vem_MATLAB_SRCS ${CMAKE_SOURCE_DIR}/*.cpp)
+file(GLOB vem_MATLAB_SRCS ${CMAKE_SOURCE_DIR}/mex/*.cpp)
 
 #compiler options
 if(vem_MATLAB_USE_OPENMP)
@@ -51,15 +51,6 @@ if(vem_MATLAB_USE_OPENMP)
 		target_compile_definitions(vem INTERFACE -Dvem_USE_OPENMP)
 
 	endif()
-
-	#I need to remove any openmp libraries added by mkl as they can conflict with
-	#matlabs OpenMP
-	if(vem_USE_MKL)
-		get_target_property(LINKED_LIBS vem INTERFACE_LINK_LIBRARIES)
-		LIST(FILTER LINKED_LIBS EXCLUDE REGEX libiomp5.dylib)
-		set_target_properties(vem PROPERTIES INTERFACE_LINK_LIBRARIES "${LINKED_LIBS}")
-	endif()
-
 endif()
 
 
