@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addonCore>
+  <label>IGES Toolbox</label>
+  <version>1.7</version>
+  <type>Toolbox</type>
+  <identifier>e5520973-4a80-11e4-9553-005056977bd0</identifier>
+  <summary>Toolbox for working with IGES CAD-models in Matlab</summary>
+  <description>The Matlab function "iges2matlab" extracts parameter data in an IGES file into Matlab. Other functions in the toolbox do plots, transformations, projections etc. All users must first compile the C-source code. This is done in Matlab by running
+makeIGESmex
+
+and the mex-functions are compiled.
+
+Other Requirements
+
+Some C-compiler must be installed.</description>
+  <createdBy name="Per Bergström"/>
+  <image>resources/screenshot.png</image>
+</addonCore>
