@@ -29,7 +29,7 @@ function vem_nurbs
     %      a total of 36 samples across the NURBs patch.
     resolution = 6;
     part=nurbs_from_iges(iges_file, resolution,0);
-    part=plot_nurbs(part);
+    part=nurbs_plot(part);
     
     % Raycasting quadrature as described nowhere yet :)
     V = raycast_quadrature(part, [6 6], 5)';
