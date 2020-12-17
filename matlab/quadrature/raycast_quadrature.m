@@ -26,7 +26,7 @@ UV = [U(:) V(:)];
 X = [];
 for i = 1:size(UV,1)
     % Intersect along x-axis
-    [dist, face_intersect] = ray_intersect(xrange, UV(i,:), verts, face_bins, OT);
+    [dist, ~] = ray_intersect(xrange, UV(i,:), verts, face_bins, OT);
 
     if ~isempty(dist)
         dist=sort(dist);

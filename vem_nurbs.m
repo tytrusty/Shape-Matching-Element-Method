@@ -2,7 +2,7 @@ function vem_nurbs
     % Simulation parameters
     dt = 0.01;      	% timestep
     C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
+    D = 0.5 * 15000;    % Lame parameter 2
     gravity = -100;
     k_error = 100000;
     order = 1;
@@ -16,21 +16,22 @@ function vem_nurbs
     % Read in NURBs 
     fig=figure(1);
     clf;
-        
-%     part=nurbs_from_iges('rocket_4.iges',6,0);
-%     res=repelem(5,14); res(1)=8;
-%     part=nurbs_from_iges('rocket_4.iges',res,0);
-%     part=nurbs_from_iges('puft_simple.iges',6,0);
-    part=nurbs_from_iges('rounded_cube.iges',6,0);
-%     part=nurbs_from_iges('castle_simple.iges',6,0);
-%     res=[8 15];
-%     part=nurbs_from_iges('mug.iges',res,1);
     
+    % Some files I test on
+    iges_file = 'rounded_cube.iges';
+    % iges_file = 'puft_simple.iges';
+    % iges_file = 'castle_simple.iges';
+    % iges_file = 'rocket_with_nose.iges';
+    % iges_file = 'rocket.iges'; % this rocket doesn't have the nosecone
+    
+    % Resolution indicates how many point samples we will take on each
+    % e.g. 6 means we have 6 samples in both the U & V coordinates, so
+    %      a total of 36 samples across the NURBs patch.
+    resolution = 6;
+    part=nurbs_from_iges(iges_file, resolution,0);
     part=plot_nurbs(part);
     
-    %
-    % Raycasting quadrature as described
-    %
+    % Raycasting quadrature as described nowhere yet :)
     V = raycast_quadrature(part, [6 6], 5)';
     % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
 
@@ -64,7 +65,6 @@ function vem_nurbs
         % Subsitute block into global NURBs jacobian (J) matrix
         J(I1,I2) = Ji;
         J_idx = J_idx + size(Ji);
-        size(Ji)
     end
     J = sparse(J);
     qdot=zeros(size(q));
@@ -84,7 +84,7 @@ function vem_nurbs
     
     % Setup pinned vertices constraint matrix
     [kth_min,I] = mink(x0(3,:),20);
-    pin_I = I(1:4);
+    pin_I = I(1:3);
     %   pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
     %   pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
     %   pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
@@ -112,11 +112,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    %     a = compute_projected_weights(x0, E, V);
-    %     a_x = compute_projected_weights(x0, E, x0);
-    
-    a = nurbs_diffusion_weights(part, V);
-    a_x = nurbs_diffusion_weights(part, x0);
+    a = nurbs_blending_weights(part, V', 40);
+    a_x = nurbs_blending_weights(part, x0', 40);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -141,6 +138,7 @@ function vem_nurbs
     dM_dX = monomial_basis_grad(V, x0_com, order);
     
     % Computing gradient of deformation gradient w.r.t configuration, q
+    % Cover your EYES this code is a disaster
     d = 3;  % dimension (2 or 3)
     dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), a);
     dF_dq = permute(dF_dq, [2 3 1]);
@@ -187,10 +185,7 @@ function vem_nurbs
             Ai = p*B{i};
             A(:,:,i) = Ai;
         end
-        
-        dV_dq = zeros(numel(x),1);     % force vector
-        K0 = zeros(numel(x), numel(x)); % stiffness matrix
-        
+                
         % Computing force dV/dq for each point.
         n=size(x0,2);
         dF_dqij = permute(dF_dq, [3 1 2]);
@@ -200,10 +195,14 @@ function vem_nurbs
         params = [C, D];
         params = repmat(params,size(a,1),1);
         
-        % Force vector
+        % Stiffness matrix
         K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
+        
+        % Force vector
+        dV_dq = zeros(numel(x),1);
 
         % Computing force dV/dq for each point.
+        % TODO -- move this to C++ :)
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
             
@@ -218,16 +217,9 @@ function vem_nurbs
                         
             % Force vector
             dV_dF = neohookean_tet_dF(F,C,D);
-
             dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF; % assuming constant area
-
-            % Stiffness matrix
-            %d2V_dF2 = neohookean_tet_dF2(F,C,D);
-            %K0 = K0 - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
         end
-        %diff = K-K0;
-        %norm(diff(:))
-        
+  
         % Error correction force
         f_error = - 2 * ME * x(:);
         f_error = k_error*(dt * P * f_error(:));

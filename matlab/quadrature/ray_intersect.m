@@ -21,7 +21,7 @@ function [dist, faces] = ray_intersect(xrange, coord, verts, face_bins, Octree)
     D = [xrange(1) coord] - or;
     D = D ./ norm(D);
     [dist,fids] = ray_tri(P0, P1, P2, or, D);
-    
+
     % Output faces if desired
     if nargout > 1
         faces = face_intersect(fids,:);
