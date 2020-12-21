@@ -1,0 +1,632 @@
+@article{10.1145/1073204.1073216,
+author = {M\"{u}ller, Matthias and Heidelberger, Bruno and Teschner, Matthias and Gross, Markus},
+title = {Meshless Deformations Based on Shape Matching},
+year = {2005},
+issue_date = {July 2005},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {24},
+number = {3},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/1073204.1073216},
+doi = {10.1145/1073204.1073216},
+abstract = {We present a new approach for simulating deformable objects. The underlying model is geometrically motivated. It handles pointbased objects and does not need connectivity information. The approach does not require any pre-processing, is simple to compute, and provides unconditionally stable dynamic simulations.The main idea of our deformable model is to replace energies by geometric constraints and forces by distances of current positions to goal positions. These goal positions are determined via a generalized shape matching of an undeformed rest state with the current deformed state of the point cloud. Since points are always drawn towards well-defined locations, the overshooting problem of explicit integration schemes is eliminated. The versatility of the approach in terms of object representations that can be handled, the efficiency in terms of memory and computational complexity, and the unconditional stability of the dynamic simulation make the approach particularly interesting for games.},
+journal = {ACM Trans. Graph.},
+month = jul,
+pages = {471–478},
+numpages = {8},
+keywords = {deformable modeling, shape matching, real-time simulation, geometric deformation}
+}
+
+@article{MULLER2007109,
+title = "Position based dynamics",
+journal = "Journal of Visual Communication and Image Representation",
+volume = "18",
+number = "2",
+pages = "109 - 118",
+year = "2007",
+issn = "1047-3203",
+doi = "https://doi.org/10.1016/j.jvcir.2007.01.005",
+url = "http://www.sciencedirect.com/science/article/pii/S1047320307000065",
+author = "Matthias Müller and Bruno Heidelberger and Marcus Hennix and John Ratcliff",
+keywords = "Physically based simulation, Game physics, Integration schemes, Cloth simulation",
+abstract = "The most popular approaches for the simulation of dynamic systems in computer graphics are force based. Internal and external forces are accumulated from which accelerations are computed based on Newton’s second law of motion. A time integration method is then used to update the velocities and finally the positions of the object. A few simulation methods (most rigid body simulators) use impulse based dynamics and directly manipulate velocities. In this paper we present an approach which omits the velocity layer as well and immediately works on the positions. The main advantage of a position based approach is its controllability. Overshooting problems of explicit integration schemes in force based systems can be avoided. In addition, collision constraints can be handled easily and penetrations can be resolved completely by projecting points to valid locations. We have used the approach to build a real time cloth simulator which is part of a physics software library for games. This application demonstrates the strengths and benefits of the method."
+}
+
+@inproceedings{10.1145/1275808.1276480,
+author = {Rivers, Alec R. and James, Doug L.},
+title = {FastLSM: Fast Lattice Shape Matching for Robust Real-Time Deformation},
+year = {2007},
+isbn = {9781450378369},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1275808.1276480},
+doi = {10.1145/1275808.1276480},
+abstract = {We introduce a simple technique that enables robust approximation of volumetric, large-deformation dynamics for real-time or large-scale offline simulations. We propose Lattice Shape Matching, an extension of deformable shape matching to regular lattices with embedded geometry; lattice vertices are smoothed by convolution of rigid shape matching operators on local lattice regions, with the effective mechanical stiffness specified by the amount of smoothing via region width. Since the na\"{\i}ve method can be very slow for stiff models - per-vertex costs scale cubically with region width - we provide a fast summation algorithm, Fast Lattice Shape Matching (FastLSM), that exploits the inherent summation redundancy of shape matching and can provide large-region matching at constant per-vertex cost. With this approach, large lattices can be simulated in linear time. We present several examples and benchmarks of an efficient CPU implementation, including many dozens of soft bodies simulated at real-time rates on a typical desktop machine.},
+booktitle = {ACM SIGGRAPH 2007 Papers},
+pages = {82–es},
+numpages = {6},
+keywords = {shape matching, fast summation, domain embedding, polar decomposition, video game physics, large deformation, summed-area tables, interactive dynamics, soft body, free-form deformation, fracturing},
+location = {San Diego, California},
+series = {SIGGRAPH '07}
+}
+
+@inproceedings{10.1145/2019406.2019438,
+author = {Diziol, R. and Bender, J. and Bayer, D.},
+title = {Robust Real-Time Deformation of Incompressible Surface Meshes},
+year = {2011},
+isbn = {9781450309233},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2019406.2019438},
+doi = {10.1145/2019406.2019438},
+abstract = {We introduce an efficient technique for robustly simulating incompressible objects with thousands of elements in real-time. Instead of considering a tetrahedral model, commonly used to simulate volumetric bodies, we simply use their surfaces. Not requiring hundreds or even thousands of elements in the interior of the object enables us to simulate more elements on the surface, resulting in high quality deformations at low computation costs. The elasticity of the objects is robustly simulated with a geometrically motivated shape matching approach which is extended by a fast summation technique for arbitrary triangle meshes suitable for an efficient parallel computation on the GPU. Moreover, we present an oscillation-free and collision-aware volume constraint, purely based on the surface of the incompressible body. The novel heuristic we propose in our approach enables us to conserve the volume, both globally and locally. Our volume constraint is not limited to the shape matching method and can be used with any method simulating the elasticity of an object. We present several examples which demonstrate high quality volume conserving deformations and compare the run-times of our CPU implementation, as well as our GPU implementation with similar methods.},
+booktitle = {Proceedings of the 2011 ACM SIGGRAPH/Eurographics Symposium on Computer Animation},
+pages = {237–246},
+numpages = {10},
+location = {Vancouver, British Columbia, Canada},
+series = {SCA '11}
+}
+
+@article{10.1145/2601097.2601116,
+author = {Bouaziz, Sofien and Martin, Sebastian and Liu, Tiantian and Kavan, Ladislav and Pauly, Mark},
+title = {Projective Dynamics: Fusing Constraint Projections for Fast Simulation},
+year = {2014},
+issue_date = {July 2014},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {33},
+number = {4},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/2601097.2601116},
+doi = {10.1145/2601097.2601116},
+abstract = {We present a new method for implicit time integration of physical systems. Our approach builds a bridge between nodal Finite Element methods and Position Based Dynamics, leading to a simple, efficient, robust, yet accurate solver that supports many different types of constraints. We propose specially designed energy potentials that can be solved efficiently using an alternating optimization approach. Inspired by continuum mechanics, we derive a set of continuum-based potentials that can be efficiently incorporated within our solver. We demonstrate the generality and robustness of our approach in many different applications ranging from the simulation of solids, cloths, and shells, to example-based simulation. Comparisons to Newton-based and Position Based Dynamics solvers highlight the benefits of our formulation.},
+journal = {ACM Trans. Graph.},
+month = jul,
+articleno = {154},
+numpages = {11},
+keywords = {continuum mechanics, physics-based animation, position based dynamics, implicit Euler method}
+}
+
+@article{10.1111/j.1467-8659.2012.03171.x,
+author = {Bouaziz, Sofien and Deuss, Mario and Schwartzburg, Yuliy and Weise, Thibaut and Pauly, Mark},
+title = {Shape-Up: Shaping Discrete Geometry with Projections},
+year = {2012},
+issue_date = {August 2012},
+publisher = {The Eurographs Association &amp; John Wiley &amp; Sons, Ltd.},
+address = {Chichester, GBR},
+volume = {31},
+number = {5},
+issn = {0167-7055},
+url = {https://doi.org/10.1111/j.1467-8659.2012.03171.x},
+doi = {10.1111/j.1467-8659.2012.03171.x},
+abstract = {We introduce a unified optimization framework for geometry processing based on shape constraints. These constraints preserve or prescribe the shape of subsets of the points of a geometric data set, such as polygons, one-ring cells, volume elements, or feature curves. Our method is based on two key concepts: a shape proximity function and shape projection operators. The proximity function encodes the distance of a desired least-squares fitted elementary target shape to the corresponding vertices of the 3D model. Projection operators are employed to minimize the proximity function by relocating vertices in a minimal way to match the imposed shape constraints. We demonstrate that this approach leads to a simple, robust, and efficient algorithm that allows implementing a variety of geometry processing applications, simply by combining suitable projection operators. We show examples for computing planar and circular meshes, shape space exploration, mesh quality improvement, shape-preserving deformation, and conformal parametrization. Our optimization framework provides a systematic way of building new solvers for geometry processing and produces similar or better results than state-of-the-art methods. © 2012 Wiley Periodicals, Inc.},
+journal = {Comput. Graph. Forum},
+month = aug,
+pages = {1657–1667},
+numpages = {11},
+keywords = {languages, and systems, I.3.5 [Computer Graphics]: Computational Geometry and Object Modeling—Geometric algorithms}
+}
+
+@inproceedings{10.1145/1964921.1964987,
+author = {M\"{u}ller, Matthias and Chentanez, Nuttapong},
+title = {Solid Simulation with Oriented Particles},
+year = {2011},
+isbn = {9781450309431},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1964921.1964987},
+doi = {10.1145/1964921.1964987},
+abstract = {We propose a new fast and robust method to simulate various types of solid including rigid, plastic and soft bodies as well as one, two and three dimensional structures such as ropes, cloth and volumetric objects. The underlying idea is to use oriented particles that store rotation and spin, along with the usual linear attributes, i.e. position and velocity. This additional information adds substantially to traditional particle methods. First, particles can be represented by anisotropic shapes such as ellipsoids, which approximate surfaces more accurately than spheres. Second, shape matching becomes robust for sparse structures such as chains of particles or even single particles because the undefined degrees of freedom are captured in the rotational states of the particles. Third, the full transformation stored in the particles, including translation and rotation, can be used for robust skinning of graphical meshes and for transforming plastic deformations back into the rest state.},
+booktitle = {ACM SIGGRAPH 2011 Papers},
+articleno = {92},
+numpages = {10},
+keywords = {oriented particles, position based dynamics, shape matching},
+location = {Vancouver, British Columbia, Canada},
+series = {SIGGRAPH '11}
+}
+
+@article{10.1142/S0218202512500492,
+author = {Veiga, L. and Brezzi, Franco and Cangiani, Andrea and Manzini, G. and Marini, L. and Russo, Alessandro},
+year = {2012},
+month = {11},
+pages = {},
+title = {Basic principles of Virtual Element Methods},
+volume = {23},
+journal = {Mathematical Models and Methods in Applied Sciences},
+doi = {10.1142/S0218202512500492}
+}
+
+@article{10.1016/j.jcp.2013.07.031,
+author = {Lipnikov, Konstantin and Manzini, Gianmarco and Shashkov, Mikhail},
+title = {Mimetic Finite Difference Method},
+year = {2014},
+issue_date = {January, 2014},
+publisher = {Academic Press Professional, Inc.},
+address = {USA},
+volume = {257},
+issn = {0021-9991},
+url = {https://doi.org/10.1016/j.jcp.2013.07.031},
+doi = {10.1016/j.jcp.2013.07.031},
+abstract = {The mimetic finite difference (MFD) method mimics fundamental properties of mathematical and physical systems including conservation laws, symmetry and positivity of solutions, duality and self-adjointness of differential operators, and exact mathematical identities of the vector and tensor calculus. This article is the first comprehensive review of the 50-year long history of the mimetic methodology and describes in a systematic way the major mimetic ideas and their relevance to academic and real-life problems. The supporting applications include diffusion, electromagnetics, fluid flow, and Lagrangian hydrodynamics problems. The article provides enough details to build various discrete operators on unstructured polygonal and polyhedral meshes and summarizes the major convergence results for the mimetic approximations. Most of these theoretical results, which are presented here as lemmas, propositions and theorems, are either original or an extension of existing results to a more general formulation using polyhedral meshes. Finally, flexibility and extensibility of the mimetic methodology are shown by deriving higher-order approximations, enforcing discrete maximum principles for diffusion problems, and ensuring the numerical stability for saddle-point systems.},
+journal = {J. Comput. Phys.},
+month = jan,
+pages = {1163–1227},
+numpages = {65},
+keywords = {Mimetic finite difference method, Discrete vector and tensor calculus, Lagrangian hydrodynamics}
+}
+
+
+@article{10.1142/S0218202505000832,
+author = {Brezzi, Franco and Lipnikov, Konstantin and Simoncini, Valeria},
+year = {2005},
+month = {04},
+pages = {},
+title = {A family of mimetic finite difference methods on polygonal and polyhedral meshes},
+volume = {15},
+journal = {Mathematical Models and Methods in Applied Sciences},
+doi = {10.1142/S0218202505000832}
+}
+
+@article{10.1142/S021820251440003X,
+author = {Beirão da Veiga, L. and Brezzi, F. and Marini, L. D. and Russo, A.},
+title = {The Hitchhiker's Guide to the Virtual Element Method},
+journal = {Mathematical Models and Methods in Applied Sciences},
+volume = {24},
+number = {08},
+pages = {1541-1573},
+year = {2014},
+doi = {10.1142/S021820251440003X},
+
+URL = { 
+        https://doi.org/10.1142/S021820251440003X
+    
+},
+eprint = { 
+        https://doi.org/10.1142/S021820251440003X
+    
+}
+,
+    abstract = { We present the essential ingredients in the Virtual Element Method for a simple linear elliptic second-order problem. We emphasize its computer implementation, which will enable interested readers to readily implement the method. }
+}
+
+@article{10.1145/3355089.3356576,
+author = {Hafner, Christian and Schumacher, Christian and Knoop, Espen and Auzinger, Thomas and Bickel, Bernd and B\"{a}cher, Moritz},
+title = {X-CAD: Optimizing CAD Models with Extended Finite Elements},
+year = {2019},
+issue_date = {November 2019},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {38},
+number = {6},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/3355089.3356576},
+doi = {10.1145/3355089.3356576},
+abstract = {We propose a novel generic shape optimization method for CAD models based on the eXtended Finite Element Method (XFEM). Our method works directly on the intersection between the model and a regular simulation grid, without the need to mesh or remesh, thus removing a bottleneck of classical shape optimization strategies. This is made possible by a novel hierarchical integration scheme that accurately integrates finite element quantities with sub-element precision. For optimization, we efficiently compute analytical shape derivatives of the entire framework, from model intersection to integration rule generation and XFEM simulation. Moreover, we describe a differentiable projection of shape parameters onto a constraint manifold spanned by user-specified shape preservation, consistency, and manufacturability constraints. We demonstrate the utility of our approach by optimizing mass distribution, strength-to-weight ratio, and inverse elastic shape design objectives directly on parameterized 3D CAD models.},
+journal = {ACM Trans. Graph.},
+month = nov,
+articleno = {157},
+numpages = {15},
+keywords = {simulation, CAD processing, XFEM, shape optimization}
+}
+
+@inbook{10.1002/9780470749081.ch7,
+author = {Cottrell, J. and Hughes, Thomas and Bazilevs, Yuri},
+year = {2009},
+month = {09},
+pages = {},
+title = {Isogeometric Analysis: Toward integration of CAD and FEA},
+isbn = {0470748737},
+journal = {Isogeometric Analysis: Toward Integration of CAD and FEA},
+doi = {10.1002/9780470749081.ch7}
+}
+
+@article{KHOSRAVIFARD201030,
+title = "A new method for meshless integration in 2D and 3D Galerkin meshfree methods",
+journal = "Engineering Analysis with Boundary Elements",
+volume = "34",
+number = "1",
+pages = "30 - 40",
+year = "2010",
+issn = "0955-7997",
+doi = "https://doi.org/10.1016/j.enganabound.2009.07.008",
+url = "http://www.sciencedirect.com/science/article/pii/S0955799709001520",
+author = "Amir Khosravifard and Mohammad Rahim Hematiyan",
+keywords = "Truly meshless, Element-free Galerkin method, Meshless integration, Meshless radial point interpolation method",
+abstract = "A method for the evaluation of regular domain integrals without domain discretization is presented. In this method, a domain integral is transformed into a boundary integral and a 1D integral. The method is then utilized for the evaluation of domain integrals in meshless methods based on the weak form, such as the element-free Galerkin method and the meshless radial point interpolation method. The proposed technique results in truly meshless methods with better accuracy and efficiency in comparison with their original forms. Some examples, including linear and large-deformation problems, are also provided to demonstrate the usefulness of the proposed method."
+}
+
+@article{DBLP:journals/tog/WangFP12,
+  author    = {Bin Wang and
+               Fran{\c{c}}ois Faure and
+               Dinesh K. Pai},
+  title     = {Adaptive image-based intersection volume},
+  journal   = {{ACM} Trans. Graph.},
+  volume    = {31},
+  number    = {4},
+  pages     = {97:1--97:9},
+  year      = {2012},
+  url       = {https://doi.org/10.1145/2185520.2185593},
+  doi       = {10.1145/2185520.2185593},
+  timestamp = {Tue, 06 Nov 2018 12:51:26 +0100},
+  biburl    = {https://dblp.org/rec/journals/tog/WangFP12.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{https://doi.org/10.1002/nme.3120,
+author = {Haasemann, G. and Kästner, M. and Prüger, S. and Ulbricht, V.},
+title = {Development of a quadratic finite element formulation based on the XFEM and NURBS},
+journal = {International Journal for Numerical Methods in Engineering},
+volume = {86},
+number = {4‐5},
+pages = {598-617},
+keywords = {XFEM, NURBS, homogenization, composites, weak discontinuities},
+doi = {https://doi.org/10.1002/nme.3120},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nme.3120},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/nme.3120},
+abstract = {Abstract The FE-simulation of inhomogeneous structures, such as composite materials, biological tissues or foams, requires the generation of respective finite element meshes. With increasing complexity of the inner architecture of such structures, this becomes a time-consuming and laborious task. Additionally, the risk of forming bad-shaped elements that may lead to ill-conditioned numerical problems grows significantly. A solution to this problem provides the extended finite element method (XFEM). Thereby, the interface between different materials is represented by a local enrichment of the displacement approximation. As a consequence of this, the element boundary need not be aligned to the interface. In order to improve the accuracy of the interface approximation, the development of a plane element based on the XFEM and quadratic shape functions will be presented. This element allows for the description of curved material interfaces. The computation of the element stiffness matrix requires a numerical integration process that accounts for discontinuous fields. Regarding a linear element formulation, this can be achieved by an adapted triangulation of the element domain. However, in the case of a curved interface this solution is not applicable. Hence, non-uniform rational B-Spline (NURBS) surfaces are used to evaluate the integrals numerically. Finally, the results of different examples will show the general properties such as the accuracy of the numerical integration procedure and the convergence behavior of this element formulation. Copyright © 2011 John Wiley \& Sons, Ltd.},
+year = {2011}
+}
+
+
+
+@article{https://doi.org/10.1002/nme.4852,
+author = {Safdari, Masoud and Najafi, Ahmad R. and Sottos, Nancy R. and Geubelle, Philippe H.},
+title = {A NURBS-based interface-enriched generalized finite element method for problems with complex discontinuous gradient fields},
+journal = {International Journal for Numerical Methods in Engineering},
+volume = {101},
+number = {12},
+pages = {950-964},
+keywords = {NURBS, GFEM, weak discontinuity},
+doi = {https://doi.org/10.1002/nme.4852},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nme.4852},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/nme.4852},
+abstract = {SummaryA non-uniform rational B-splines (NURBS)-based interface-enriched generalized finite element method is introduced to solve problems with complex discontinuous gradient fields observed in the structural and thermal analysis of the heterogeneous materials. The presented method utilizes generalized degrees of freedom and enrichment functions based on NURBS to capture the solution with non-conforming meshes. A consistent method for the generation and application of the NURBS-based enrichment functions is introduced. These enrichment functions offer various advantages including simplicity of the integration, possibility of different modes of local solution refinement, and ease of implementation. In addition, we show that these functions well capture weak discontinuities associated with highly curved material interfaces. The convergence, accuracy, and stability of the method in the solution of two-dimensional elasto-static problems are compared with the standard finite element scheme, showing improved accuracy. Finally, the performance of the method for solving problems with complex internal geometry is highlighted through a numerical example. Copyright © 2015 John Wiley \& Sons, Ltd.},
+year = {2015}
+}
+
+@article{SAFDARI2016373,
+title = "A NURBS-based generalized finite element scheme for 3D simulation of heterogeneous materials",
+journal = "Journal of Computational Physics",
+volume = "318",
+pages = "373 - 390",
+year = "2016",
+issn = "0021-9991",
+doi = "https://doi.org/10.1016/j.jcp.2016.05.004",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999116301310",
+author = "Masoud Safdari and Ahmad R. Najafi and Nancy R. Sottos and Philippe H. Geubelle",
+keywords = "NURBS, G/XFEM, Material interfaces",
+abstract = "A 3D NURBS-based interface-enriched generalized finite element method (NIGFEM) is introduced to solve problems with complex discontinuous gradient fields observed in the analysis of heterogeneous materials. The method utilizes simple structured meshes of hexahedral elements that do not necessarily conform to the material interfaces in heterogeneous materials. By avoiding the creation of conforming meshes used in conventional FEM, the NIGFEM leads to significant simplification of the mesh generation process. To achieve an accurate solution in elements that are crossed by material interfaces, the NIGFEM utilizes Non-Uniform Rational B-Splines (NURBS) to enrich the solution field locally. The accuracy and convergence of the NIGFEM are tested by solving a benchmark problem. We observe that the NIGFEM preserves an optimal rate of convergence, and provides additional advantages including the accurate capture of the solution fields in the vicinity of material interfaces and the built-in capability for hierarchical mesh refinement. Finally, the use of the NIGFEM in the computational analysis of heterogeneous materials is discussed."
+}
+
+@article{10.1007/s00466-013-0854-7,
+author = {Legrain, Grégory},
+year = {2013},
+month = {04},
+pages = {},
+title = {A NURBS enhanced extended finite element approach for unfitted CAD analysis},
+volume = {52},
+journal = {Computational Mechanics},
+doi = {10.1007/s00466-013-0854-7}
+}
+
+@inproceedings{10.1145/1028523.1028542,
+author = {M\"{u}ller, M. and Keiser, R. and Nealen, A. and Pauly, M. and Gross, M. and Alexa, M.},
+title = {Point Based Animation of Elastic, Plastic and Melting Objects},
+year = {2004},
+isbn = {3905673142},
+publisher = {Eurographics Association},
+address = {Goslar, DEU},
+url = {https://doi.org/10.1145/1028523.1028542},
+doi = {10.1145/1028523.1028542},
+abstract = {We present a method for modeling and animating a wide spectrum of volumetric objects, with material properties anywhere in the range from stiff elastic to highly plastic. Both the volume and the surface representation are point based, which allows arbitrarily large deviations form the original shape. In contrast to previous point based elasticity in computer graphics, our physical model is derived from continuum mechanics, which allows the specification of common material properties such as Young's Modulus and Poisson's Ratio.In each step, we compute the spatial derivatives of the discrete displacement field using a Moving Least Squares (MLS) procedure. From these derivatives we obtain strains, stresses and elastic forces at each simulated point. We demonstrate how to solve the equations of motion based on these forces, with both explicit and implicit integration schemes. In addition, we propose techniques for modeling and animating a point-sampled surface that dynamically adapts to deformations of the underlying volumetric model.},
+booktitle = {Proceedings of the 2004 ACM SIGGRAPH/Eurographics Symposium on Computer Animation},
+pages = {141–151},
+numpages = {11},
+location = {Grenoble, France},
+series = {SCA '04}
+}
+
+@inproceedings{10.1145/2343483.2343501,
+author = {Sifakis, Eftychios and Barbic, Jernej},
+title = {FEM Simulation of 3D Deformable Solids: A Practitioner's Guide to Theory, Discretization and Model Reduction},
+year = {2012},
+isbn = {9781450316781},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2343483.2343501},
+doi = {10.1145/2343483.2343501},
+abstract = {A practical guide to finite-element-method (FEM) simulation of 3D deformable solids reviews essential offline FEM simulation techniques: complex nonlinear materials, invertible treatment of elasticity, and model-reduction techniques for real-time simulation.Simulations of deformable solids are important in many applications in computer graphics, including film special effects, computer games, and virtual surgery. FEM has become a popular method in many applications. Both offline simulation and real-time techniques have matured in computer graphics literature.This course is designed for attendees familiar with numerical simulation in computer graphics who would like to obtain a cohesive picture of the various FEM simulation methods available, their strengths and weaknesses, and their applicability in various simulation scenarios. The course is also a practical implementation guide for the visual-effects developer, offering a very lean yet adequate synopsis of the underlying mathematical theory. The first section introduces FEM deformable-object simulation and its fundamental concepts, such as deformation gradient, strain, stress, and elastic energy, discusses corotational FEM models, isotropic hyperelasticity, and numerical methods such as conjugate gradients and multigrid. The second section presents the state of the art in model reduction techniques for real-time FEM solid simulation. Topics include linear modal analysis, modal warping, subspace simulation, domain decomposition, and which techniques are suitable for which application.},
+booktitle = {ACM SIGGRAPH 2012 Courses},
+articleno = {20},
+numpages = {50},
+location = {Los Angeles, California},
+series = {SIGGRAPH '12}
+}
+
+@article{10.1145/3386569.3392389,
+author = {De Goes, Fernando and Butts, Andrew and Desbrun, Mathieu},
+title = {Discrete Differential Operators on Polygonal Meshes},
+year = {2020},
+issue_date = {July 2020},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {39},
+number = {4},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/3386569.3392389},
+doi = {10.1145/3386569.3392389},
+abstract = {Geometry processing of surface meshes relies heavily on the discretization of differential operators such as gradient, Laplacian, and covariant derivative. While a variety of discrete operators over triangulated meshes have been developed and used for decades, a similar construction over polygonal meshes remains far less explored despite the prevalence of non-simplicial surfaces in geometric design and engineering applications. This paper introduces a principled construction of discrete differential operators on surface meshes formed by (possibly non-flat and non-convex) polygonal faces. Our approach is based on a novel mimetic discretization of the gradient operator that is linear-precise on arbitrary polygons. Equipped with this discrete gradient, we draw upon ideas from the Virtual Element Method in order to derive a series of discrete operators commonly used in graphics that are now valid over polygonal surfaces. We demonstrate the accuracy and robustness of our resulting operators through various numerical examples, before incorporating them into existing geometry processing algorithms.},
+journal = {ACM Trans. Graph.},
+month = jul,
+articleno = {110},
+numpages = {14},
+keywords = {geometry processing, polygonal meshes, discrete differential operators}
+}
+
+@article{10.1145/3414685.3417853,
+author = {Longva, Andreas and L\"{o}schner, Fabian and Kugelstadt, Tassilo and Fern\'{a}ndez-Fern\'{a}ndez, Jos\'{e} Antonio and Bender, Jan},
+title = {Higher-Order Finite Elements for Embedded Simulation},
+year = {2020},
+issue_date = {December 2020},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {39},
+number = {6},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/3414685.3417853},
+doi = {10.1145/3414685.3417853},
+abstract = {As demands for high-fidelity physics-based animations increase, the need for accurate methods for simulating deformable solids grows. While higherorder finite elements are commonplace in engineering due to their superior approximation properties for many problems, they have gained little traction in the computer graphics community. This may partially be explained by the need for finite element meshes to approximate the highly complex geometry of models used in graphics applications. Due to the additional perelement computational expense of higher-order elements, larger elements are needed, and the error incurred due to the geometry mismatch eradicates the benefits of higher-order discretizations. One solution to this problem is the embedding of the geometry into a coarser finite element mesh. However, to date there is no adequate, practical computational framework that permits the accurate embedding into higher-order elements.We develop a novel, robust quadrature generation method that generates theoretically guaranteed high-quality sub-cell integration rules of arbitrary polynomial accuracy. The number of quadrature points generated is bounded only by the desired degree of the polynomial, independent of the embedded geometry. Additionally, we build on recent work in the Finite Cell Method (FCM) community so as to tackle the severe ill-conditioning caused by partially filled elements by adapting an Additive-Schwarz-based preconditioner so that it is suitable for use with state-of-the-art non-linear material models from the graphics literature. Together these two contributions constitute a general-purpose framework for embedded simulation with higher-order finite elements.We finally demonstrate the benefits of our framework in several scenarios, in which second-order hexahedra and tetrahedra clearly outperform their first-order counterparts.},
+journal = {ACM Trans. Graph.},
+month = nov,
+articleno = {181},
+numpages = {14},
+keywords = {finite cell method higher-order finite elements, deformable solids, embedded simulation}
+}
+
+@article{10.1145/176579.176580,
+author = {Terzopoulos, Demetri and Qin, Hong},
+title = {Dynamic NURBS with Geometric Constraints for Interactive Sculpting},
+year = {1994},
+issue_date = {April 1994},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {13},
+number = {2},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/176579.176580},
+doi = {10.1145/176579.176580},
+abstract = {This article develops a dynamic generalization of the nonuniform rational B-spline (NURBS) model. NURBS have become a defacto standard in commercial modeling systems because of their power to represent free-form shapes as well as common analytic shapes. To date, however, they have been viewed as purely geometric primitives that require the user to manually adjust multiple control points and associated weights in order to design shapes. Dynamic NURBS, or D-NURBS, are physics-based models that incorporate mass distributions, internal deformation energies, and other physical quantities into the popular NURBS geometric substrate. Using D-NURBS, a modeler can interactively sculpt curves and surfaces and design complex shapes to required specifications not only in the traditional indirect  fashion, by adjusting control points and weights, but also through direct physical manipulation, by applying simulated forces and local and global shape constraints. D-NURBS move and deform in a physically intuitive manner in response to the user's direct manipulations. Their dynamic behavior results from the numerical integration of a set of nonlinear differential equations that automatically evolve the control points and weights in response to the applied forces and constraints. To derive these equations, we employ Lagrangian mechanics and a finite-element-like discretization. Our approach supports the trimming of D-NURBS surfaces using D-NURBS curves. We demonstrate D-NURBS models and constraints in applications including the rounding of solids, optimal surface fitting to unstructured data, surface design from cross sections, and free-form deformation. We also introduce a new technique for 2D shape metamorphosis using constrained D-NURBS surfaces.},
+journal = {ACM Trans. Graph.},
+month = apr,
+pages = {103–136},
+numpages = {34},
+keywords = {deformable models, solid rounding, dynamics, trimming, constraints, cross-sectional shape design, optimal curve and surface fitting, CAGD, shape metamorphosis, NURBS, finite elements, free-form deformation}
+}
+
+@article{Nayroles1992GeneralizingTF,
+  title={Generalizing the finite element method: Diffuse approximation and diffuse elements},
+  author={B. Nayroles and G. Touzot and P. Villon},
+  journal={Computational Mechanics},
+  year={1992},
+  volume={10},
+  pages={307-318}
+}
+
+@article{https://doi.org/10.1002/nme.1620370205,
+author = {Belytschko, T. and Lu, Y. Y. and Gu, L.},
+title = {Element-free Galerkin methods},
+journal = {International Journal for Numerical Methods in Engineering},
+volume = {37},
+number = {2},
+pages = {229-256},
+doi = {https://doi.org/10.1002/nme.1620370205},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nme.1620370205},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/nme.1620370205},
+abstract = {Abstract An element-free Galerkin method which is applicable to arbitrary shapes but requires only nodal data is applied to elasticity and heat conduction problems. In this method, moving least-squares interpolants are used to construct the trial and test functions for the variational principle (weak form); the dependent variable and its gradient are continuous in the entire domain. In contrast to an earlier formulation by Nayroles and coworkers, certain key differences are introduced in the implementation to increase its accuracy. The numerical examples in this paper show that with these modifications, the method does not exhibit any volumetric locking, the rate of convergence can exceed that of finite elements significantly and a high resolution of localized steep gradients can be achieved. The moving least-squares interpolants and the choices of the weight function are also discussed in this paper.},
+year = {1994}
+}
+
+@inproceedings{10.1145/2614028.2615427,
+author = {Jacobson, Alec and Deng, Zhigang and Kavan, Ladislav and Lewis, J. P.},
+title = {Skinning: Real-Time Shape Deformation (Full Text Not Available)},
+year = {2014},
+isbn = {9781450329620},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2614028.2615427},
+doi = {10.1145/2614028.2615427},
+booktitle = {ACM SIGGRAPH 2014 Courses},
+articleno = {24},
+numpages = {1},
+location = {Vancouver, Canada},
+series = {SIGGRAPH '14}
+}
+
+@article{Zhang_2020,
+   title={Complementary dynamics},
+   volume={39},
+   ISSN={1557-7368},
+   url={http://dx.doi.org/10.1145/3414685.3417819},
+   DOI={10.1145/3414685.3417819},
+   number={6},
+   journal={ACM Transactions on Graphics},
+   publisher={Association for Computing Machinery (ACM)},
+   author={Zhang, Jiayi Eris and Bang, Seungbae and Levin, David I. W. and Jacobson, Alec},
+   year={2020},
+   month={Nov},
+   pages={1–11}
+}
+
+@inproceedings{10.5555/1632592.1632606,
+author = {Steinemann, Denis and Otaduy, Miguel A. and Gross, Markus},
+title = {Fast Adaptive Shape Matching Deformations},
+year = {2008},
+isbn = {9783905674101},
+publisher = {Eurographics Association},
+address = {Goslar, DEU},
+abstract = {We present a new shape-matching deformation model that allows for efficient handling of topological changes and dynamic adaptive selection of levels of detail. Similar to the recently presented Fast Lattice Shape Matching (FLSM), we compute the position of simulation nodes by convolution of rigid shape matching operators on many overlapping regions, but we rely instead on octree-based hierarchical sampling and an interval-based region definition. Our approach enjoys the efficiency and robustness of shape-matching deformation models, and the same algorithmic simplicity and linear cost as FLSM, but it eliminates its dense sampling requirements. Our method can handle adaptive spatial discretizations, allowing the simulation of more degrees of freedom in arbitrary regions of interest at little additional cost. The method is also versatile, as it can simulate elastic and plastic deformation, it can handle cuts interactively, and it reuses the underlying data structures for efficient handling of (self-)collisions. All this makes it especially useful for interactive applications such as videogames.},
+booktitle = {Proceedings of the 2008 ACM SIGGRAPH/Eurographics Symposium on Computer Animation},
+pages = {87–94},
+numpages = {8},
+location = {Dublin, Ireland},
+series = {SCA '08}
+}
+
+@inproceedings{10.2312/PE/vriphys/vriphys08/039-046,
+author = {Stumpp, Thomas and Spillmann, Jonas and Becker, Markus and Teschner, Matthias},
+year = {2008},
+month = {01},
+pages = {39-46},
+title = {A Geometric Deformation Model for Stable Cloth Simulation},
+journal = {VRIPHYS 2008 - 5th Workshop on Virtual Reality Interactions and Physical Simulations},
+doi = {10.2312/PE/vriphys/vriphys08/039-046}
+}
+@article{10.1145/2766952,
+author = {Wang, Yu and Jacobson, Alec and Barbi\v{c}, Jernej and Kavan, Ladislav},
+title = {Linear Subspace Design for Real-Time Shape Deformation},
+year = {2015},
+issue_date = {August 2015},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {34},
+number = {4},
+issn = {0730-0301},
+url = {https://doi-org.myaccess.library.utoronto.ca/10.1145/2766952},
+doi = {10.1145/2766952},
+abstract = {We propose a method to design linear deformation subspaces, unifying linear blend skinning and generalized barycentric coordinates. Deformation subspaces cut down the time complexity of variational shape deformation methods and physics-based animation (reduced-order physics). Our subspaces feature many desirable properties: interpolation, smoothness, shape-awareness, locality, and both constant and linear precision. We achieve these by minimizing a quadratic deformation energy, built via a discrete Laplacian inducing linear precision on the domain boundary. Our main advantage is speed: subspace bases are solutions to a sparse linear system, computed interactively even for generously tessellated domains. Users may seamlessly switch between applying transformations at handles and editing the subspace by adding, removing or relocating control handles. The combination of fast computation and good properties means that designing the right subspace is now just as creative as manipulating handles. This paradigm shift in handle-based deformation opens new opportunities to explore the space of shape deformations.},
+journal = {ACM Trans. Graph.},
+month = jul,
+articleno = {57},
+numpages = {11},
+keywords = {reduced-order physics, deformation modeling, subspace methods, skinning}
+}
+
+@inproceedings{10.2312/PE.vriphys.vriphys13.025-034,
+author = {Deul, Crispin and Bender, Jan},
+year = {2013},
+month = {11},
+pages = {},
+title = {Physically-Based Character Skinning},
+doi = {10.2312/PE.vriphys.vriphys13.025-034}
+}
+
+@article{willis2020fusion,
+    title={Fusion 360 Gallery: A Dataset and Environment for Programmatic CAD Reconstruction},
+    author={Karl D. D. Willis and Yewen Pu and Jieliang Luo and Hang Chu and Tao Du and Joseph G. Lambourne and Armando Solar-Lezama and Wojciech Matusik},
+    journal={arXiv preprint arXiv:2010.02392},
+    year={2020}
+}
+
+@article{10.1145/1778765.1778776,
+author = {Martin, Sebastian and Kaufmann, Peter and Botsch, Mario and Grinspun, Eitan and Gross, Markus},
+title = {Unified Simulation of Elastic Rods, Shells, and Solids},
+year = {2010},
+issue_date = {July 2010},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {29},
+number = {4},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/1778765.1778776},
+doi = {10.1145/1778765.1778776},
+abstract = {We develop an accurate, unified treatment of elastica. Following the method of resultant-based formulation to its logical extreme, we derive a higher-order integration rule, or elaston, measuring stretching, shearing, bending, and twisting along any axis. The theory and accompanying implementation do not distinguish between forms of different dimension (solids, shells, rods), nor between manifold regions and non-manifold junctions. Consequently, a single code accurately models a diverse range of elastoplastic behaviors, including buckling, writhing, cutting and merging. Emphasis on convergence to the continuum sets us apart from early unification efforts.},
+journal = {ACM Trans. Graph.},
+month = jul,
+articleno = {39},
+numpages = {10}
+}
+@inproceedings{10.5555/1632592.1632608,
+author = {Kaufmann, Peter and Martin, Sebastian and Botsch, Mario and Gross, Markus},
+title = {Flexible Simulation of Deformable Models Using Discontinuous Galerkin FEM},
+year = {2008},
+isbn = {9783905674101},
+publisher = {Eurographics Association},
+address = {Goslar, DEU},
+abstract = {We propose a simulation technique for elastically deformable objects based on the discontinuous Galerkin finite element method (DG FEM). In contrast to traditional FEM, it overcomes the restrictions of conforming basis functions by allowing for discontinuous elements with weakly enforced continuity constraints. This added flexibility enables the simulation of arbitrarily shaped, convex and non-convex polyhedral elements, while still using simple polynomial basis functions. For the accurate strain integration over these elements we propose an analytic technique based on the divergence theorem. Being able to handle arbitrary elements eventually allows us to derive simple and efficient techniques for volumetric mesh generation, adaptive mesh refinement, and robust cutting.},
+booktitle = {Proceedings of the 2008 ACM SIGGRAPH/Eurographics Symposium on Computer Animation},
+pages = {105–115},
+numpages = {11},
+location = {Dublin, Ireland},
+series = {SCA '08}
+}
+
+
+@inproceedings{10.1007/978-3-642-03596-8_2,
+author = {Aigner, Martin and Heinrich, Christoph and Jüttler, Bert and Pilgerstorfer, Elisabeth and Simeon, Bernd and Vuong, Anh-Vu},
+year = {2009},
+month = {09},
+pages = {19-44},
+title = {Swept Volume Parameterization for Isogeometric Analysis},
+isbn = {978-3-642-03595-1},
+doi = {10.1007/978-3-642-03596-8_2}
+}
+
+@article{HEINRICH20121645,
+title = "A finite volume method on NURBS geometries and its application in isogeometric fluid–structure interaction",
+journal = "Mathematics and Computers in Simulation",
+volume = "82",
+number = "9",
+pages = "1645 - 1666",
+year = "2012",
+issn = "0378-4754",
+doi = "https://doi.org/10.1016/j.matcom.2012.03.008",
+url = "http://www.sciencedirect.com/science/article/pii/S0378475412000730",
+author = "Ch. Heinrich and B. Simeon and St. Boschert",
+keywords = "Finite volume method, NURBS, Exact geometry, Navier–Stokes equations, Fluid–structure interaction, Matching interface",
+abstract = "A finite volume method for geometries parameterized by Non-Uniform Rational B-Splines (NURBS) is proposed. Since the computational grid is inherently defined by the knot vectors of the NURBS parameterization, the mesh generation step simplifies here greatly and furthermore curved boundaries are resolved exactly. Based on the incompressible Navier–Stokes equations, the main steps of the discretization are presented, with emphasis on the preservation of geometrical and physical properties. Moreover, the method is combined with a structural solver based on isogeometric finite elements in a partitioned fluid–structure interaction coupling algorithm that features a gap-free and non-overlapping interface even in the case of non-matching grids."
+}
+
+@article{10.1002/nme.2311,
+author = {Sevilla, Ruben and Mendez, Sonia and Huerta, Antonio},
+year = {2008},
+month = {10},
+pages = {56-83},
+title = {Nurbs-enhanced finite element method (NEFEM)},
+volume = {76},
+journal = {International Journal for Numerical Methods in Engineering},
+doi = {10.1002/nme.2311}
+}
+
+
+@article{10.1186/s40323-015-0031-y,
+author = {Kudela, László and Zander, Nils and Bog, Tino and Kollmannsberger, Stefan and Rank, Ernst},
+year = {2015},
+month = {06},
+pages = {},
+title = {Efficient and accurate numerical quadrature for immersed boundary methods},
+volume = {2},
+journal = {Advanced Modeling and Simulation in Engineering Sciences},
+doi = {10.1186/s40323-015-0031-y}
+}
+
+@article{https://doi.org/10.1002/nme.4569,
+author = {Müller, B. and Kummer, F. and Oberlack, M.},
+title = {Highly accurate surface and volume integration on implicit domains by means of moment-fitting},
+journal = {International Journal for Numerical Methods in Engineering},
+volume = {96},
+number = {8},
+pages = {512-528},
+keywords = {quadrature, numerical integration, level set, extended finite element method, discontinuous Galerkin method, finite cell method},
+doi = {https://doi.org/10.1002/nme.4569},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nme.4569},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/nme.4569},
+abstract = {SUMMARY We introduce a new method for the numerical integration over curved surfaces and volumes defined by a level set function. The method is based on the solution of a small linear system based on a simplified variant of the moment-fitting equations. Numerical experiments suggest that the accuracy of the resulting quadrature rules exceeds the accuracy of traditional methods by orders of magnitude. Using moments up to an order of p, the measured experimental orders of convergence exceed hp. Consequently, their construction is very efficient because only coarse computational grids are required. The conceptual simplicity allows for the application on very general grid types, which is demonstrated by numerical experiments on quadrilateral, triangular and hexahedral grids. Copyright © 2013 John Wiley \& Sons, Ltd.},
+year = {2013}
+}
+
+
+@article{https://doi.org/10.1002/nme.5343,
+author = {Müller, B. and Krämer-Eis, S. and Kummer, F. and Oberlack, M.},
+title = {A high-order discontinuous Galerkin method for compressible flows with immersed boundaries},
+journal = {International Journal for Numerical Methods in Engineering},
+volume = {110},
+number = {1},
+pages = {3-30},
+keywords = {discontinuous Galerkin method, immersed boundary, level set, quadrature, compressible flow, cell-agglomeration},
+doi = {https://doi.org/10.1002/nme.5343},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nme.5343},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/nme.5343},
+abstract = {Summary We present a higher order discretization scheme for the compressible Euler and Navier–Stokes equations with immersed boundaries. Our approach makes use of a discontinuous Galerkin discretization in a domain that is implicitly defined by means of a level set function. The zero iso-contour of this level set function is considered as an additional domain boundary where we weakly enforce boundary conditions in the same manner as in boundary-fitted cells. In order to retain the full order of convergence of the scheme, it is crucial to perform volume and surface integrals in boundary cells with high accuracy. This is achieved using a linear moment-fitting strategy. Moreover, we apply a non-intrusive cell-agglomeration technique that averts problems with very small and ill-shaped cuts. The robustness, accuracy, and convergence properties of the scheme are assessed in several two-dimensional test cases for the steady compressible Euler and Navier–Stokes equations. Approximation orders range from 0 to 4, even though the approach directly generalizes to even higher orders. In all test cases with a sufficiently smooth solution, the experimental order of convergence matches the expected rate for discontinuous Galerkin schemes. Copyright © 2016 John Wiley \& Sons, Ltd.},
+year = {2017}
+}

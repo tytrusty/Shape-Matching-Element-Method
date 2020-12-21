@@ -1,4 +1,4 @@
-function nurbs = plot_nurbs(nurbs)
+function nurbs = nurbs_plot(nurbs)
     cm=jet(numel(nurbs));
     for ii = 1:numel(nurbs)
         xi = reshape(nurbs{ii}.x0, 3, nurbs{ii}.subd(1), nurbs{ii}.subd(2));
@@ -12,7 +12,7 @@ function nurbs = plot_nurbs(nurbs)
     lighting gouraud;
     %     shading interp
     
-%     lightangle(gca,72,-4)
+    lightangle(gca,0, 20)
 %         zlim([-70 150]);
     xlabel('x');
 end
