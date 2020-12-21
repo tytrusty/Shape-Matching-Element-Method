@@ -8,7 +8,7 @@ function vem_sim_2d
     gravity = -10;      % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1;            % mass
+    rho = 1;            % density
     save_output = 0;    % (0 or 1) whether to output images of simulation
     
     % Load a basic square mesh

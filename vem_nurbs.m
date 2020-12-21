@@ -1,17 +1,15 @@
 function vem_nurbs
     % Simulation parameters
-    dt = 0.01;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;    % Lame parameter 2
-    gravity = -100;
-    k_error = 100000;
-    order = 1;
-    rho = 1;
-    save_output = 0;
-    save_obj = 0;
-    obj_res = 18;
-
-    % TODO --- use volume of quadrature points ... vol = volume(V,T);
+    dt = 0.01;          % timestep
+    C = 0.5 * 17000;    % Lame parameter 1
+    D = 0.5 * 150000;   % Lame parameter 2
+    gravity = -500;     % gravity force (direction is -z direction)
+    k_error = 100000;   % stiffness for stability term
+    order = 1;          % (1 or 2) linear or quadratic deformation
+    rho = 1;            % per point density (currently constant)
+    save_output = 0;    % (0 or 1) whether to output images of simulation
+    save_obj = 0;       % (0 or 1) whether to output obj files
+    obj_res = 18;       % the amount of subdivision for the output obj
 
     % Read in NURBs 
     fig=figure(1);
@@ -19,26 +17,30 @@ function vem_nurbs
     
     % Some files I test on
     iges_file = 'rounded_cube.iges';
+    % iges_file = 'starship_nose.iges';
     % iges_file = 'puft_simple.iges';
     % iges_file = 'castle_simple.iges';
     % iges_file = 'rocket_with_nose.iges';
+    % iges_file = 'mug.iges';
     % iges_file = 'rocket.iges'; % this rocket doesn't have the nosecone
     
     % Resolution indicates how many point samples we will take on each
     % e.g. 6 means we have 6 samples in both the U & V coordinates, so
     %      a total of 36 samples across the NURBs patch.
-    resolution = 6;
-    part=nurbs_from_iges(iges_file, resolution,0);
+    resolution = 7;
+    
+    % NOTE: if you a warning saying "Matrix is singular", this means the
+    %       resolution is too low. I will fix this so that resolution is
+    %       set automatically on monday :)
+
+    % resolution = repelem(8,9); resolution(1)=11; % resolution(17)=11;
+    part=nurbs_from_iges(iges_file, resolution, 1);
     part=nurbs_plot(part);
     
-    % Raycasting quadrature as described nowhere yet :)
-    V = raycast_quadrature(part, [6 6], 5)';
-    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
-
     x0 = zeros(3,0);
     q_size = 0;
     J_size = 0;
-    
+
     % build global position vectors
     for i=1:numel(part)
         idx1=q_size+1;
@@ -83,18 +85,32 @@ function vem_nurbs
     x = x0;
     
     % Setup pinned vertices constraint matrix
-    [kth_min,I] = mink(x0(3,:),20);
-    pin_I = I(1:3);
-    %   pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
-    %   pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 8);
-    %   pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
+    [~,I] = mink(x0(3,:),20);
+    pin_I = I(1:4);
+    % pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
+    % pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 7);
+    % pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
-    % V=x0;
+    
+    % Raycasting quadrature as described nowhere yet :)
+    [V, vol] = raycast_quadrature(part, [8 8], 5);
 
+    % Things are hard to tune right now when I produce crazy high volumes
+    % so I'm normalizing them (for now...)
+    vol = vol ./ max(vol);  
+
+    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
+    %V=x0;
+    %vol=ones(size(V,2),1);
+    
+    % Lame parameters concatenated.
+    params = [C, D];
+    params = repmat(params,size(V,2),1);
+        
     % Gravity force vector.
   	f_gravity = repmat([0 0 gravity], size(x0,2),1)';
     f_gravity = dt*P*f_gravity(:);
@@ -112,8 +128,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    a = nurbs_blending_weights(part, V', 40);
-    a_x = nurbs_blending_weights(part, x0', 40);
+    a = nurbs_blending_weights(part, V', 1);
+    a_x = nurbs_blending_weights(part, x0', 1);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -131,6 +147,7 @@ function vem_nurbs
         x_fixed(:,pin_I(i))=x0(:,pin_I(i));
     end
     
+    % Applying fixed point constraints to NURBS jacobian.
     J = P * J;
     m = size(Q,2);
     
@@ -163,16 +180,18 @@ function vem_nurbs
     ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
-    %     save('saveM.mat','M');
-    %     save('saveME.mat','ME');
-    % 	M = matfile('saveM.mat').M;
-    % 	ME = matfile('saveME.mat').ME;
+    
+    % Save & load these matrices for large models to save time.
+    % save('saveM.mat','M');
+    % save('saveME.mat','ME');
+    % M = matfile('saveM.mat').M;
+    % ME = matfile('saveME.mat').ME;
 
     k=3;
     if order == 2
         k = 9;
     end
-        
+
     ii=1;
     for t=0:dt:30
         tic
@@ -185,24 +204,22 @@ function vem_nurbs
             Ai = p*B{i};
             A(:,:,i) = Ai;
         end
-                
-        % Computing force dV/dq for each point.
+
+        % Preparing input for stiffness matrix mex function.
         n=size(x0,2);
         dF_dqij = permute(dF_dq, [3 1 2]);
         Aij = permute(A, [3 1 2]);
         Aij = Aij(:,:);        
-        vol=ones(size(a,1),1);
-        params = [C, D];
-        params = repmat(params,size(a,1),1);
         
-        % Stiffness matrix
-        K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
+        % Stiffness matrix (mex function)
+        K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
+                dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
         
         % Force vector
         dV_dq = zeros(numel(x),1);
 
         % Computing force dV/dq for each point.
-        % TODO -- move this to C++ :)
+        % TODO: move this to C++ :)
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
             
@@ -254,7 +271,7 @@ function vem_nurbs
         end
         
         if save_output
-            fn=sprintf('output/img/fix_%03d.png',ii);
+            fn=sprintf('output/img/cutoff_ten_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
