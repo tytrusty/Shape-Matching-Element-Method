@@ -1,1 +1,8 @@
-build/
+*.log
+*.aux
+*.bbl
+*.out
+*.blg
+*.synctex.gz
+acmart.cls
+acmart.dtx
