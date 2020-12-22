@@ -1,12 +1,12 @@
 function vem_nurbs
     % Simulation parameters
     dt = 0.01;          % timestep
-    C = 0.5 * 17000;    % Lame parameter 1
-    D = 0.5 * 150000;   % Lame parameter 2
-    gravity = -500;     % gravity force (direction is -z direction)
-    k_error = 100000;   % stiffness for stability term
+    C = 0.5 * 1700;    % Lame parameter 1
+    D = 0.5 * 15000;   % Lame parameter 2
+    gravity = -50;     % gravity force (direction is -z direction)
+    k_error = 10000;   % stiffness for stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1;            % per point density (currently constant)
+    rho = .1;            % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
     save_obj = 0;       % (0 or 1) whether to output obj files
     obj_res = 18;       % the amount of subdivision for the output obj
@@ -27,14 +27,14 @@ function vem_nurbs
     % Resolution indicates how many point samples we will take on each
     % e.g. 6 means we have 6 samples in both the U & V coordinates, so
     %      a total of 36 samples across the NURBs patch.
-    resolution = 7;
+    resolution = 6;
     
     % NOTE: if you a warning saying "Matrix is singular", this means the
     %       resolution is too low. I will fix this so that resolution is
     %       set automatically on monday :)
 
     % resolution = repelem(8,9); resolution(1)=11; % resolution(17)=11;
-    part=nurbs_from_iges(iges_file, resolution, 1);
+    part=nurbs_from_iges(iges_file, resolution, 0);
     part=nurbs_plot(part);
     
     x0 = zeros(3,0);
@@ -85,11 +85,11 @@ function vem_nurbs
     x = x0;
     
     % Setup pinned vertices constraint matrix
-    [~,I] = mink(x0(3,:),20);
-    pin_I = I(1:4);
+    [~,I] = mink(x0(1,:),20);
+    pin_I = I(1:9);
     % pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
     % pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 7);
-    % pin_I = find(x0(1,:) > max(x0(1,:)) - 1e-4);
+    % pin_I = find(x0(1,:) == max(x0(1,:)));
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -97,7 +97,7 @@ function vem_nurbs
     hold on;
     
     % Raycasting quadrature as described nowhere yet :)
-    [V, vol] = raycast_quadrature(part, [8 8], 5);
+    [V, vol] = raycast_quadrature(part, [9 9], 5);
 
     % Things are hard to tune right now when I produce crazy high volumes
     % so I'm normalizing them (for now...)
@@ -128,8 +128,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    a = nurbs_blending_weights(part, V', 1);
-    a_x = nurbs_blending_weights(part, x0', 1);
+    a = nurbs_blending_weights(part, V', 30);
+    a_x = nurbs_blending_weights(part, x0', 30);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -180,27 +180,25 @@ function vem_nurbs
     ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
-    
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
 
-    k=3;
+    k=4;
     if order == 2
-        k = 9;
+        k = 10;
     end
 
     ii=1;
     for t=0:dt:30
         tic
-        x_com = mean(x,2);
         
         % Compute shape matching matrices
         A=zeros(d, k, numel(E));
         for i=1:numel(E)
-            p = x(:,E{i}) - x_com;
+            p = x(:,E{i}) - x0_com;
             Ai = p*B{i};
             A(:,:,i) = Ai;
         end
