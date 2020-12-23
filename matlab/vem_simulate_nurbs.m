@@ -1,96 +1,38 @@
-function vem_nurbs
-    % NOTE: gonna deprecate this soon and instead make scripts in examples/
-    %       that call vem_simulate_nurbs.m instead.
-
-    % Simulation parameters
-    dt = 0.01;          % timestep
-    C = 0.5 * 17000;     % Lame parameter 1
-    D = 0.5 * 150000;    % Lame parameter 2
-    gravity = -50;      % gravity force (direction is -z direction)
-    k_error = 10000;    % stiffness for stability term
-    order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = .1;           % per point density (currently constant)
-    save_output = 0;    % (0 or 1) whether to output images of simulation
-    save_obj = 0;       % (0 or 1) whether to output obj files
-    obj_res = 18;       % the amount of subdivision for the output obj
+function vem_simulate_nurbs(parts, varargin)
+    % Simulation parameter parsing
+    p = inputParser;
+    addParameter(p, 'dt', 0.01);                % timestep
+    addParameter(p, 'lambda', 0.5 * 1700);    	% Lame parameter 1
+    addParameter(p, 'mu', 0.5 * 15000);        	% Lame parameter 2
+    addParameter(p, 'gravity', -300);          	% gravity force (direction is -z direction)
+    addParameter(p, 'k_stability', 1e5);       	% stiffness for stability term
+    addParameter(p, 'order', 1);              	% (1 or 2) linear or quadratic deformation
+    addParameter(p, 'rho', 1);                 	% per point density (currently constant)
+    addParameter(p, 'save_output', 0);        	% (0 or 1) whether to output images of simulation
+    addParameter(p, 'save_obj', 0);          	% (0 or 1) whether to output obj files
+    addParameter(p, 'save_resultion', 20);    	% the amount of subdivision for the output obj
+    addParameter(p, 'pin_function', @(x) 1);
+    addParameter(p, 'sample_interior', 1);
+    addParameter(p, 'distance_cutoff', 20);
+    parse(p,varargin{:});
+    config = p.Results;
 
     % Read in NURBs 
     fig=figure(1);
     clf;
     
-    % Some files I test on
-    iges_file = 'rounded_cube.iges';
-    % iges_file = 'starship_nose.iges';
-    % iges_file = 'puft_simple.iges';
-    % iges_file = 'castle_simple.iges';
-    % iges_file = 'rocket_with_nose.iges';
-    
-    % Resolution indicates how many point samples we will take on each
-    % e.g. 6 means we have 6 samples in both the U & V coordinates, so
-    %      a total of 36 samples across the NURBs patch.
-    resolution = 7;
-    
-    % NOTE: if you a warning saying "Matrix is singular", this means the
-    %       resolution is too low. I will fix this so that resolution is
-    %       set automatically on monday :)
-
     % resolution = repelem(8,9); resolution(1)=11; % resolution(17)=11;
-    part=nurbs_from_iges(iges_file, resolution, 1);
-    part=nurbs_plot(part);
+    parts=nurbs_plot(parts);
     
-    x0 = zeros(3,0);
-    q_size = 0;
-    J_size = 0;
-
-    % build global position vectors
-    for i=1:numel(part)
-        idx1=q_size+1;
-    	q_size = q_size + size(part{i}.p,1);
-        J_size = J_size + size(part{i}.J_flat,2) * size(part{i}.J_flat,3);
-        idx2=q_size;
-        
-        % indices into global configuration vector
-        part{i}.idx1=idx1;
-        part{i}.idx2=idx2;
-    end
-    
-    q = zeros(q_size,1);
-    J = zeros(J_size,q_size);
-    J_idx = [0 0];
-    for i=1:numel(part)
-        q(part{i}.idx1:part{i}.idx2,1) = part{i}.p;
-        Ji = part{i}.J_flat(:,:)';
-        
-        % Block indices
-        I1=J_idx(1)+1:J_idx(1)+size(Ji,1);
-        I2=J_idx(2)+1:J_idx(2)+size(Ji,2);
-        
-        % Subsitute block into global NURBs jacobian (J) matrix
-        J(I1,I2) = Ji;
-        J_idx = J_idx + size(Ji);
-    end
-    J = sparse(J);
-    qdot=zeros(size(q));
-    E=cell(numel(part),1);
-    
-    for i=1:numel(part)
-        idx1=size(x0,2)+1;
-        x0 = [x0 part{i}.x0];
-        idx2=size(x0,2);
-        
-        % indices into global configuration vector
-        E{i}=idx1:idx2;
-    end
+    % Assembles global generalized coordinates
+    [J, q, E, x0] = nurbs_assemble_coords(parts);
 
     % Initial deformed positions and velocities
     x = x0;
+    qdot=zeros(size(q));
     
     % Setup pinned vertices constraint matrix
-    [~,I] = mink(x0(1,:),20);
-    pin_I = I(1:9);
-    % pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
-    % pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 7);
-    % pin_I = find(x0(1,:) == max(x0(1,:)));
+    pin_I = config.pin_function(x0);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -98,23 +40,24 @@ function vem_nurbs
     hold on;
     
     % Raycasting quadrature as described nowhere yet :)
-    [V, vol] = raycast_quadrature(part, [9 9], 5);
-
-    % Things are hard to tune right now when I produce crazy high volumes
-    % so I'm normalizing them (for now...)
-    vol = vol ./ max(vol);  
-
+    if config.sample_interior
+        [V, vol] = raycast_quadrature(parts, [9 9], 5);
+        vol = vol ./ max(vol); % temporary
+    else
+    	V=x0;
+        vol=ones(size(V,2),1);
+    end
+    
+    % TODO: add option to visualization quadrature points
     % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
-    V=x0;
-    vol=ones(size(V,2),1);
     
     % Lame parameters concatenated.
-    params = [C, D];
+    params = [config.lambda, config.mu];
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 gravity], size(x0,2),1)';
-    f_gravity = dt*P*f_gravity(:);
+  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
+    f_gravity = config.dt*P*f_gravity(:);
     
     % Undeformed Center of mass
     x0_com = mean(x0,2);
@@ -122,15 +65,15 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    [B,~] = compute_shape_matrices(x0, x0_com, E, order);
+    [B,~] = compute_shape_matrices(x0, x0_com, E, config.order);
     
     % Build Monomial bases for all quadrature points
-    Q = monomial_basis(V, x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order); 
+    Q = monomial_basis(V, x0_com, config.order);
+    Q0 = monomial_basis(x0, x0_com, config.order); 
     
     % Compute Shape weights
-    a = nurbs_blending_weights(part, V', 30);
-    a_x = nurbs_blending_weights(part, x0', 30);
+    a = nurbs_blending_weights(parts, V', config.distance_cutoff);
+    a_x = nurbs_blending_weights(parts, x0', config.distance_cutoff);
     
     % Form selection matrices for each shape.
     S = cell(numel(E),1);
@@ -153,7 +96,7 @@ function vem_nurbs
     m = size(Q,2);
     
     % Forming gradient of monomial basis w.r.t X
-    dM_dX = monomial_basis_grad(V, x0_com, order);
+    dM_dX = monomial_basis_grad(V, x0_com, config.order);
     
     % Computing gradient of deformation gradient w.r.t configuration, q
     % Cover your EYES this code is a disaster
@@ -169,7 +112,7 @@ function vem_nurbs
        I = find(mm1 > 1e-4);
        [~,I] = maxk(mm1,60);
        m1(:,setdiff(1:numel(x),I))=[];
-       %sum(mm1 < 1e-4)
+       sum(mm1 < 1e-4);
        dF_I{i} = I';
        SdF{i} = sparse(zeros(numel(I), numel(x)));
        ind=sub2ind(size(SdF{i}), 1:numel(I),I);
@@ -180,7 +123,7 @@ function vem_nurbs
     % Compute mass matrices
     ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
-    M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
+    M = ((config.rho*M + config.k_stability*ME)); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
@@ -188,12 +131,12 @@ function vem_nurbs
     % ME = matfile('saveME.mat').ME;
 
     k=4;
-    if order == 2
+    if config.order == 2
         k = 10;
     end
 
     ii=1;
-    for t=0:dt:30
+    for t=0:config.dt:30
         tic
         
         % Compute shape matching matrices
@@ -212,7 +155,7 @@ function vem_nurbs
         
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
-                dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
+                dM_dX(:,:), a, vol, params,k, n, dF, dF_I);
         
         % Force vector
         dV_dq = zeros(numel(x),1);
@@ -232,44 +175,44 @@ function vem_nurbs
             F = Aij * dMi_dX;
                         
             % Force vector
-            dV_dF = neohookean_tet_dF(F,C,D);
+            dV_dF = neohookean_tet_dF(F,config.lambda, config.mu);
             dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF; % assuming constant area
         end
   
         % Error correction force
         f_error = - 2 * ME * x(:);
-        f_error = k_error*(dt * P * f_error(:));
+        f_error = config.k_stability*(config.dt * P * f_error(:));
        
         % Force from potential energy.
-        f_internal = -dt*P*dV_dq;
+        f_internal = -config.dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
-        lhs = J' * (P*(M - dt*dt*K)*P') * J;
+        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;
 
         % Update position
-        q = q + dt*qdot;
+        q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
         
         % Update NURBs plots
         x_idx=0;
-        for i=1:numel(part)
-            x_sz = size(part{i}.x0,2);
-            xi = reshape(x(:,x_idx+1:x_idx+x_sz), 3, part{i}.subd(1), part{i}.subd(2));
-            part{i}.plt.XData = squeeze(xi(1,:,:));
-            part{i}.plt.YData = squeeze(xi(2,:,:));
-            part{i}.plt.ZData = squeeze(xi(3,:,:));
+        for i=1:numel(parts)
+            x_sz = size(parts{i}.x0,2);
+            xi = reshape(x(:,x_idx+1:x_idx+x_sz), 3, parts{i}.subd(1), parts{i}.subd(2));
+            parts{i}.plt.XData = squeeze(xi(1,:,:));
+            parts{i}.plt.YData = squeeze(xi(2,:,:));
+            parts{i}.plt.ZData = squeeze(xi(3,:,:));
             x_idx = x_idx+x_sz;   
         end
         drawnow
         
-        if save_obj
+        if config.save_obj
             obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            nurbs_write_obj(q,part,obj_res,obj_fn,ii);
+            nurbs_write_obj(q,parts,config.obj_res,obj_fn,ii);
         end
         
-        if save_output
+        if config.save_output
             fn=sprintf('output/img/cutoff_ten_%03d.png',ii);
             saveas(fig,fn);
         end

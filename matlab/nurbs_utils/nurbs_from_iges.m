@@ -22,7 +22,7 @@ function [nurbs_object] = nurbs_from_iges(filename, res, rescale)
                 res_ii = res;
             end
             
-            subd = max(round(res_ii .*ratio ./ max(ratio)), 5);
+            subd = max(round(res_ii .*ratio ./ max(ratio)), 4);
             u_range = data{i}.u;
             v_range = data{i}.v ;
 
@@ -43,7 +43,6 @@ function [nurbs_object] = nurbs_from_iges(filename, res, rescale)
             [p, J] = nurbs_coords(data{i}.nurbs, u, v);
             J_flat=reshape(J,[],3,size(J,4));
             J_flat=permute(J_flat,[3 2 1]);
-
             surf.u_range = u_range;
             surf.v_range = v_range;
             surf.u = u;

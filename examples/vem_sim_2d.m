@@ -194,6 +194,8 @@ function vem_sim_2d
         end
         
         % Error correction force
+        % The math tells me I need to subtract the com when computing this
+        % term, but I think it's lying.
         %         p = x(:);
         %         p(1:2:end) = p(1:2:end) - x_com(1);
         %         p(2:2:end) = p(2:2:end) - x_com(2);

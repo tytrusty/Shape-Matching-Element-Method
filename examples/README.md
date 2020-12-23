@@ -1,0 +1,1 @@
+This folder contains script with configuration for different models and orders of deformation. Each example contains a prefix (linear, quadratic, etc.) indicating the order of deformation.
