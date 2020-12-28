@@ -37,6 +37,20 @@
 
 \section{Introduction}
 
+A pointform description of the general idea
+\begin{itemize}
+	\item A D-NURBS approach to simulation. Use a Jacobian to map from UV positions in a NURBS parametric space to world space positions on the surface. 
+	\item \textbf{Shape Matching}: From the sample world space positions on a single NURBS surface, we solve a least squares problem to fit a \textit{projection operator} to the surface. This projection operator maps monomials in the undeformed space, to the least squares estimate of the deformed positions for the given monomials.
+	\item With DNURBS and Shape Matching VEM we have two mappings: a UV to undeformed world space with our NURBS Jacobian, then an undeformed to deformed mapping with the projection operators. This lets us form a set of generalized coordinates in terms of our control points of the NURBS surface (section 1.4).
+	\item For an arbitrary position in space (not necessarily on the surface), we can build a projection operator unique to this point via a weighted sum of the projection operators of the projection operators for each NURBS (eq 5). From this we can reconstruct an estimate of the deformed position from the monomial basis defined using its undeformed position.
+	\item For any point in space, we need to compute a set of weights to the projection operators defined on the surfaces with the following criteria: the weights sum to 1, are nonzero, and depend on the distances to the surfaces (See section 1.8).
+	\item With this mapping for undeformed to deformed positions, this yields a simple definition for the deformation gradient (eq 12).
+	\item Armed with our deformation gradient, we next define the Lagrangian, but this basic form isn't sufficient. We augment our kinetic and potential energies with a stability term (ref VEM). This accounts for cases in which the position of the nodal values don't match their estimated positions defined by the projection operator mapping.
+	\item \textbf{Raycasting Quadrature}: To compute the volume integrals we make use of raycasting quadrature approach (ref) where we uniform sample a YZ grid and shoot rays in the X direction. We then use the points of intersection to define integrations bounds for 1D integrals along these rays, which we integrate numerically.
+	\item With our augmented lagrangian, we use the Euler-Lagrange equation to arrive at equations of motion. Our generalized coordinates give us direct updates on the control points of the NURBS. Currently we are using linearly-implicit Euler for time integration.
+	\item \textbf{Handling trimmed NURBS}: For this case we update the original control points, but we must only sample points within the boundary. To compute these points we use an approach similar to the raycasting quadrature but in 2D. In the paremtric domain for a T-NURBS we sample uniforly in the V direction and shoot rays along the U axis. At each region of intersection, we sample more values along the ray. The final result is a set of UV coordinates that respect the boundary defined by NURBS curves.
+\end{itemize}
+
 
 % \textbf{x}(\textbf{X}) = \hat{A}M(\textbf{X}) + \bar{\textbf{x}}$ \\
 % $\hat{A} = \sum_i^{|S|}w_i(\textbf{X})A_i$
@@ -87,6 +101,14 @@ This is the shape matching problem's least squares solution where $M(q_0)^{\dagg
 \end{equation}
 
 \subsection{Simulation on NURBs models}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/nurbs_surface}
+  \caption{The NURBs model uses control points, shown in grey, as the original degrees of freedom.}
+  \Description{A simple NURBS surface in $R^3$.}
+\end{figure}
+
 We used the D-NURBS model (ref) for simulating on NURBs surfaces, giving an approach to simulating directly on the degrees of freedom of parametric NURBs models. The equation for a NURBs curve takes the form:
 \begin{equation}
     \mathbf{x}(u) = \frac{\sum_{i=1}^{n} \mathbf{p}_i w_i B_{i,k}(u)}{ w_i B_{i,k}(u)}
@@ -174,8 +196,21 @@ where
 From the potential energy (which uses dF/dq) and this potential energy, we discretize in time and right now I'm using linearly implicit backward euler
 
 \subsection{Stability term}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/error_energy}
+  \caption{A figure showing the spring energy error for each sampled point on the NURBS curve. I should change the colors of the lines to show higher energies where the error is higher.}
+  \Description{Showing an example error of a NURBS curve.}
+\end{figure}
 
 \subsection{Projection Operator Weighting}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/distance_weighting}
+  \caption{A 2D example showing how $\theta$ is computed for $\Pi_B$. $d_1$ shows the distance to the closest point on $\Pi_B$ to $\mathbf{x}$ and $d_2$ shows the distance to the surface hit by the ray in the opposite direction.}
+  \Description{Showing a 2D NURBS curve with a quadrature point in the center. A ray is cast to the nearest point on a shape, showing the distance between the quadrature point and the nearest point as well as the distance to the "back surface".}
+\end{figure}
+
 \begin{equation}
 \begin{aligned}
 \mathbf{w}(\mathbf{X}) = \min_{\mathbf{w}} \quad & \mathbf{w}^T \Theta(\mathbf{X}) \mathbf{w}    \\
@@ -188,6 +223,21 @@ where
 \begin{equation}
      \Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_N}\right)
 \end{equation}
+In computing the theta values, we require that they a approach 1 at the target surface and fall off to zero as a point becomes closer to other surfaces. To compute this for some surface, we shoot a ray from the point to the nearest point on the surface.  Then in the opposite direction we find the nearest intersection to any other surfaces. We compute the theta with the following linear function 
+
+\begin{equation}
+theta = \max (1.0 - \frac{d_1}{\min (d_2, D)}, 0.0)
+\end{equation}
+where $D$ is a fixed cut-off distance.
+
+
+\subsection{Integrating the volume}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/raycasting_quadrature}
+  \caption{An example raycasting quadrature on a 2D NURBS curve.}
+  \Description{Shows a 2D NURBs curve with horizontal rays intersecting the curve. }
+\end{figure}
 
 \section{Related Work}
 \subsection{Shape Matching Related Papers}
