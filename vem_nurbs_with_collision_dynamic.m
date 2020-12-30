@@ -18,11 +18,11 @@ function vem_nurbs
     
     % Some files I test on
     iges_file = 'rounded_cube.iges';
-    % iges_file = 'starship_nose.iges';
-    % iges_file = 'puft_simple.iges';
+%     iges_file = 'starship_nose.iges';
+%     iges_file = 'puft_simple.iges';
 %     iges_file = 'castle_simple.iges';
     % iges_file = 'rocket_with_nose.iges';
-    % iges_file = 'mug.iges';
+%     iges_file = 'mug.iges';
     % iges_file = 'rocket.iges'; % this rocket doesn't have the nosecone
     
     % Resolution indicates how many point samples we will take on each
@@ -193,16 +193,19 @@ function vem_nurbs
     end
     
     % Sphere for collision
-    sphere_r = (max(x(3,:)) - min(x(3,:))) / 10.0; 
-    sphere_c = [mean(x(1,:)); mean(x(2,:)) ; max(x(3,:)) + sphere_r + 12.0];
+%   sphere_c = [0; 0; max(x(3,:)) + 10.0];
+    sphere_c = [(max(x(1,:)) + min(x(1,:)))/2; (max(x(2,:)) + min(x(2,:)))/2; max(x(3,:)) + 40.0];
+    sphere_r = (max(x(3,:)) - min(x(3,:))) / 10.0;  
     [sphere_x, sphere_y, sphere_z] = sphere;
     sphere_x = sphere_x * sphere_r + sphere_c(1);
     sphere_y = sphere_y * sphere_r + sphere_c(2);
     sphere_z = sphere_z * sphere_r + sphere_c(3);
     sphere_surf = surf(sphere_x, sphere_y, sphere_z);
-    set(fig, 'KeyPressFcn', @keypress)
+    sphere_v = [0; 0; 0];
+    sphere_m = 1;
+    sphere_g = [0; 0; -9.8*10];
     
-    % Triangulate nurbs patch, for collision detection
+    % Triangulate nurbs patch, for self-intersection detection
     faces=[];
     verts=[];
     for ii=1:numel(part)
@@ -213,13 +216,12 @@ function vem_nurbs
     end
     vert_normal = per_vertex_normals(verts, faces);
     face_normal = normals(verts, faces);
-    collide_ratio = 0.1; % for rounded cube
-%     collide_ratio = 10;
-
+    
+    collide_ratio = 10;
+    
     ii=1;
     for t=0:dt:30
-        tic
-        
+        tic  
         % Compute shape matching matrices
         A=zeros(d, k, numel(E));
         for i=1:numel(E)
@@ -267,26 +269,36 @@ function vem_nurbs
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
         
+        % Collision force for sphere
         f_collision = zeros(size(x,2)*3,1);
+        sphere_f = sphere_g * sphere_m;
         % detect the collision of vertices with sphere
         for i = 1:size(x, 2)
           dist_vec = x(:,i) - sphere_c;
           dist = sqrt(sum(dist_vec.^2));
-          if dist <= sphere_r
+          dir = dist_vec / dist;
+          if dist < sphere_r
             f_collision(3*i-2:3*i, 1) = collide_ratio * (sphere_r - dist) * vert_normal(i,:)';
+            sphere_f = sphere_f  - collide_ratio * (sphere_r - dist) * vert_normal(i,:)';
             disp('vertex collide!!');
           end
         end
         % detect the collision of faces with sphere
         for i = 1:size(faces,1)
-          [dist, ~] = pointTriangleDistance([verts(faces(i,1),:); verts(faces(i,2),:); verts(faces(i,3),:)], sphere_c');
-          if dist <= sphere_r
+          [dist, closest_pt] = pointTriangleDistance([verts(faces(i,1),:); verts(faces(i,2),:); verts(faces(i,3),:)], sphere_c');
+          if dist < sphere_r
             f_collision(3*faces(i,1)-2:3*faces(i,1), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
             f_collision(3*faces(i,2)-2:3*faces(i,2), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
             f_collision(3*faces(i,3)-2:3*faces(i,3), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
+            sphere_f = sphere_f - collide_ratio * (sphere_r - dist) * face_normal(i,:)';
             disp('face collide!!');
           end
         end
+       
+        sphere_a = sphere_f / sphere_m;
+        sphere_v = sphere_v + sphere_a * dt;
+        sphere_c = sphere_c + sphere_v * dt;
+
         f_collision = P * f_collision;
         
         % Computing linearly-implicit velocity update
@@ -312,8 +324,11 @@ function vem_nurbs
             part{i}.plt.YData = squeeze(xi(2,:,:));
             part{i}.plt.ZData = squeeze(xi(3,:,:));
             x_idx = x_idx+x_sz;   
-        end
+        end  
         drawnow
+        
+        % Always do a redraw
+        redraw_sphere();
         
         if save_obj
             obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
@@ -326,32 +341,7 @@ function vem_nurbs
         end
         ii=ii+1
         toc
-    end
-    
-        % Callback to process keypress events
-    function keypress(~, evnt)
-      switch lower(evnt.Key)  
-          case 'leftarrow'
-             sphere_c(1) = sphere_c(1) - 10;
-          case 'rightarrow'
-             sphere_c(1) = sphere_c(1) + 10;
-          case 'downarrow'
-             sphere_c(2) = sphere_c(2) - 10;
-          case 'uparrow'
-             sphere_c(2) = sphere_c(2) + 10;
-          case 115  % s: move down
-             sphere_c(3) = sphere_c(3) - 10;
-          case 119  % w: move up
-             sphere_c(3) = sphere_c(3) + 10;
-          case 97   % a: increase the size of the sphere
-             sphere_r = sphere_r - 1;
-          case 100  % d: decrease the size of the sphere
-             sphere_r = sphere_r + 1; 
-          otherwise
-              return
-      end
-      % Always do a redraw
-      redraw_sphere();
+       
     end
 
     function redraw_sphere()
