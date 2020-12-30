@@ -48,7 +48,6 @@ end
 function process_untrimmed()
     for i=1:numel(data)   
         if data{i}.type == 128 && ~data{i}.is_trimmed
-            data{i}.is_trimmed
             srf = data{i};
             u = linspace(srf.u(1), srf.u(2), untrimmed_res);
             v = linspace(srf.v(1), srf.v(2), untrimmed_res);

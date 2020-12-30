@@ -1,9 +1,12 @@
-function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res)
+function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res, use_triangle)
+    if nargin < 3
+        use_triangle = 0;
+    end
 
-    use_triangle = 0;
     if nurbs.is_trimmed
         if use_triangle
-            T=[];
+            [T,UV] = trimmed_trimesh_triangle(nurbs.line_1, ...
+                nurbs.line_2, nurbs.line_N);
         else
             T = trimmed_trimesh(nurbs.line_1, nurbs.line_2, ...
                                 nurbs.line_N, nurbs.UV);
@@ -32,6 +35,48 @@ function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res)
         angles = dot(diff_p, N(:,I));
         TtoRemove = angles > 0;
         T(TtoRemove,:) = [];
+    end
+
+    function [T,V] = trimmed_trimesh_triangle(p1, p2, N)
+        offset = 0.2;	% offset along normal to generate hole points.
+        midpoints = (p1+p2) ./ 2;               % line midpoints
+        p_outside = midpoints + offset .* N;    % points outside surface
+
+        % Define a boundary around the surface. This is just some arbitrary
+        % number high enough so that the UV boundary will enclose all the
+        % points. This UV boundary lets us define the points that are
+        % outside the surface as holes for triangle to indicate where not
+        % to triangulate.
+        uv_bnd = 50;
+
+        % Planar Straight Line Graph (PSLG) vertices for triangle.
+        TUV = [p1 p2];
+        nlines = size(p1,2);
+
+        % Basic heuristic so that triangle density is reasonable.
+        max_area_divisor = 100;
+        max_area = min(range(TUV, 2)) / max_area_divisor;
+
+        % Beginning index for UV boudnary points.
+        bnd_idx = size(TUV,2) + 1;
+
+        % Adding UV boundary vertices.
+        TUV = [TUV [-uv_bnd -uv_bnd]' [uv_bnd -uv_bnd]' ...
+                     [uv_bnd uv_bnd]' [-uv_bnd uv_bnd]'];
+
+        % PSLG segments for triangle.
+        E = [1:nlines; nlines+1:2*nlines]';
+
+        % Add edges on the UV boundary.
+        E = [E; [bnd_idx   bnd_idx+1; ...
+                 bnd_idx+1 bnd_idx+2; ...
+                 bnd_idx+2 bnd_idx+3; ...
+                 bnd_idx+3 bnd_idx]];
+
+        H = p_outside';
+
+        [V,T] = triangle(TUV', E, H, 'Quality','MaxArea', max_area, 'Flags','-j','Quiet',true);
+        V = V';
     end
 
     function dist = point_line_min_distances(origins, p1, p2)
