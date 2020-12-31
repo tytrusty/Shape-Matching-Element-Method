@@ -156,7 +156,7 @@ function vem_simulate_nurbs(parts, varargin)
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
                 dM_dX(:,:), a, vol, params,k, n, dF, dF_I);
-        
+
         % Force vector
         dV_dq = zeros(numel(x),1);
 
@@ -199,17 +199,16 @@ function vem_simulate_nurbs(parts, varargin)
         x_idx=0;
         for i=1:numel(parts)
             x_sz = size(parts{i}.x0,2);
-            xi = reshape(x(:,x_idx+1:x_idx+x_sz), 3, parts{i}.subd(1), parts{i}.subd(2));
-            parts{i}.plt.XData = squeeze(xi(1,:,:));
-            parts{i}.plt.YData = squeeze(xi(2,:,:));
-            parts{i}.plt.ZData = squeeze(xi(3,:,:));
-            x_idx = x_idx+x_sz;   
+            xi = x(:,x_idx+1:x_idx+x_sz);
+            parts{i}.plt.Vertices =xi';
+            x_idx = x_idx+x_sz;
         end
         drawnow
         
         if config.save_obj
-            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            nurbs_write_obj(q,parts,config.obj_res,obj_fn,ii);
+            warning('Currently cant save to obj! I will fix this...');
+            %obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
+            %nurbs_write_obj(q,parts,config.obj_res,obj_fn,ii);
         end
         
         if config.save_output

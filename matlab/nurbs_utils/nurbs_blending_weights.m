@@ -8,9 +8,8 @@ w = zeros(m,n);
 
 % Compute per-shape distance weights
 for i = 1:n
-    fvc = surf2patch(parts{i}.plt,'triangles');
-    FV.faces = fvc.faces;
-    FV.vertices = fvc.vertices;
+    FV.faces = parts{i}.T;
+    FV.vertices = parts{i}.Vertices';
     [dist,~] = point2trimesh(FV, 'QueryPoints', X, 'UseSubSurface', false);
     w(:,i) = max(1 -  (abs(dist) ./ alpha), 0);
 end

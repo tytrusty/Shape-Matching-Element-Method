@@ -6,10 +6,10 @@ function [X, vol] = raycast_quadrature(parts, ray_samples, samples)
 faces=[];
 verts=[];
 for ii=1:numel(parts)
-    fvc = surf2patch(parts{ii}.plt,'triangles');
-    fvc.faces = fvc.faces + size(verts,1);
-    faces=[faces; fvc.faces];
-    verts=[verts; fvc.vertices];   
+    F = parts{ii}.T;
+    F = F + size(verts,1);
+    faces=[faces; F];
+    verts=[verts; parts{ii}.Vertices'];
 end
 
 % Create spatial structure

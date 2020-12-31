@@ -25,8 +25,10 @@ function s = findspan(n,p,u,U)
                                                  
                                                 %   int low, high, mid;                                                 
                                                 %   // special case 
-if (u==U(n+2)), s=n; return,  end               %   if (u == U[n+1]) return(n); 
-                                                % 
+if (u >= U(n+2)), s=n; return,  end             %   if (u == U[n+1]) return(n);
+
+% Edit Ty 12/30/2020: adding special case
+if  (u <= U(1)),  s=p; return, end              %
                                                 %   // do binary search 
 low = p;                                        %   low = p; 
 high = n + 1;                                   %   high = n + 1; 

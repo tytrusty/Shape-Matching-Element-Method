@@ -8,7 +8,7 @@ function [J,q,E,x] = nurbs_assemble_coords(parts)
     for i=1:numel(parts)
         idx1=q_size+1;
     	q_size = q_size + size(parts{i}.p,1);
-        J_size = J_size + size(parts{i}.J_flat,2) * size(parts{i}.J_flat,3);
+        J_size = J_size + size(parts{i}.J,2) * size(parts{i}.J,3);
         idx2=q_size;
         
         % indices into global configuration vector
@@ -21,8 +21,8 @@ function [J,q,E,x] = nurbs_assemble_coords(parts)
     J_idx = [0 0];
     for i=1:numel(parts)
         q(parts{i}.idx1:parts{i}.idx2,1) = parts{i}.p;
-        Ji = parts{i}.J_flat(:,:)';
-        
+        Ji = parts{i}.J(:,:)';
+        cond(Ji'*Ji);
         % Block indices
         I1=J_idx(1)+1:J_idx(1)+size(Ji,1);
         I2=J_idx(2)+1:J_idx(2)+size(Ji,2);

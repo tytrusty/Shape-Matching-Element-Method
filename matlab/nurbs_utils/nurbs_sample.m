@@ -1,20 +1,42 @@
-function surfaces=nurbs_sample(data, nrays, samples_per_ray, untrimmed_res)
+function surfaces=nurbs_sample(data, enable_trimming)
 
 nsurfaces = 0;
 
 % Initially mark all surfaces as untrimmed
 for ii=1:numel(data)  
-   if data{ii}.type == 128
-       data{ii}.is_trimmed = 0;
-       nsurfaces = nsurfaces + 1;
-   end
+	if data{ii}.type == 128
+        data{ii}.is_trimmed = 0;
+       
+        s = sample_spline(data{ii}.s, data{ii}.m1);
+        t = sample_spline(data{ii}.t, data{ii}.m2);
+        [U,V] = meshgrid(s,t);
+        UV = [U(:) V(:)]';
+        data{ii}.UV = UV;
+            
+        nsurfaces = nsurfaces + 1;
+	end
 end
 
 surfaces = cell(nsurfaces,1);
 ii = 1;
-process_trimmed();
+
+if enable_trimming
+    process_trimmed();
+end
 process_untrimmed();
-disp('done');
+
+function t_new = sample_spline(u, degree)
+    u = u(degree+1:end-degree);
+    %u = unique(u);
+    t_new = [];
+    for i=1:numel(u)-1
+        s_b = u(i);
+        s_e = u(i+1);
+        samples = linspace(s_b, s_e, degree + 2);
+        t_new = [t_new samples(1:end-1)];
+    end
+    t_new = [t_new samples(end)];
+end
 
 function process_trimmed()
     % Samples points on all the trimmed surfaces
@@ -28,10 +50,19 @@ function process_trimmed()
             % Mark surface as trimmed
             data{srf_ii}.is_trimmed = 1;
 
-            v_range = [min([p1(2,:) p2(2,:)]) max([p1(2,:) p2(2,:)])];
-            v_vals = linspace(v_range(1)+1e-4, v_range(2)-1e-4, nrays);
-            u_range = [data{srf_ii}.u(1) data{srf_ii}.u(2)];
-            UV = sample_ray(p1, p2, v_vals, u_range, nrays, samples_per_ray);                      
+            dist = point_line_min_distances(data{srf_ii}.UV, p1, p2);
+            [~,I] = min(dist, [], 2);
+
+            % Check angles between nearest point ray and normal.
+            diff_p = data{srf_ii}.UV - p1(:, I);
+            angles = dot(diff_p, N(:,I));
+            ToKeep = angles < 0;
+%             clf;
+%             plot(data{srf_ii}.UV(1,:), data{srf_ii}.UV(2,:),'.','Color','g');
+%             hold on;
+%             plot(data{srf_ii}.UV(1,ToRemove), data{srf_ii}.UV(2,ToRemove),'.','Color','r');
+            UV = data{srf_ii}.UV(:,ToKeep);
+
             uv_struct.UV = UV;
             uv_struct.surf_ptr = srf_ii;
             uv_struct.line_1 = p1;
@@ -48,12 +79,7 @@ end
 function process_untrimmed()
     for i=1:numel(data)   
         if data{i}.type == 128 && ~data{i}.is_trimmed
-            srf = data{i};
-            u = linspace(srf.u(1), srf.u(2), untrimmed_res);
-            v = linspace(srf.v(1), srf.v(2), untrimmed_res);
-            [U,V] = meshgrid(u,v);
-            UV = [U(:) V(:)]';
-            uv_struct.UV = UV;
+            uv_struct.UV = data{i}.UV;
             uv_struct.surf_ptr = i;
             uv_struct.is_trimmed = 0;
             surfaces{ii} = uv_struct;
@@ -89,41 +115,22 @@ function [p1,p2,N] = boundary_lines(boundary_srf)
     N=N(1:2,:);
 end
 
-function UV = sample_ray(p1, p2, v_vals, u_range, nrays, samples_per_ray)
-    UV = [];
-    for jj = 1:nrays
-        % Find intersection points.
-        isect = (p1(2,:) <= v_vals(jj) & p2(2,:) >= v_vals(jj)) ...
-              | (p1(2,:) >= v_vals(jj) & p2(2,:) <= v_vals(jj));
+function dist = point_line_min_distances(origins, p1, p2)
+    % ref: http://paulbourke.net/geometry/pointlineplane/
+    diff_X = origins(1,:)' - p1(1,:);
+    diff_Y = origins(2,:)' - p1(2,:);
+    dp = p2 - p1;
+    norm_sqr = dot(dp,dp,1);
 
-        if nnz(isect) > 0
-            origin = [u_range(1) v_vals(jj)]';
-            p1_isect = p1(:,isect);
-            p2_isect = p2(:,isect);
+    t = (diff_X .* dp(1,:) + diff_Y .* dp(2,:)) ./ norm_sqr;
+    t(:) = max(min(t(:), 1), 0);
 
-            % reference for ray-line intersection:
-            % https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
-            v1 = origin - p1_isect;
-            v2 = p2_isect - p1_isect;
-            v3 = repmat([0 1]', 1, size(v1,2));
+    min_X = p1(1,:) + t .* dp(1,:);
+    min_Y = p1(2,:) + t .* dp(2,:);
 
-            t = (v2(1,:).*v1(2,:) - v2(2,:).*v1(1,:)) ./ dot(v2,v3,1);
-            t = sort(t);
-            t = uniquetol(t);
-            assert(rem(numel(t),2) == 0, ...
-                'Number of intersection is not even! Trimming failed.')
-
-            t = reshape(t,2,[]);
-
-            t_pnts = [];
-            for kk = 1:size(t,2)
-                t_samples = linspace(t(1,kk), t(2,kk), samples_per_ray);
-                new_t_pnts = origin + t_samples .* [1 0]';
-                t_pnts = [t_pnts new_t_pnts];
-            end
-            UV = [UV t_pnts];
-        end
-    end
+    diff_X = origins(1,:)' - min_X;
+    diff_Y = origins(2,:)' - min_Y;
+    dist = diff_X.^2 + diff_Y.^2;
 end
 
 end

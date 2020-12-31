@@ -1,4 +1,4 @@
-function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res, use_triangle)
+function [T,UV] = nurbs_triangulate(nurbs, use_triangle)
     if nargin < 3
         use_triangle = 0;
     end
@@ -8,16 +8,17 @@ function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res, use_triangle)
             [T,UV] = trimmed_trimesh_triangle(nurbs.line_1, ...
                 nurbs.line_2, nurbs.line_N);
         else
+            warning('Triangulating trimmed nurbs without triangle!');
             T = trimmed_trimesh(nurbs.line_1, nurbs.line_2, ...
                                 nurbs.line_N, nurbs.UV);
+            UV = nurbs.UV;
         end
         
     else
-        u = linspace(nurbs.srf.u(1), nurbs.srf.u(2), untrimmed_res);
-        v = linspace(nurbs.srf.v(1), nurbs.srf.v(2), untrimmed_res);
-        [U,V] = meshgrid(u,v);
-        UV = [U(:) V(:)]';
-        T = delaunay(UV(1,:), UV(2,:));
+        % TODO -- make untrimmed_res optional so that you can optionally
+        % add more untrimmed samples
+        T = delaunay(nurbs.UV(1,:), nurbs.UV(2,:));
+        UV = nurbs.UV;
     end
 
     function T = trimmed_trimesh(p1, p2, N, UV)
@@ -75,7 +76,13 @@ function [T,UV] = nurbs_triangulate(nurbs, untrimmed_res, use_triangle)
 
         H = p_outside';
 
-        [V,T] = triangle(TUV', E, H, 'Quality','MaxArea', max_area, 'Flags','-j','Quiet',true);
+        % Invoke triangle. This assumes your path is set is set in
+        % path_to_triangle file in GPToolbox in the file:
+        % gptoolbox\wrappers\path_to_triangle.m
+        %
+        % -j Flags removes vertices not included in the triangulation.
+        [V,T] = triangle(TUV', E, H, 'Quality','MaxArea', max_area, ...
+            'Flags','-j');
         V = V';
     end
 
