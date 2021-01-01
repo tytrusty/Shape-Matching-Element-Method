@@ -21,11 +21,12 @@ function A = vem_A_func(n,ne)
      P=sym(zeros(2, ne));
     for i=1:ne
         %P(:,i) = qdot(2*i-1:2*i)-x_com;
-        P(:,i) = qE(2*i-1:2*i)-x_com;
+        %P(:,i) = qE(2*i-1:2*i) - x_com;
+        P(:,i) = qE(2*i-1:2*i)- [qdot(end-1) qdot(end)]' - x_com;
     end
     
-    C=([qdot(3) qdot(4)]' -  (P*BM + x_com)); % Error matrix term
-%     C=(P*BM + x_com);                     % Mass matrix term
+%     C=([qdot(3) qdot(4)]' -  (P*BM + x_com)); % Error matrix term
+    C=(P*BM + x_com);                     % Mass matrix term
     dT_dqdot = jacobian(C,qdot)
 %     M = jacobian(dT_dqdot,qdot)
 %     M = double(subs(M, BM, B));

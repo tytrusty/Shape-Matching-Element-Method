@@ -20,12 +20,12 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
                 dMi_dX(4,:) = [0 2*Q(2,i)];
                 dMi_dX(5,:) = [Q(2,i) Q(1,i)];
             else
-                dMi_dX(5,:) = [2*Q(1,i) 0 0];
-                dMi_dX(6,:) = [0 2*Q(2,i) 0];
-                dMi_dX(7,:) = [0 0 2*Q(3,i)];
-                dMi_dX(8,:) = [Q(2,i) Q(1,i) 0];
-                dMi_dX(9,:) = [0 Q(3,i) Q(2,i)];
-                dMi_dX(10,:) = [Q(3,i) 0 Q(1,i)];
+                dMi_dX(4,:) = [2*Q(1,i) 0 0];
+                dMi_dX(5,:) = [0 2*Q(2,i) 0];
+                dMi_dX(6,:) = [0 0 2*Q(3,i)];
+                dMi_dX(7,:) = [Q(2,i) Q(1,i) 0];
+                dMi_dX(8,:) = [0 Q(3,i) Q(2,i)];
+                dMi_dX(9,:) = [Q(3,i) 0 Q(1,i)];
             end
         end
         dM_dX(i,:,:) = dMi_dX;

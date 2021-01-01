@@ -4,13 +4,13 @@ function vem_sim_2d
     % Simulation parameters
     dt = 0.01;      	% timestep
     C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
-    gravity = -20;     % gravity strength
-    k_error = 10000;   % Stiffness for VEM stability term
+    D = 0.5 * 1500;   	% Lame parameter 2
+    gravity = -40;     % gravity strength
+    k_error = 100000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
     rho = 1;            % density
 	d = 2;              % dimension (2 or 3)
-    save_output = 1;    % (0 or 1) whether to output images of simulation
+    save_output = 0;    % (0 or 1) whether to output images of simulation
     
     % Load a basic square mesh
     [V,F] = readOBJ('models/plane.obj');
@@ -46,8 +46,8 @@ function vem_sim_2d
 %     E = [1 2; 2 3; 3 4; 4 1];
 %     E_cell = {[1 2], [2 3], [3 4], [4 1]}';
 
-    % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
-    % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+%     min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
+%     min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
     min_I = [1]; % Pinning the top left corner.
 
     % Form selection matrices for each shape, allowing us to project
@@ -127,18 +127,9 @@ function vem_sim_2d
     dF_dq = permute(dF_dq, [2 3 1]);
  
     % Computing mass matrices
-    n = numel(x0);
-    
     ME = vem_error_matrix(B, Q0, w_x, d, size(x0,2), E_cell);
-    PN = eye(d);
-    PN = repmat(PN,size(x0,2),1);
-    PN = [eye(numel(x0)) -PN];
-    ME = PN' * ME * PN;
-    
     M = vem_mass_matrix(B, Q, w, d, size(x0,2), E_cell);
-    warning('ME not included!');
     M = rho*M + k_error*ME;
-%     M = 100*eye(10);
 
     % The number of elements in the monomial basis.
     % -- example: Draft equation 1 is second order with k == 5
@@ -153,16 +144,15 @@ function vem_sim_2d
     % Neohookean stuff.
     m = size(Q,2);
     
-    
     x_com = zeros(d,1);
-    com_plt = plot(x0_com(1), x0_com(2), '.', 'Color', 'g', 'MarkerSize', 20);
+    com_plt = plot(x0_com(1), x0_com(2), ...
+                   '.', 'Color', 'g', 'MarkerSize', 20);
     
     ii=1;
     for t=0:dt:30
 
         % Compute projection operators for each shape (edge)
         A=zeros(d, k, size(E,1));
-        warning('review time integration. I didnt work through the math');
         for i=1:size(E,1)
             p = x(:,E(i,:)) - x0_com - x_com;
             Ai = p*B{i};
@@ -191,7 +181,7 @@ function vem_sim_2d
             F = Aij * dMi_dX;
             
             % Computing new world position of this point.
-            Points(:,i) = F * Q(:,i) + x_com + x0_com;
+            Points(:,i) = F * Q(1:d,i) + x_com + x0_com;
                         
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
