@@ -4,13 +4,13 @@ function vem_sim_2d
     % Simulation parameters
     dt = 0.01;      	% timestep
     C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
-    gravity = -100;     % gravity strength
-    k_error = 100000;   % Stiffness for VEM stability term
+    D = 0.5 * 15000;   	% Lame parameter 2
+    gravity = -20;     % gravity strength
+    k_error = 10000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
     rho = 1;            % density
 	d = 2;              % dimension (2 or 3)
-    save_output = 0;    % (0 or 1) whether to output images of simulation
+    save_output = 1;    % (0 or 1) whether to output images of simulation
     
     % Load a basic square mesh
     [V,F] = readOBJ('models/plane.obj');
@@ -37,11 +37,14 @@ function vem_sim_2d
        E_cell{i} = E(i,:); 
     end
     
-    % Simpler cube example.
-    x0  = [0 0; 0 2;  2 2; 2 0; ]';
-    E = [1 2 3; 3 4 1];
-    E_cell = {[1 2 3], [3 4 1]}';
-    %V=x0';      
+%     V  = [0 0; 0 2;  2 2; 2 0; 1 1 ];
+%     
+%     % Simpler cube example.
+%     x0  = [0 0; 0 2;  2 2; 2 0; ]';
+%     E = [1 2 3; 3 4 1];
+%     E_cell = {[1 2 3], [3 4 1]}';
+%     E = [1 2; 2 3; 3 4; 4 1];
+%     E_cell = {[1 2], [2 3], [3 4], [4 1]}';
 
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
     % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
@@ -59,7 +62,7 @@ function vem_sim_2d
     end
     
     % Initial deformed positions and velocities
-    x = x0;
+    x = [x0 [0 0]'];
     v = zeros(size(x));
         
     % Setup figure
@@ -81,10 +84,10 @@ function vem_sim_2d
     ylim([-4.5 2.5])
     
     % Constraint matrix for boundary conditions.
-    P = fixed_point_constraint_matrix(x0',sort(min_I)');
+    P = fixed_point_constraint_matrix(x',sort(min_I)');
     
     % Gravity force vector.
-  	f_gravity = repmat([0 gravity], size(x0,2),1)';
+  	f_gravity = repmat([0 gravity], size(x,2),1)';
     f_gravity = dt*P*f_gravity(:);
     
     % Undeformed Center of mass
@@ -120,46 +123,53 @@ function vem_sim_2d
     dM_dX = monomial_basis_grad(V', x0_com, order);
         
     % Computing each dF_dq
-    dF_dq = vem_dF_dq(B, dM_dX, E_cell, size(x,2), w);
+    dF_dq = vem_dF_dq(B, dM_dX, E_cell, size(x0,2), w);
     dF_dq = permute(dF_dq, [2 3 1]);
  
     % Computing mass matrices
-    % Note: I haven't written up this bit yet in the draft, so
-    %       I'll get on that
-    ME = vem_error_matrix(B, Q0, w_x, d, size(x,2), E_cell);
-    M = vem_mass_matrix(B, Q, w, d, size(x,2), E_cell);
-    M = sparse((rho*M + k_error*ME));
-    % M = 100*eye(8);
+    n = numel(x0);
+    
+    ME = vem_error_matrix(B, Q0, w_x, d, size(x0,2), E_cell);
+    PN = eye(d);
+    PN = repmat(PN,size(x0,2),1);
+    PN = [eye(numel(x0)) -PN];
+    ME = PN' * ME * PN;
+    
+    M = vem_mass_matrix(B, Q, w, d, size(x0,2), E_cell);
+    warning('ME not included!');
+    M = rho*M + k_error*ME;
+%     M = 100*eye(10);
 
     % The number of elements in the monomial basis.
     % -- example: Draft equation 1 is second order with k == 5
     % TODO: compute this the right way :) 
-    k=3;
+    k=2;
     if order == 2
-        k = 6;
+        k = 5;
     end
     
     % The number of quadrature points where at each point we
     % add stiffness matrix contributions and do all that fun
     % Neohookean stuff.
     m = size(Q,2);
-        
+    
+    
+    x_com = zeros(d,1);
+    com_plt = plot(x0_com(1), x0_com(2), '.', 'Color', 'g', 'MarkerSize', 20);
+    
     ii=1;
     for t=0:dt:30
-        % Center of mass of deformed shape
-%         x_com = mean(x,2);
-        x_com = x0_com;
-        
+
         % Compute projection operators for each shape (edge)
-        avg_com = zeros(size(x_com));
         A=zeros(d, k, size(E,1));
+        warning('review time integration. I didnt work through the math');
         for i=1:size(E,1)
-            p = x(:,E(i,:)) - x_com;
+            p = x(:,E(i,:)) - x0_com - x_com;
             Ai = p*B{i};
             A(:,:,i) = Ai;
         end
         
-        dV_dq = zeros(numel(x),1);     % force vector
+        dV_dq = zeros(numel(x),1);      % force vector
         K = zeros(numel(x), numel(x)); % stiffness matrix
         
         % New deformed positions of quadrature points.
@@ -181,8 +191,7 @@ function vem_sim_2d
             F = Aij * dMi_dX;
             
             % Computing new world position of this point.
-            t = Aij(:,1); % translation
-            Points(:,i) = F * Q(2:3,i) + x_com + t;
+            Points(:,i) = F * Q(:,i) + x_com + x0_com;
                         
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
@@ -194,12 +203,10 @@ function vem_sim_2d
         end
         
         % Error correction force
-        % The math tells me I need to subtract the com when computing this
-        % term, but I think it's lying.
-        %         p = x(:);
-        %         p(1:2:end) = p(1:2:end) - x_com(1);
-        %         p(2:2:end) = p(2:2:end) - x_com(2);
-        f_error = - 2 * ME * x(:);
+        xx = x(:);
+        xx(1:2:end-3) = xx(1:2:end-3) - x0_com(1);
+        xx(2:2:end-2) = xx(2:2:end-2) - x0_com(2);
+        f_error = - 2 * ME *  xx;
         f_error = k_error*(dt * P * f_error);
         
         % Force from potential energy.
@@ -214,19 +221,23 @@ function vem_sim_2d
 
         % Update position
         x = x + dt*v;
-
+        
+        x_com = x(end-1:end)';
+        
         % Update plots
         for i = 1:numel(E_lines)
             E_lines(i).XData = x(1,E(i,:)); 
             E_lines(i).YData = x(2,E(i,:)); 
         end
+        com_plt.XData = x0_com(1) + x(end-1);
+        com_plt.YData = x0_com(2) + x(end);
      
         X_plot.XData = Points(1,:);
         X_plot.YData = Points(2,:);
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\100k_%03d.png',ii)
+            fn=sprintf('output\\img\\newcom_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;

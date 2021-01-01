@@ -4,7 +4,7 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
     
     % Compute number of monomials
     k=0;
-    for i=0:order
+    for i=1:order
         k=k+nchoosek(d+i-1,i);
     end
     
@@ -13,13 +13,12 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
     
     % TODO -- make this general
     for i = 1:m
-        dMi_dX = zeros(k,d); 
-        dMi_dX(2:d+1,:) = eye(d);
+        dMi_dX(1:d,:) = eye(d);
         if order == 2
             if d==2
-                dMi_dX(4,:) = [2*Q(1,i) 0];
-                dMi_dX(5,:) = [0 2*Q(2,i)];
-                dMi_dX(6,:) = [Q(2,i) Q(1,i)];
+                dMi_dX(3,:) = [2*Q(1,i) 0];
+                dMi_dX(4,:) = [0 2*Q(2,i)];
+                dMi_dX(5,:) = [Q(2,i) Q(1,i)];
             else
                 dMi_dX(5,:) = [2*Q(1,i) 0 0];
                 dMi_dX(6,:) = [0 2*Q(2,i) 0];

@@ -4,7 +4,7 @@ function dF_dq = vem_dF_dq(B, dM_dX, E, N, w)
     m = size(dM_dX,1);  % # of sampled points
     d = size(dM_dX,3);  % dimension (2 or 3)
     
-    dF_dq = zeros(m,d*d,d*N);
+    dF_dq = zeros(m,d*d,d*(N+1));
 
     % Rearrange dM_dX to matrix of dM_dX entries stacked column-wise
     dM_dX=permute(dM_dX,[2 3 1]);
@@ -22,6 +22,7 @@ function dF_dq = vem_dF_dq(B, dM_dX, E, N, w)
             for k = 1:d
                 idx=(j-1)*d + k;
                 dF_dq(:,idx,idxs+k) = dF_dq(:,idx,idxs+k) + grad_i(:,j,:);
+                dF_dq(:,idx,d*N+k) = dF_dq(:,idx,d*N+k) - sum(squeeze(grad_i(:,j,:)),2);
             end
         end
     end
