@@ -6,10 +6,10 @@ function vem_nurbs
     dt = 0.01;          % timestep
     C = 0.5 * 1700;     % Lame parameter 1
     D = 0.5 * 15000;    % Lame parameter 2
-    gravity = -50;      % gravity force (direction is -z direction)
-    k_error = 100000;   % stiffness for stability term
+    gravity = -10;      % gravity force (direction is -z direction)
+    k_error = 1000;   % stiffness for stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = .1;           % per point density (currently constant)
+    rho = 1;           % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
     save_obj = 0;       % (0 or 1) whether to output obj files
     obj_res = 18;       % the amount of subdivision for the output obj
@@ -20,6 +20,9 @@ function vem_nurbs
     
     % Read in file, generate coordinates and trimesh.
     iges_file = 'rounded_cube.iges';
+    iges_file = 'mug.iges';
+    iges_file = 'cylinder2.iges';
+
     parts=nurbs_from_iges(iges_file);
     parts=nurbs_plot(parts);
     
@@ -32,7 +35,9 @@ function vem_nurbs
     
     % Setup pinned vertices constraint matrix
     [~,I] = mink(x0(1,:),20);
-    pin_I = I(1:2);
+    pin_I = I(1:4);
+%     pin_I = find(x(1,:) > 6 & x(3,:) > 6 & x(3,:) < 7);
+    %     pin_I = [];
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -46,9 +51,9 @@ function vem_nurbs
     % so I'm normalizing them (for now...)
     vol = vol ./ max(vol);  
 
-    %     plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
-    %     V=x0;
-    %     vol=ones(size(V,2),1);
+    V=x0;
+    vol=ones(size(V,2),1);
+    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
     
     % Lame parameters concatenated.
     params = [C, D];
@@ -64,7 +69,7 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    [B,~] = compute_shape_matrices(x0, x0_com, E, order);
+    [B,L] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
     Q = monomial_basis(V, x0_com, order);
@@ -73,16 +78,6 @@ function vem_nurbs
     % Compute Shape weights
     a = nurbs_blending_weights(parts, V', 30);
     a_x = nurbs_blending_weights(parts, x0', 30);
-    
-    % Form selection matrices for each shape.
-    S = cell(numel(E),1);
-    for i=1:size(E,1)
-        S{i} = sparse(zeros(numel(x0), numel(E{i})*3));
-        for j=1:numel(E{i})
-            idx = E{i}(j);
-            S{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
-        end
-    end
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -108,7 +103,7 @@ function vem_nurbs
        m1 = dF_dq(:,:,i);
        mm1 = max(abs(m1),[],1);
        I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,60);
+       [~,I] = maxk(mm1,120);
        m1(:,setdiff(1:numel(x),I))=[];
        %sum(mm1 < 1e-4)
        dF_I{i} = I';
@@ -125,19 +120,22 @@ function vem_nurbs
     %     M = matfile('saveM.mat').M;
     %     ME = matfile('saveME.mat').ME;
 
-    k=4;
+    k=3;
     if order == 2
-        k = 10;
+        k = 9;
     end
+    
+    xcom_plt = plot3(x0_com(1),x0_com(2),x0_com(3),'.','Color','g','MarkerSize',20);
 
     ii=1;
     for t=0:dt:30
         tic
+        x_com = mean(x,2);
         
         % Compute shape matching matrices
         A=zeros(d, k, numel(E));
         for i=1:numel(E)
-            p = x(:,E{i}) - x0_com;
+            p = x(:,E{i}) - x_com;
             Ai = p*B{i};
             A(:,:,i) = Ai;
         end
@@ -145,14 +143,34 @@ function vem_nurbs
         % Preparing input for stiffness matrix mex function.
         n=size(x0,2);
         dF_dqij = permute(dF_dq, [3 1 2]);
-        Aij = permute(A, [3 1 2]);
-        Aij = Aij(:,:);        
+%         Aij = permute(A, [3 1 2]);
+%         Aij = Aij(:,:);
+        
+        b = [];
+        for i=1:numel(E)
+            b = [b x(:,E{i}) - x0_com];
+        end
+        b = b(:);
+
+        PI = L * b;
+        p = PI(end-d+1:end);
+        PI = PI(1:end-d);
+        PI = reshape(PI, k, d, []);
+        PI = permute(PI, [2 1 3]);
+        
+        norm(PI(:)-A(:))
+
+        Aij = permute(PI, [3 1 2]);
+        Aij = Aij(:,:);
+
+        xcom_plt.XData = p(1)+x0_com(1);
+        xcom_plt.YData = p(2)+x0_com(2);
+        xcom_plt.ZData = p(3)+x0_com(3);
         
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
                 dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
-        %nnz(K(:))
-        %size(K(:))
+
         % Force vector
         dV_dq = zeros(numel(x),1);
 
@@ -161,10 +179,11 @@ function vem_nurbs
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
             
-            Aij = zeros(size(A(:,:,1)));
-            
+            %Aij = zeros(size(A(:,:,1)));
+            Aij = zeros(d,k);
             for j = 1:size(E,1)
-                Aij = Aij + A(:,:,j) * a(i,j);
+                %Aij = Aij + A(:,:,j) * a(i,j);
+                Aij = Aij + PI(:,:,j) * a(i,j);
             end
             
             % Deformation Gradient
@@ -177,8 +196,9 @@ function vem_nurbs
   
         % Error correction force
         p = x(:);
-%         p(1:2:end) = p(1:2:end) - x0_com(1);
-%         p(2:2:end) = p(2:2:end) - x0_com(2);
+        p(1:d:end) = p(1:d:end) - x_com(1);
+        p(2:d:end) = p(2:d:end) - x_com(2);
+        p(3:d:end) = p(3:d:end) - x_com(3);
         f_error = - 2 * ME * p;
         f_error = k_error*(dt * P * f_error(:));
        
