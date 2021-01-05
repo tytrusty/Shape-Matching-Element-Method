@@ -22,7 +22,7 @@ function [J,q,E,x] = nurbs_assemble_coords(parts)
     for i=1:numel(parts)
         q(parts{i}.idx1:parts{i}.idx2,1) = parts{i}.p;
         Ji = parts{i}.J(:,:)';
-        cond(Ji'*Ji);
+
         % Block indices
         I1=J_idx(1)+1:J_idx(1)+size(Ji,1);
         I2=J_idx(2)+1:J_idx(2)+size(Ji,2);

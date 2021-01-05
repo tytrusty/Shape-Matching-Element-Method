@@ -25,14 +25,17 @@ if enable_trimming
 end
 process_untrimmed();
 
-function t_new = sample_spline(u, degree)
+function t_new = sample_spline(u, degree, alpha)
+    if nargin < 3
+        alpha = 2; % 1 sample in the range (midpoint)
+    end
     u = u(degree+1:end-degree);
     %u = unique(u);
     t_new = [];
     for i=1:numel(u)-1
         s_b = u(i);
         s_e = u(i+1);
-        samples = linspace(s_b, s_e, degree + 2);
+        samples = linspace(s_b, s_e, degree + alpha);
         t_new = [t_new samples(1:end-1)];
     end
     t_new = [t_new samples(end)];
@@ -49,19 +52,7 @@ function process_trimmed()
 
             % Mark surface as trimmed
             data{srf_ii}.is_trimmed = 1;
-
-            dist = point_line_min_distances(data{srf_ii}.UV, p1, p2);
-            [~,I] = min(dist, [], 2);
-
-            % Check angles between nearest point ray and normal.
-            diff_p = data{srf_ii}.UV - p1(:, I);
-            angles = dot(diff_p, N(:,I));
-            ToKeep = angles < 0;
-%             clf;
-%             plot(data{srf_ii}.UV(1,:), data{srf_ii}.UV(2,:),'.','Color','g');
-%             hold on;
-%             plot(data{srf_ii}.UV(1,ToRemove), data{srf_ii}.UV(2,ToRemove),'.','Color','r');
-            UV = data{srf_ii}.UV(:,ToKeep);
+            UV = sample_rays(p1, p2, data{srf_ii});
 
             uv_struct.UV = UV;
             uv_struct.surf_ptr = srf_ii;
@@ -98,7 +89,7 @@ function [p1,p2,N] = boundary_lines(boundary_srf)
             if curve.type == 110 % Line
                 nlines = 1;
             elseif curve.type == 126 % NURBS CURVE
-                nlines = 50;
+                nlines = 100;
             end
             tt = linspace(curve.v(1), curve.v(2), nlines+1);
             p = nrbeval(curve.nurbs, tt); 
@@ -115,22 +106,103 @@ function [p1,p2,N] = boundary_lines(boundary_srf)
     N=N(1:2,:);
 end
 
-function dist = point_line_min_distances(origins, p1, p2)
-    % ref: http://paulbourke.net/geometry/pointlineplane/
-    diff_X = origins(1,:)' - p1(1,:);
-    diff_Y = origins(2,:)' - p1(2,:);
-    dp = p2 - p1;
-    norm_sqr = dot(dp,dp,1);
+function u_vals = sample_intersections(u_spans, nurbs, alpha)
+    eps = 1e-12;
+    degree = nurbs.m1;
+    knots = unique(nurbs.s(degree+1:end-degree));
+    interval = @(x) find(x-knots > -eps, 1, 'last');
+    u_vals = [];
 
-    t = (diff_X .* dp(1,:) + diff_Y .* dp(2,:)) ./ norm_sqr;
-    t(:) = max(min(t(:), 1), 0);
+    for i = 1:size(u_spans,2)
 
-    min_X = p1(1,:) + t .* dp(1,:);
-    min_Y = p1(2,:) + t .* dp(2,:);
+        idx1 = interval(u_spans(1,i));
+        idx2 = interval(u_spans(2,i));
 
-    diff_X = origins(1,:)' - min_X;
-    diff_Y = origins(2,:)' - min_Y;
-    dist = diff_X.^2 + diff_Y.^2;
+        % Special case when both lie in the same span.
+        if idx1==idx2
+            samples = linspace(u_spans(1,i), u_spans(2,i), degree + alpha);
+            u_vals = [u_vals samples];
+        end
+
+        for j = idx1:idx2-1
+            % Sample along the knot span. Remove final samples if not at
+            % end index so we don't have duplicates
+            u1 = knots(j);
+            u2 = knots(j+1);
+            if j == idx1
+                u1 = u_spans(1,i);
+            elseif j == idx2-1
+                u2 = u_spans(2,i);
+            end
+            samples = linspace(u1, u2, degree + alpha);
+            if j < idx2 - 1
+               samples = samples(1:end-1) ;
+            end
+            u_vals = [u_vals samples];
+        end
+    end
 end
 
+function UV = sample_rays(p1, p2, nurbs)
+    UV = [];
+    alpha = 4;
+
+    origin_u = nurbs.u(1);
+    v_range = [min([p1(2,:) p2(2,:)]) max([p1(2,:) p2(2,:)])];
+    v_vals = sample_spline(nurbs.t, nurbs.m2, alpha);
+
+    eps=1e-5;
+    v_vals(1) = v_range(1)+eps;
+    v_vals(end) = v_range(2)-eps;
+
+%     clf;
+%     plot([p1(1,:); p2(1,:)],[p1(2,:); p2(2,:)], 'LineWidth',5, 'Color',[0.5 0.5 0.5]);
+%     hold on;
+
+    for i = 1:numel(v_vals)
+        % Find intersection points.
+        isect = (p1(2,:) <= v_vals(i) & p2(2,:) >= v_vals(i)) ...
+              | (p1(2,:) >= v_vals(i) & p2(2,:) <= v_vals(i));
+
+        if nnz(isect) > 0
+            origin = [origin_u v_vals(i)]';
+            p1_isect = p1(:,isect);
+            p2_isect = p2(:,isect);
+
+            % reference for ray-line intersection:
+            % https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+            v1 = origin - p1_isect;
+            v2 = p2_isect - p1_isect;
+            v3 = repmat([0 1]', 1, size(v1,2));
+
+            t = (v2(1,:).*v1(2,:) - v2(2,:).*v1(1,:)) ./ dot(v2,v3,1);
+            t = sort(t);
+            t = uniquetol(t);
+
+            t_pnts = [];
+
+            % If odd number of intersections, perform point sampling,
+            % otherwise sample along the ray taking consideration of the
+            % knots in the u direction.
+            if rem(numel(t),2) == 1
+                % Point sampling
+                new_t_pnts = origin + t .* [1 0]';
+                t_pnts = [t_pnts new_t_pnts];
+            else
+                u_spans = origin_u + t;
+                u_spans = reshape(u_spans,2,[]);
+                u_samples = sample_intersections(u_spans, nurbs, alpha);
+                v_samples = repelem(v_vals(i), numel(u_samples));
+                t_pnts = [t_pnts [u_samples; v_samples]];
+            end
+            UV = [UV t_pnts];
+
+%             plot([nurbs.u(1) nurbs.u(2)], [v_vals(i) v_vals(i)],'-','Color','b','LineWidth',2);
+%             hold on;
+%             if numel(t_pnts) > 0
+%                 plot(t_pnts(1,:), t_pnts(2,:), '.', 'Color', 'g', 'MarkerSize', 20);
+%             end
+        end
+    end
+end
 end

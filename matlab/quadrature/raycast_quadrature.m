@@ -6,10 +6,16 @@ function [X, vol] = raycast_quadrature(parts, ray_samples, samples)
 faces=[];
 verts=[];
 for ii=1:numel(parts)
-    F = parts{ii}.T;
+    if isfield(parts{ii}, 'hires_T')
+        F = parts{ii}.hires_T;
+        V = parts{ii}.hires_x0';
+    else
+        F = parts{ii}.T;
+        V = parts{ii}.x0';
+    end
     F = F + size(verts,1);
     faces=[faces; F];
-    verts=[verts; parts{ii}.Vertices'];
+    verts=[verts; V];
 end
 
 % Create spatial structure

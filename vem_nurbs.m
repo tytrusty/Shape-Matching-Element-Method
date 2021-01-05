@@ -4,14 +4,20 @@ function vem_nurbs
 
     % Simulation parameters
     dt = 0.01;          % timestep
-    C = 0.5 * 1700;     % Lame parameter 1
-    D = 0.5 * 15000;    % Lame parameter 2
-    gravity = -10;      % gravity force (direction is -z direction)
-    k_error = 1000;   % stiffness for stability term
+%     C = 0.5 * 10000;     % Lame parameter 1
+%     D = 0.5 * 150000;    % Lame parameter 2
+%     gravity = -100;      % gravity force (direction is -z direction)
+%     k_error = 100000;   % stiffness for stability term
+%     order = 1;          % (1 or 2) linear or quadratic deformation
+%     rho = .5;           % per point density (currently constant)
+    C = 0.5 * 5000;     % Lame parameter 1
+    D = 0.5 * 150000;    % Lame parameter 2
+    gravity = -100;      % gravity force (direction is -z direction)
+    k_error = 100000;   % stiffness for stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1;           % per point density (currently constant)
+    rho = .1;           % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
-    save_obj = 0;       % (0 or 1) whether to output obj files
+    save_obj = 0;        % (0 or 1) whether to output obj files
     obj_res = 18;       % the amount of subdivision for the output obj
 
     % Read in NURBs 
@@ -20,8 +26,10 @@ function vem_nurbs
     
     % Read in file, generate coordinates and trimesh.
     iges_file = 'rounded_cube.iges';
-    iges_file = 'mug.iges';
-    iges_file = 'cylinder2.iges';
+%     iges_file = 'mug.iges';
+%     iges_file = 'cylinder2.iges';
+%     iges_file = 'wrench_shrink.igs';
+%     iges_file = 'mug3.iges';
 
     parts=nurbs_from_iges(iges_file);
     parts=nurbs_plot(parts);
@@ -35,9 +43,7 @@ function vem_nurbs
     
     % Setup pinned vertices constraint matrix
     [~,I] = mink(x0(1,:),20);
-    pin_I = I(1:4);
-%     pin_I = find(x(1,:) > 6 & x(3,:) > 6 & x(3,:) < 7);
-    %     pin_I = [];
+    pin_I = I(1:2);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plot all vertices
@@ -76,8 +82,8 @@ function vem_nurbs
     Q0 = monomial_basis(x0, x0_com, order); 
     
     % Compute Shape weights
-    a = nurbs_blending_weights(parts, V', 30);
-    a_x = nurbs_blending_weights(parts, x0', 30);
+    a = nurbs_blending_weights(parts, V', 10);
+    a_x = nurbs_blending_weights(parts, x0', 10);
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -103,7 +109,7 @@ function vem_nurbs
        m1 = dF_dq(:,:,i);
        mm1 = max(abs(m1),[],1);
        I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,120);
+       [~,I] = maxk(mm1,60);
        m1(:,setdiff(1:numel(x),I))=[];
        %sum(mm1 < 1e-4)
        dF_I{i} = I';
@@ -115,10 +121,10 @@ function vem_nurbs
     M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
     M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
     % Save & load these matrices for large models to save time.
-    %     save('saveM.mat','M');
-    %     save('saveME.mat','ME');
-    %     M = matfile('saveM.mat').M;
-    %     ME = matfile('saveME.mat').ME;
+    %         save('saveM.mat','M');
+    %         save('saveME.mat','ME');
+    %         M = matfile('saveM.mat').M;
+    %         ME = matfile('saveME.mat').ME;
 
     k=3;
     if order == 2
@@ -221,22 +227,16 @@ function vem_nurbs
             xi = x(:,x_idx+1:x_idx+x_sz);
             parts{i}.plt.Vertices =xi';
             x_idx = x_idx+x_sz;
-            %             x_sz = size(part{i}.Vertices,2);
-            %             qi = q(part{i}.idx1:part{i}.idx2);
-            %             xi = squeeze(sum(part{i}.T_J .* qi,1));
-            %             part{i}.plt.Vertices =xi';
-            %             x_idx = x_idx+x_sz;  
         end
         drawnow
         
         if save_obj
-            warning('Currently cant save to obj! I will fix this...');
-            %obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            %nurbs_write_obj(q,parts,obj_res,obj_fn,ii);
+            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
+            nurbs_write_obj(q,parts,obj_fn,ii);
         end
         
         if save_output
-            fn=sprintf('output/img/cutoff_ten_%03d.png',ii);
+            fn=sprintf('output/img/cylinder_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1

@@ -1,5 +1,5 @@
 function [T,UV] = nurbs_triangulate(nurbs, use_triangle)
-    if nargin < 3
+    if nargin < 2
         use_triangle = 0;
     end
 
