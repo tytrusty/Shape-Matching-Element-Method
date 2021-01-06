@@ -1,11 +1,8 @@
-function [B,L] = compute_shape_matrices(x0, x0_com, E, order)
+function [B,L,LM] = compute_shape_matrices(x0, x0_com, E, order)
     d = size(x0,1); % dimension
 
     % Compute number of monomials
-    k=0;
-    for i=1:order
-        k=k+nchoosek(d+i-1,i);
-    end
+    k = basis_size(d, order);
 
     Q = cell(numel(E),1);
     B = cell(numel(E),1);
@@ -37,7 +34,10 @@ function [B,L] = compute_shape_matrices(x0, x0_com, E, order)
 
     L = M'*M;
     L(end-d+1:end,1:end-d) = 0;
-    L = L\M';
+%     L = L\M';
+    
+    L = inv(L);
+    LM = M';
 
     for i=1:numel(E)
         % Monomial basis of DOF for the i-th shape.
@@ -49,8 +49,6 @@ function [B,L] = compute_shape_matrices(x0, x0_com, E, order)
         S = diag(S);
         S = 1./ max(S, 1e-4);
         Bi = Qi' * (V * diag(S) * U');
-
-        Q{i} = Qi;
         B{i} = Bi;
     end
 end
