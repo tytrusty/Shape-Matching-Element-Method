@@ -80,3 +80,11 @@ if(OpenMP_CXX_FOUND)
     endif()
     
 endif()
+
+
+set(Thrust_DIR ${vem_SOURCE_DIR}/cmake)
+#message(${Thrust_DIR})
+find_package(Thrust REQUIRED CONFIG)
+# thrust_create_target(Thrust)
+thrust_create_target(Thrust HOST OMP DEVICE OMP)
+target_link_libraries(vem INTERFACE Thrust)

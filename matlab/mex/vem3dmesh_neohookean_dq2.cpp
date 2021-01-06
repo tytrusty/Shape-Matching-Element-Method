@@ -14,6 +14,9 @@
 
 //bartels
 #include <vem3dmesh_neohookean_dq2.h>
+#include <vem3dmesh_neohookean_dq2_v2.h>
+
+#include <thrust/detail/config.h>
 
 /* The gateway function */
 void mexFunction(int nlhs, mxArray *plhs[],
@@ -33,7 +36,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	int k = (int)*mxGetPr(prhs[6]);
 	int n = (int)*mxGetPr(prhs[7]);
 
-	
 	const mwSize *dims;
 	const mxArray *cell;
 	const mxArray *cellElement;
@@ -59,8 +61,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
 		igl::matlab::parse_rhs_index(&cellElement, element);
 		E.emplace_back(element);
 	}
-
 	sim::vem3dmesh_neohookean_dq2(g, A, dF_dq, dM_dq, w, volumes, params, k, n, dF_dq_sp, E);
+
+	//Eigen::SparseMatrixd g_sp(3 * n, 3 * n);
+	//sim::vem3dmesh_neohookean_dq2_v2(g_sp, A, dF_dq, dM_dq, w, volumes, params, k, n, dF_dq_sp, E);
+
 
     igl::matlab::prepare_lhs_double(g, plhs);
 }
