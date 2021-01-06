@@ -4,22 +4,26 @@ function vem_nurbs
 
     % Simulation parameters
     dt = 0.01;          % timestep
-%     C = 0.5 * 10000;     % Lame parameter 1
-%     D = 0.5 * 150000;    % Lame parameter 2
-%     gravity = -100;      % gravity force (direction is -z direction)
-%     k_error = 100000;   % stiffness for stability term
-%     order = 1;          % (1 or 2) linear or quadratic deformation
-%     rho = .5;           % per point density (currently constant)
+    %     C = 0.5 * 10000;     % Lame parameter 1
+    %     D = 0.5 * 150000;    % Lame parameter 2
+    %     gravity = -100;      % gravity force (direction is -z direction)
+    %     k_error = 100000;   % stiffness for stability term
+    %     order = 1;          % (1 or 2) linear or quadratic deformation
+    %     rho = .5;           % per point density (currently constant)
     C = 0.5 * 5000;     % Lame parameter 1
-    D = 0.5 * 150000;    % Lame parameter 2
-    gravity = -100;      % gravity force (direction is -z direction)
+    D = 0.5 * 150000;   % Lame parameter 2
+    gravity = -100;     % gravity force (direction is -z direction)
     k_error = 100000;   % stiffness for stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
     rho = .1;           % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
-    save_obj = 0;        % (0 or 1) whether to output obj files
+    save_obj = 0;       % (0 or 1) whether to output obj files
     obj_res = 18;       % the amount of subdivision for the output obj
+    d = 3;              % dimension (2 or 3)
 
+    % The number of elements in the monomial basis.
+    k = basis_size(d, order);
+    
     % Read in NURBs 
     fig=figure(1);
     clf;
@@ -79,11 +83,15 @@ function vem_nurbs
     
     % Build Monomial bases for all quadrature points
     Q = monomial_basis(V, x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order); 
+    Q0 = monomial_basis(x0, x0_com, order);
+    Y = monomial_basis_matrix(V, x0_com, order, k);
+    Y0 = monomial_basis_matrix(x0, x0_com, order, k);
     
     % Compute Shape weights
-    a = nurbs_blending_weights(parts, V', 10);
-    a_x = nurbs_blending_weights(parts, x0', 10);
+    w = nurbs_blending_weights(parts, V', 10);
+    w_x = nurbs_blending_weights(parts, x0', 10);
+    [W, ~, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
+    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -97,11 +105,15 @@ function vem_nurbs
     
     % Forming gradient of monomial basis w.r.t X
     dM_dX = monomial_basis_grad(V, x0_com, order);
+    dM_dX2 = monomial_basis_grad2(V, x0_com, order);
+    
+    % Computing each gradient of deformation gradient with respect to
+    % projection operator (c are polynomial coefficients)
+    dF_dc = vem_dF_dc(dM_dX2, W);
     
     % Computing gradient of deformation gradient w.r.t configuration, q
     % Cover your EYES this code is a disaster
-    d = 3;  % dimension (2 or 3)
-    dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), a);
+    dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), w);
     dF_dq = permute(dF_dq, [2 3 1]);
     dF = cell(m,1);
     dF_I = cell(m,1);
@@ -109,29 +121,25 @@ function vem_nurbs
        m1 = dF_dq(:,:,i);
        mm1 = max(abs(m1),[],1);
        I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,60);
+       [~,I] = maxk(mm1,450);
        m1(:,setdiff(1:numel(x),I))=[];
        %sum(mm1 < 1e-4)
        dF_I{i} = I';
        dF{i} = m1;
     end
 
-    % Compute mass matrices
-    ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
-    M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
-    M = ((rho*M + k_error*ME)); %sparse?, doesn't seem to be right now
+    % Computing mass matrices
+    ME = vem_error_matrix2(Y0, W0, W0_S, L);
+    M = vem_mass_matrix2(Y, W, W_S, L);
+    M = ((rho*M + k_error*ME)); % sparse? Doesn't seem to be right now...
     % Save & load these matrices for large models to save time.
-    %         save('saveM.mat','M');
-    %         save('saveME.mat','ME');
-    %         M = matfile('saveM.mat').M;
-    %         ME = matfile('saveME.mat').ME;
+    %     save('saveM.mat','M');
+    %     save('saveME.mat','ME');
+    %     M = matfile('saveM.mat').M;
+    %     ME = matfile('saveME.mat').ME;
 
-    k=3;
-    if order == 2
-        k = 9;
-    end
-    
-    xcom_plt = plot3(x0_com(1),x0_com(2),x0_com(3),'.','Color','g','MarkerSize',20);
+    xcom_plt = plot3(x0_com(1),x0_com(2),x0_com(3), ...
+                     '.','Color','g','MarkerSize',20);
 
     ii=1;
     for t=0:dt:30
@@ -157,15 +165,14 @@ function vem_nurbs
             b = [b x(:,E{i}) - x0_com];
         end
         b = b(:);
-
-        PI = L * b;
-        p = PI(end-d+1:end);
-        PI = PI(1:end-d);
+        
+        % Solve for polynomial coefficients (projection operators).
+        c = L * b;
+        p = c(end-d+1:end);
+        PI = c(1:end-d);
         PI = reshape(PI, k, d, []);
         PI = permute(PI, [2 1 3]);
         
-        norm(PI(:)-A(:))
-
         Aij = permute(PI, [3 1 2]);
         Aij = Aij(:,:);
 
@@ -175,31 +182,39 @@ function vem_nurbs
         
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
-                dM_dX(:,:), a, vol, params,k,n,dF,dF_I);
+                dM_dX(:,:), w, vol, params,k,n,dF,dF_I);
 
         % Force vector
-        dV_dq = zeros(numel(x),1);
-
+        dV_dq = zeros(d*(k*numel(E) + 1),1);
+        
+        K2 = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1)); 
+        K3 = zeros(numel(x),numel(x));
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
-            dMi_dX = squeeze(dM_dX(i,:,:));
-            
-            %Aij = zeros(size(A(:,:,1)));
-            Aij = zeros(d,k);
-            for j = 1:size(E,1)
-                %Aij = Aij + A(:,:,j) * a(i,j);
-                Aij = Aij + PI(:,:,j) * a(i,j);
-            end
-            
+            dMi_dX = squeeze(dM_dX2(i,:,:));
+          
             % Deformation Gradient
-            F = Aij * dMi_dX;
+            F = dMi_dX * W{i} * W_S{i} * c;
+            F = reshape(F,d,d);
                         
             % Force vector
             dV_dF = neohookean_tet_dF(F,C,D);
-            dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF; % assuming constant area
+            
+            % Todo: I should be multiplying by volume here, right?
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
+            
+            % Stiffness matrix contribution
+            d2V_dF2 = neohookean_tet_dF2(F,C,D);
+            K2 = K2 - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
+            K3 = K3 - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
         end
-  
+        dV_dq = L' * dV_dq;
+        K2 = L' * K2 * L;
+        norm(K2(:) - K(:))
+        K = K2;
+        norm(K2(:) - K3(:))
+        
         % Error correction force
         p = x(:);
         p(1:d:end) = p(1:d:end) - x_com(1);
