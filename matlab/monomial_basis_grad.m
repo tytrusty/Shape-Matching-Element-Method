@@ -1,4 +1,4 @@
-function dM_dX = monomial_basis_grad2(x, x_com, order)
+function dM_dX = monomial_basis_grad(x, x_com, order)
     d = size(x,1); % dimension
     m = size(x,2);
     

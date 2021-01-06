@@ -1,4 +1,4 @@
-function ME = vem_error_matrix2(Y, W, W_S, L)
+function ME = vem_error_matrix(Y, W, W_S, L)
     m = size(Y,1);
     ME = zeros(size(L,2), size(L,2));
     d = size(Y,2);
