@@ -48,8 +48,8 @@ function vem_sim_2d
     [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
     V = [X(:) Y(:)];
     
-    shapes_per_line = 2;
-    
+    shapes_per_line = 1;
+     
     % Generates line segment samples along a specified line.
     function s=sample_func(a,b)
         s1 = linspace(a(1),b(1),shapes_per_line+1);
@@ -99,6 +99,10 @@ function vem_sim_2d
     axis equal
     ylim([-4.5 2.5])
     
+    % The number of quadrature points where at each point we
+    % add stiffness matrix contributions.
+    m = size(V,1);
+    
     % Constraint matrix for boundary conditions.
     P = fixed_point_constraint_matrix(x0',sort(min_I)');
     
@@ -126,14 +130,15 @@ function vem_sim_2d
     % -- Draft equation (1)
     % -- Shape matching section 4.3
     Q = monomial_basis(V', x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order);     
+    Q0 = monomial_basis(x0, x0_com, order);
+    Y = monomial_basis_matrix(V', x0_com, order, k);
     
     % For each sampled point, compute the weighting with respect to all
     % shapes.
     % -- Draft Equation (3)
     w = compute_projected_weights(x0, E, V');
     w_x = compute_projected_weights(x0, E, x0);
-    W = build_weight_matrix(w,d,k);
+    [W, W_I, W_S] = build_weight_matrix(w,d,k, 'Truncate', false);
     
     % Forming gradient of monomial basis with respect to X (undeformed)
     % -- Draft Equation (13)
@@ -141,21 +146,14 @@ function vem_sim_2d
         
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(dM_dX, W, w, E, d, k);
-    dF_dc = permute(dF_dc, [2 3 1]);
+    dF_dc = vem_dF_dc(dM_dX, W);
+    % dF_dc = permute(dF_dc, [2 3 1]);
     
     % Computing mass matrices
     ME = vem_error_matrix(B, Q0, w_x, d, size(x,2), E);
-    M = vem_mass_matrix(B, Q, w, d, size(x,2), E);
+    M = vem_mass_matrix2(Y, W, W_S, L);
     M = sparse((rho*M + k_error*ME));
 
-    warning('Need to add truncated weights');
-    
-    % The number of quadrature points where at each point we
-    % add stiffness matrix contributions and do all that fun
-    % Neohookean stuff.
-    m = size(Q,2);
-        
     ii=1;
     for t=0:dt:30
         x_com = mean(x,2);
@@ -184,29 +182,27 @@ function vem_sim_2d
         
         % Computing force and stiffness contributions
         for i = 1:m
-            dMi_dX2 = squeeze(dM_dX(i,:,:));
-            Wi = squeeze(W(i,:,:));
+            dMi_dX = squeeze(dM_dX(i,:,:));
            
             % Deformation Gradient (Draft equation 13)
-            F = dMi_dX2 * Wi * c;
+            F = dMi_dX * W{i} * W_S{i} * c;
             F = reshape(F,d,d);
             
             % Computing new world position of this point.
-            Points(:,i) = F * Q(1:d,i) + x0_com + p;
+            Yi = squeeze(Y(i,:,:))*W{i}*W_S{i}; % weighed monomial basis
+            Points(:,i) = Yi * c + x0_com + p;
             
-            dF_dc_i = dF_dc(:,:,i);
-
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + dF_dc_i' * dV_dF;
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - dF_dc_i' * d2V_dF2 * dF_dc_i;
+            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
-        
+
         % Error correction force
         xx = x(:);
         xx(1:2:end) = xx(1:2:end) - x_com(1);
