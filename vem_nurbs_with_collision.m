@@ -1,4 +1,4 @@
-function vem_nurbs
+function vem_nurbs_with_collision
     % Simulation parameters
     dt = 0.01;          % timestep
     C = 0.5 * 1700;    % Lame parameter 1
@@ -18,10 +18,10 @@ function vem_nurbs
     
     % Some files I test on
     iges_file = 'rounded_cube.iges';
-    % iges_file = 'starship_nose.iges';
-    % iges_file = 'puft_simple.iges';
+%     iges_file = 'starship_nose.iges';
+%     iges_file = 'puft_simple.iges';
 %     iges_file = 'castle_simple.iges';
-    % iges_file = 'rocket_with_nose.iges';
+%     iges_file = 'rocket_with_nose.iges';
     % iges_file = 'mug.iges';
     % iges_file = 'rocket.iges'; % this rocket doesn't have the nosecone
     
@@ -86,7 +86,7 @@ function vem_nurbs
     x = x0;
     
     % Setup pinned vertices constraint matrix
-    [~,I] = mink(x0(1,:),20);
+    [~,I] = maxk(x0(1,:),20);
     pin_I = I(1:9);
     % pin_I = find(x0(1,:) < -2.3 & x0(3,:) > 14 );
     % pin_I = find(x0(1,:) > 6 & x0(3,:) > 6 & x0(3,:) < 7);
@@ -191,30 +191,20 @@ function vem_nurbs
     if order == 2
         k = 10;
     end
-    
-    % Sphere for collision
-    sphere_r = (max(x(3,:)) - min(x(3,:))) / 10.0; 
-    sphere_c = [mean(x(1,:)); mean(x(2,:)) ; max(x(3,:)) + sphere_r + 12.0];
-    [sphere_x, sphere_y, sphere_z] = sphere;
-    sphere_x = sphere_x * sphere_r + sphere_c(1);
-    sphere_y = sphere_y * sphere_r + sphere_c(2);
-    sphere_z = sphere_z * sphere_r + sphere_c(3);
-    sphere_surf = surf(sphere_x, sphere_y, sphere_z);
-    set(fig, 'KeyPressFcn', @keypress)
-    
+        
     % Triangulate nurbs patch, for collision detection
-    faces=[];
-    verts=[];
-    for ii=1:numel(part)
-        fvc = surf2patch(part{ii}.plt, 'triangles');
-        fvc.faces = fvc.faces + size(verts,1);
-        faces=[faces; fvc.faces];
-        verts=[verts; fvc.vertices];   
-    end
+    [verts,faces] = triangulate_iges(part);
+    collide_ratio = 0.1; % for rounded cube
     vert_normal = per_vertex_normals(verts, faces);
     face_normal = normals(verts, faces);
-    collide_ratio = 0.1; % for rounded cube
 %     collide_ratio = 10;
+
+    collide_iges_file = 'rounded_cube.iges';
+    collide_part=nurbs_from_iges(collide_iges_file, resolution, 0);
+    [collide_verts, collide_faces] = triangulate_iges(collide_part);
+    collide_verts = collide_verts + [0 0 max(verts(:,3))];
+    t_collide = tsurf(collide_faces, collide_verts);
+    set(fig, 'KeyPressFcn', @keypress)
 
     ii=1;
     for t=0:dt:30
@@ -268,25 +258,27 @@ function vem_nurbs
         f_internal = -dt*P*dV_dq;
         
         f_collision = zeros(size(x,2)*3,1);
-        % detect the collision of vertices with sphere
-        for i = 1:size(x, 2)
-          dist_vec = x(:,i) - sphere_c;
-          dist = sqrt(sum(dist_vec.^2));
-          if dist <= sphere_r
-            f_collision(3*i-2:3*i, 1) = collide_ratio * (sphere_r - dist) * vert_normal(i,:)';
-            disp('vertex collide!!');
-          end
+        % detect the collision of vertices with another mesh
+        [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
+        for i = 1:size(IF,1)
+          fid = IF(i, 1); % face id of the origin mesh
+          c_fid = IF(i, 2); % face id of the colliding mesh
+          f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collide_ratio,f_collision);
         end
-        % detect the collision of faces with sphere
-        for i = 1:size(faces,1)
-          [dist, ~] = pointTriangleDistance([verts(faces(i,1),:); verts(faces(i,2),:); verts(faces(i,3),:)], sphere_c');
-          if dist <= sphere_r
-            f_collision(3*faces(i,1)-2:3*faces(i,1), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
-            f_collision(3*faces(i,2)-2:3*faces(i,2), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
-            f_collision(3*faces(i,3)-2:3*faces(i,3), 1) = 1/3 * collide_ratio * (sphere_r - dist) * face_normal(i,:)';
-            disp('face collide!!');
-          end
-        end
+        
+%         % detect self-collision
+%         [~,~,IF] = selfintersect(verts,faces,'DetectOnly',true);
+%         for i = 1:size(IF,1)
+%           fid = IF(i, 1); % face id of the origin mesh
+%           c_fid = IF(i, 2); % face id of the colliding mesh
+%           if fid == c_fid
+%             continue;
+%           end
+%           % check collision in each directions
+%           f_collision = check_collision_between_faces(verts,faces,verts,faces,fid,c_fid,face_normal,collide_ratio,f_collision);
+%           f_collision = check_collision_between_faces(verts,faces,verts,faces,c_fid,fid,face_normal,collide_ratio,f_collision);
+%         end
+%  
         f_collision = P * f_collision;
         
         % Computing linearly-implicit velocity update
@@ -328,43 +320,75 @@ function vem_nurbs
         toc
     end
     
-        % Callback to process keypress events
+    % Callback to process keypress events
     function keypress(~, evnt)
       switch lower(evnt.Key)  
           case 'leftarrow'
-             sphere_c(1) = sphere_c(1) - 10;
+             collide_verts = collide_verts - repmat([10 0 0], size(collide_verts,1), 1);
           case 'rightarrow'
-             sphere_c(1) = sphere_c(1) + 10;
+             collide_verts = collide_verts + repmat([10 0 0], size(collide_verts,1), 1);
           case 'downarrow'
-             sphere_c(2) = sphere_c(2) - 10;
+             collide_verts = collide_verts - repmat([0 10 0], size(collide_verts,1), 1);
           case 'uparrow'
-             sphere_c(2) = sphere_c(2) + 10;
+             collide_verts = collide_verts + repmat([0 10 0], size(collide_verts,1), 1);
           case 115  % s: move down
-             sphere_c(3) = sphere_c(3) - 10;
+             collide_verts = collide_verts - repmat([0 0 10], size(collide_verts,1), 1);
           case 119  % w: move up
-             sphere_c(3) = sphere_c(3) + 10;
+             collide_verts = collide_verts + repmat([0 0 10], size(collide_verts,1), 1);
           case 97   % a: increase the size of the sphere
-             sphere_r = sphere_r - 1;
+             collide_verts = collide_verts * 1.1;
           case 100  % d: decrease the size of the sphere
-             sphere_r = sphere_r + 1; 
+             collide_verts = collide_verts * 0.9;
           otherwise
               return
       end
       % Always do a redraw
-      redraw_sphere();
-    end
-
-    function redraw_sphere()
-      % draw sphere
-      [sphere_x, sphere_y, sphere_z] = sphere;
-      sphere_x = sphere_x * sphere_r + sphere_c(1);
-      sphere_y = sphere_y * sphere_r + sphere_c(2);
-      sphere_z = sphere_z * sphere_r + sphere_c(3);
-      sphere_surf.XData = sphere_x;
-      sphere_surf.YData = sphere_y;
-      sphere_surf.ZData = sphere_z;
-
+      t_collide.Vertices = collide_verts;
       drawnow
     end
+
+
+      
+end
+
+function [verts,faces] = triangulate_iges(part)
+  faces=[];
+  verts=[];
+  if isfield(part{1}, 'plt')
+    for ii=1:numel(part)
+        fvc = surf2patch(part{ii}.plt, 'triangles');
+        fvc.faces = fvc.faces + size(verts,1);
+        faces=[faces; fvc.faces];
+        verts=[verts; fvc.vertices];   
+    end
+  else
+     for ii=1:numel(part)
+        xi = reshape(part{ii}.x0, 3, part{ii}.subd(1), part{ii}.subd(2));
+        fvc = surf2patch(squeeze(xi(1,:,:)),squeeze(xi(2,:,:)),squeeze(xi(3,:,:)),'triangles');
+        fvc.faces = fvc.faces + size(verts,1);
+        faces=[faces; fvc.faces];
+        verts=[verts; fvc.vertices];   
+     end
+  end
+  % check for degenerate faces
+  dblA = doublearea(verts,faces);
+  deg_fid = find(dblA <= 0);
+  faces(deg_fid, :) = [];
+end
+
+function f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collide_ratio,f_collision)
+  % check vertex-face collisions in the colliding faces
+  for j = 1:3  
+    cv = collide_verts(collide_faces(c_fid,j),:);
+    [dist, cp] = pointTriangleDistance(...
+                            [verts(faces(fid,1),:); verts(faces(fid,2),:); verts(faces(fid,3),:)], ...
+                            cv);
+    if dot(cv-cp, face_normal(fid, :)) > 0
+      f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) = f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) = f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) = f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      disp('face collide!!');
+    end
+  end
 end
 
