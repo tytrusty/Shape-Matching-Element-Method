@@ -1,7 +1,4 @@
 function vem_nurbs
-    % NOTE: gonna deprecate this soon and instead make scripts in examples/
-    %       that call vem_simulate_nurbs.m instead.
-
     % Simulation parameters
     dt = 0.01;          % timestep
     %     C = 0.5 * 10000;     % Lame parameter 1
@@ -79,11 +76,9 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    [B,L] = compute_shape_matrices(x0, x0_com, E, order);
+    [~,L] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
-    Q = monomial_basis(V, x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order);
     Y = monomial_basis_matrix(V, x0_com, order, k);
     Y0 = monomial_basis_matrix(x0, x0_com, order, k);
     
@@ -101,33 +96,15 @@ function vem_nurbs
     
     % Applying fixed point constraints to NURBS jacobian.
     J = P * J;
-    m = size(Q,2);
+    m = size(V,2);
     
     % Forming gradient of monomial basis w.r.t X
-    dM_dX = monomial_basis_grad(V, x0_com, order);
-    dM_dX2 = monomial_basis_grad2(V, x0_com, order);
+    dM_dX = monomial_basis_grad2(V, x0_com, order);
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(dM_dX2, W);
+    dF_dc = vem_dF_dc(dM_dX, W);
     
-    % Computing gradient of deformation gradient w.r.t configuration, q
-    % Cover your EYES this code is a disaster
-    dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), w);
-    dF_dq = permute(dF_dq, [2 3 1]);
-    dF = cell(m,1);
-    dF_I = cell(m,1);
-    for i = 1:m
-       m1 = dF_dq(:,:,i);
-       mm1 = max(abs(m1),[],1);
-       I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,60);
-       m1(:,setdiff(1:numel(x),I))=[];
-       %sum(mm1 < 1e-4)
-       dF_I{i} = I';
-       dF{i} = m1;
-    end
-
     % Computing mass matrices
     ME = vem_error_matrix2(Y0, W0, W0_S, L);
     M = vem_mass_matrix2(Y, W, W_S, L);
@@ -144,85 +121,57 @@ function vem_nurbs
     ii=1;
     for t=0:dt:30
         tic
-        x_com = mean(x,2);
-        
-        % Compute shape matching matrices
-        A=zeros(d, k, numel(E));
-        for i=1:numel(E)
-            p = x(:,E{i}) - x_com;
-            Ai = p*B{i};
-            A(:,:,i) = Ai;
-        end
+%         x_com = mean(x,2);
 
         % Preparing input for stiffness matrix mex function.
         n=numel(E);
-        dF_dqij = permute(dF_dq, [3 1 2]);
-%         Aij = permute(A, [3 1 2]);
-%         Aij = Aij(:,:);
-        
+
         b = [];
         for i=1:numel(E)
             b = [b x(:,E{i}) - x0_com];
         end
         b = b(:);
-        
+
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
         p = c(end-d+1:end);
-        PI = c(1:end-d);
-        PI = reshape(PI, k, d, []);
-        PI = permute(PI, [2 1 3]);
-        
-        Aij = permute(PI, [3 1 2]);
-        Aij = Aij(:,:);
+        x_com = x0_com + p;
 
-        xcom_plt.XData = p(1)+x0_com(1);
-        xcom_plt.YData = p(2)+x0_com(2);
-        xcom_plt.ZData = p(3)+x0_com(3);
-        
+        xcom_plt.XData = x_com(1);
+        xcom_plt.YData = x_com(2);
+        xcom_plt.ZData = x_com(3);
+
         % Stiffness matrix (mex function)
-        tic
-        K = -vem3dmesh_neohookean_dq2(c, dM_dX2(:,:), vol, params, ...
+        K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
                                       dF_dc, W, W_S, W_I, k, n);
         K = L' * K * L;
-        toc 
+        
         % Force vector
         dV_dq = zeros(d*(k*numel(E) + 1),1);
-        
-        K2 = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1)); 
-        K3 = zeros(numel(x),numel(x));
+
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
-            dMi_dX = squeeze(dM_dX2(i,:,:));
-          
+            dMi_dX = squeeze(dM_dX(i,:,:));
+
             % Deformation Gradient
             F = dMi_dX * W{i} * W_S{i} * c;
             F = reshape(F,d,d);
-                        
+
             % Force vector
             dV_dF = neohookean_tet_dF(F,C,D);
-            
+
             % Todo: I should be multiplying by volume here, right?
             dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
-            
-            % Stiffness matrix contribution
-            d2V_dF2 = neohookean_tet_dF2(F,C,D);
-            K2 = K2 - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
-            K3 = K3 - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
         end
         dV_dq = L' * dV_dq;
-        K2 = L' * K2 * L;
-        norm(K2(:) - K(:))
-%         K = K2;
-        norm(K2(:) - K3(:))
-        
+
         % Error correction force
-        p = x(:);
-        p(1:d:end) = p(1:d:end) - x_com(1);
-        p(2:d:end) = p(2:d:end) - x_com(2);
-        p(3:d:end) = p(3:d:end) - x_com(3);
-        f_error = - 2 * ME * p;
+        x_centered = x(:);
+        x_centered(1:d:end) = x_centered(1:d:end) - x_com(1);
+        x_centered(2:d:end) = x_centered(2:d:end) - x_com(2);
+        x_centered(3:d:end) = x_centered(3:d:end) - x_com(3);
+        f_error = - 2 * ME * x_centered;
         f_error = k_error*(dt * P * f_error(:));
        
         % Force from potential energy.

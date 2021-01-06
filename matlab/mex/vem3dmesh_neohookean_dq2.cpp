@@ -77,10 +77,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	int k = (int)*mxGetPr(prhs[8]);
 	int n = (int)*mxGetPr(prhs[9]);
 
-	std::cout << dF_dc.size() << std::endl;
-	std::cout << W.size() << std::endl;
-	std::cout << W_S.size() << std::endl;
-	std::cout << W_I.size() << std::endl;
 	sim::vem3dmesh_neohookean_dq2(g, c, dM_dX, volumes, params, dF_dc, W, W_S, W_I, k, n);
 
     igl::matlab::prepare_lhs_double(g, plhs);
