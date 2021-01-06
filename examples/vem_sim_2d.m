@@ -3,14 +3,18 @@ function vem_sim_2d
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 1700;   	% Lame parameter 1
-    D = 0.5 * 15000;   	% Lame parameter 2
+    C = 0.5 * 170;   	% Lame parameter 1
+    D = 0.5 * 1500;   	% Lame parameter 2
     gravity = -100;     % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
     rho = 1;            % density
 	d = 2;              % dimension (2 or 3)
     save_output = 0;    % (0 or 1) whether to output images of simulation
+    
+    % The number of elements in the monomial basis.
+    % -- example: Draft equation 1 is second order with k == 5
+    k = basis_size(d, order);
     
     % Load a basic square mesh
     [V,F] = readOBJ('models/plane.obj');
@@ -44,7 +48,7 @@ function vem_sim_2d
     [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
     V = [X(:) Y(:)];
     
-    shapes_per_line = 10;
+    shapes_per_line = 2;
     
     % Generates line segment samples along a specified line.
     function s=sample_func(a,b)
@@ -115,7 +119,7 @@ function vem_sim_2d
     %
     % Note: each shape (edge in this case) has its own 'B' matrix
     %       because each shape has its own projection operator.
-    [B,L,LM] = compute_shape_matrices(x0, x0_com, E, order);
+    [B,L] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for quadrature points (Q) and boundary
     % points (Q0). 
@@ -129,25 +133,23 @@ function vem_sim_2d
     % -- Draft Equation (3)
     w = compute_projected_weights(x0, E, V');
     w_x = compute_projected_weights(x0, E, x0);
-
+    W = build_weight_matrix(w,d,k);
+    
     % Forming gradient of monomial basis with respect to X (undeformed)
     % -- Draft Equation (13)
-    dM_dX = monomial_basis_grad(V', x0_com, order);
+    dM_dX = monomial_basis_grad2(V', x0_com, order);
         
-    % Computing each dF_dq
-    dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), w);
-    dF_dq = permute(dF_dq, [2 3 1]);
- 
+    % Computing each gradient of deformation gradient with respect to
+    % projection operator (c are polynomial coefficients)
+    dF_dc = vem_dF_dc(dM_dX, W, w, E, d, k);
+    dF_dc = permute(dF_dc, [2 3 1]);
+    
     % Computing mass matrices
     ME = vem_error_matrix(B, Q0, w_x, d, size(x,2), E);
     M = vem_mass_matrix(B, Q, w, d, size(x,2), E);
     M = sparse((rho*M + k_error*ME));
 
-    % The number of elements in the monomial basis.
-    % -- example: Draft equation 1 is second order with k == 5
     warning('Need to add truncated weights');
-    warning('Move new dm_dx to function');
-    k = basis_size(d, order);
     
     % The number of quadrature points where at each point we
     % add stiffness matrix contributions and do all that fun
@@ -158,83 +160,58 @@ function vem_sim_2d
     for t=0:dt:30
         x_com = mean(x,2);
         
-        % Compute projection operators for each shape (edge)
-        A=zeros(d, k, size(E,1));
-        for i=1:size(E,1)
-            p = x(:,E{i}) - x_com;
-            Ai = p*B{i};
-            A(:,:,i) = Ai;
-        end
-        
         b = [];
         for i=1:numel(E)
             b = [b x(:,E{i}) - x0_com];
         end
         b = b(:);
+        
+        % Solve for polynomial coefficients (projection operators).
+        c = L * b;
+        
+        % Extract deformed center of mass translation.
+        p = c(end-d+1:end);
 
-        PI = L * LM * b;
-        p = PI(end-d+1:end);
-        PI = PI(1:end-d);
-        PI = reshape(PI, k, d, []);
-        PI = permute(PI, [2 1 3]);
-
-        dV_dq = zeros(numel(x),1);     % force vector
-        K = zeros(numel(x), numel(x)); % stiffness matrix
-        K3 = zeros(numel(x), numel(x));
-        K2 = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1));
+        % force vector
+        dV_dq = zeros(d*(k*numel(E) + 1),1); 
+        
+        % stiffness matrix
+        K = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1));
+        
         % New deformed positions of quadrature points.
         % (only for visualization)
         Points = zeros(size(V'));
         
         % Computing force and stiffness contributions
         for i = 1:m
-            dMi_dX = squeeze(dM_dX(i,:,:));
-            
-            % Projection operator for this particular point
-            % -- Draft equation 3
-            Aij = zeros(d,k);
-            Wi = zeros(d*k, d*k*numel(E) + d);
-            
-            
-            dM = zeros(d*d, d*k);
-            for j = 1:d
-                for l = 1:d
-                    dM(d*(j-1)+l, k*(l-1)+1:k*l)= dMi_dX(:,j)';
-                end
-            end
-            
-            for j = 1:numel(E)
-%                 Aij = Aij + A(:,:,j) * w(i,j);
-                Aij = Aij + PI(:,:,j) * w(i,j);
-                Wi(:, d*k*(j-1)+1:d*k*j) = eye(d*k)*w(i,j);
-            end
-            
+            dMi_dX2 = squeeze(dM_dX(i,:,:));
+            Wi = squeeze(W(i,:,:));
+           
             % Deformation Gradient (Draft equation 13)
-            
-            F = Aij * dMi_dX;
+            F = dMi_dX2 * Wi * c;
+            F = reshape(F,d,d);
             
             % Computing new world position of this point.
             Points(:,i) = F * Q(1:d,i) + x0_com + p;
             
-            %dfdfqtmp = dF_dq(:,:,i);
-            dF_dq_i = dM * Wi; %$ * L * LM;
-            %norm(dF_dq_i(:) - dfdfqtmp(:))
+            dF_dc_i = dF_dc(:,:,i);
+
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF;
+            dV_dq = dV_dq + dF_dc_i' * dV_dF;
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
-            K2 = K2 - dF_dq_i' * d2V_dF2 * dF_dq_i;
+            K = K - dF_dc_i' * d2V_dF2 * dF_dc_i;
         end
-        LLM = L * LM;
-        K = LLM' * K2 * LLM;
+        K = L' * K * L;
+        dV_dq = L' * dV_dq;
         
         % Error correction force
         xx = x(:);
         xx(1:2:end) = xx(1:2:end) - x_com(1);
         xx(2:2:end) = xx(2:2:end) - x_com(2);
+        % should just do xx(1:d:end) - x_com?
         f_error = - 2 * ME * xx;
         f_error = k_error*(dt * P * f_error);
         

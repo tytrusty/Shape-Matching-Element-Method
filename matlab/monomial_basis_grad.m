@@ -3,10 +3,7 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
     m = size(x,2);
     
     % Compute number of monomials
-    k=0;
-    for i=1:order
-        k=k+nchoosek(d+i-1,i);
-    end
+    k = basis_size(d, order);
     
     dM_dX = zeros(m,k,d);
     Q = x - x_com;
