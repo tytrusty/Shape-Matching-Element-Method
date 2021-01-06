@@ -4,21 +4,23 @@
 #include <Eigen/Dense>
 #include <EigenTypes.h>
 
-#include <vem3d_neohookean_dq2.h>
+//#include <vem3d_neohookean_dq2.h>
+#include <d2psi_neohookean_dF2.h> // TODO remove and replace with neohookean dq2
+
 
 namespace sim {
 
-template<typename DerivedRet, typename DerivedA, typename DerivedDF, typename DerivedDM, typename DerivedW, typename DerivedVol, typename DerivedParam>
+template<typename DerivedRet, typename DerivedC, typename DerivedDM, typename DerivedVol, typename DerivedParam>
 void vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
-	const Eigen::MatrixXx<DerivedA> &A,
-	const Eigen::MatrixXx<DerivedDF> &dF_dq,
-	const Eigen::MatrixXx<DerivedDM> &dM_dq,
-	const Eigen::MatrixXx<DerivedW> &w,
+	const Eigen::VectorXx<DerivedC> &c,
+	const Eigen::MatrixXx<DerivedDM> &dM_dX,
 	const Eigen::VectorXx<DerivedVol> &volume,
 	const Eigen::MatrixXx<DerivedParam> &params,
-	int k, int n,
-	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & dF_dq_sp,
-	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & E);
+	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & dF_dc,
+	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & W,
+	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & W_S,
+	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & W_I,
+	int k, int n);
 }
 
 #ifndef SIM_STATIC_LIBRARY

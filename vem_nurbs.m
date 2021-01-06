@@ -90,7 +90,7 @@ function vem_nurbs
     % Compute Shape weights
     w = nurbs_blending_weights(parts, V', 10);
     w_x = nurbs_blending_weights(parts, x0', 10);
-    [W, ~, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
+    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
     [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     
     % Fixed x values.
@@ -121,7 +121,7 @@ function vem_nurbs
        m1 = dF_dq(:,:,i);
        mm1 = max(abs(m1),[],1);
        I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,450);
+       [~,I] = maxk(mm1,60);
        m1(:,setdiff(1:numel(x),I))=[];
        %sum(mm1 < 1e-4)
        dF_I{i} = I';
@@ -155,7 +155,7 @@ function vem_nurbs
         end
 
         % Preparing input for stiffness matrix mex function.
-        n=size(x0,2);
+        n=numel(E);
         dF_dqij = permute(dF_dq, [3 1 2]);
 %         Aij = permute(A, [3 1 2]);
 %         Aij = Aij(:,:);
@@ -181,9 +181,11 @@ function vem_nurbs
         xcom_plt.ZData = p(3)+x0_com(3);
         
         % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
-                dM_dX(:,:), w, vol, params,k,n,dF,dF_I);
-
+        tic
+        K = -vem3dmesh_neohookean_dq2(c, dM_dX2(:,:), vol, params, ...
+                                      dF_dc, W, W_S, W_I, k, n);
+        K = L' * K * L;
+        toc 
         % Force vector
         dV_dq = zeros(d*(k*numel(E) + 1),1);
         
@@ -212,7 +214,7 @@ function vem_nurbs
         dV_dq = L' * dV_dq;
         K2 = L' * K2 * L;
         norm(K2(:) - K(:))
-        K = K2;
+%         K = K2;
         norm(K2(:) - K3(:))
         
         % Error correction force

@@ -15,52 +15,73 @@
 //bartels
 #include <vem3dmesh_neohookean_dq2.h>
 
+template <typename T>
+using EigenMatrixList = std::vector<Eigen::MatrixXx<T>, Eigen::aligned_allocator<Eigen::MatrixXx<T>>>;
+
+template <typename T>
+using EigenVectorList = std::vector<Eigen::VectorXx<T>, Eigen::aligned_allocator<Eigen::VectorXx<T>>>;
+
+
+template <typename DerivedV>
+void parse_cell(const mxArray *prhs[], int index, EigenMatrixList<DerivedV>& V) {
+		const mxArray *cell = prhs[index];
+	const mwSize *dims = mxGetDimensions(prhs[index]);
+	const mxArray *cellElement;
+	mwIndex jcell;
+	for (jcell = 0; jcell < dims[0]; jcell++) {
+		cellElement = mxGetCell(cell, jcell);
+		Eigen::MatrixXx<DerivedV> element;
+		igl::matlab::parse_rhs_double(&cellElement, element);
+		
+		V.emplace_back(element);
+	}
+}
+
+template <typename DerivedV>
+void parse_cell_index(const mxArray *prhs[], int index, EigenVectorList<DerivedV>& V) {
+	const mxArray *cell = prhs[index];
+	const mwSize *dims = mxGetDimensions(prhs[index]);
+	const mxArray *cellElement;
+	mwIndex jcell;
+	for (jcell = 0; jcell < dims[0]; jcell++) {
+		cellElement = mxGetCell(cell, jcell);
+		Eigen::VectorXx<DerivedV> element;
+		igl::matlab::parse_rhs_index(&cellElement, element);
+		V.emplace_back(element);
+	}
+}
+
 /* The gateway function */
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
     /* variable declarations here */
     Eigen::MatrixXd g;
 
-    Eigen::MatrixXd A, dF_dq, dM_dq, w, params;
-    Eigen::VectorXd volumes; 
+    Eigen::MatrixXd dM_dX, params;
+    Eigen::VectorXd c, volumes; 
 
-    igl::matlab::parse_rhs_double(prhs+0, A);
-    igl::matlab::parse_rhs_double(prhs+1, dF_dq);
-    igl::matlab::parse_rhs_double(prhs+2, dM_dq);
-    igl::matlab::parse_rhs_double(prhs+3, w);
-    igl::matlab::parse_rhs_double(prhs+4, volumes);
-    igl::matlab::parse_rhs_double(prhs+5, params);
-	int k = (int)*mxGetPr(prhs[6]);
-	int n = (int)*mxGetPr(prhs[7]);
+	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > dF_dc;
+	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > W;
+	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > W_S;
+	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > W_I;
 
-	
-	const mwSize *dims;
-	const mxArray *cell;
-	const mxArray *cellElement;
-	mwIndex jcell;
-	cell = prhs[8];
-	dims = mxGetDimensions(prhs[8]);
+    igl::matlab::parse_rhs_double(prhs+0, c);
+    igl::matlab::parse_rhs_double(prhs+1, dM_dX);
+    igl::matlab::parse_rhs_double(prhs+2, volumes);
+    igl::matlab::parse_rhs_double(prhs+3, params);
+	parse_cell(prhs, 4, dF_dc);
+	parse_cell(prhs, 5, W);
+	parse_cell(prhs, 6, W_S);
+	parse_cell_index(prhs, 7, W_I);
 
-	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > dF_dq_sp;
-	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > E;
+	int k = (int)*mxGetPr(prhs[8]);
+	int n = (int)*mxGetPr(prhs[9]);
 
-	for (jcell = 0; jcell < dims[0]; jcell++) {
-		cellElement = mxGetCell(cell, jcell);
-		Eigen::MatrixXd element;
-		igl::matlab::parse_rhs_double(&cellElement, element);
-		dF_dq_sp.emplace_back(element);
-	}
-
-	cell = prhs[9];
-	dims = mxGetDimensions(prhs[9]);
-	for (jcell = 0; jcell < dims[0]; jcell++) {
-		cellElement = mxGetCell(cell, jcell);
-		Eigen::VectorXi element;
-		igl::matlab::parse_rhs_index(&cellElement, element);
-		E.emplace_back(element);
-	}
-
-	sim::vem3dmesh_neohookean_dq2(g, A, dF_dq, dM_dq, w, volumes, params, k, n, dF_dq_sp, E);
+	std::cout << dF_dc.size() << std::endl;
+	std::cout << W.size() << std::endl;
+	std::cout << W_S.size() << std::endl;
+	std::cout << W_I.size() << std::endl;
+	sim::vem3dmesh_neohookean_dq2(g, c, dM_dX, volumes, params, dF_dc, W, W_S, W_I, k, n);
 
     igl::matlab::prepare_lhs_double(g, plhs);
 }
