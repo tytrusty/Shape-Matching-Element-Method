@@ -258,15 +258,15 @@ function vem_nurbs_with_collision
         f_internal = -dt*P*dV_dq;
         
         f_collision = zeros(size(x,2)*3,1);
-        % detect the collision of vertices with another mesh
+        % detect the collision with another mesh
         [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
         for i = 1:size(IF,1)
-          fid = IF(i, 1); % face id of the origin mesh
-          c_fid = IF(i, 2); % face id of the colliding mesh
+          fid = IF(i, 1); % colliding face id of the origin mesh
+          c_fid = IF(i, 2); % colliding face id of the colliding mesh
           f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collide_ratio,f_collision);
         end
         
-%         % detect self-collision
+%         % detect self-collision (not working yet)
 %         [~,~,IF] = selfintersect(verts,faces,'DetectOnly',true);
 %         for i = 1:size(IF,1)
 %           fid = IF(i, 1); % face id of the origin mesh
