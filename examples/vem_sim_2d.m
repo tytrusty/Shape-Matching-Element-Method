@@ -142,15 +142,15 @@ function vem_sim_2d
     
     % Forming gradient of monomial basis with respect to X (undeformed)
     % -- Draft Equation (13)
-    dM_dX = monomial_basis_grad2(V', x0_com, order);
+    dM_dX = monomial_basis_grad(V', x0_com, order);
         
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
     dF_dc = vem_dF_dc(dM_dX, W);
     
     % Computing mass matrices
-    ME = vem_error_matrix2(Y0, W0, W0_S, L);
-    M = vem_mass_matrix2(Y, W, W_S, L);
+    ME = vem_error_matrix(Y0, W0, W0_S, L);
+    M = vem_mass_matrix(Y, W, W_S, L);
     M = sparse((rho*M + k_error*ME));
 
     ii=1;

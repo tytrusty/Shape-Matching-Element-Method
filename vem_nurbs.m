@@ -11,7 +11,7 @@ function vem_nurbs
     D = 0.5 * 150000;   % Lame parameter 2
     gravity = -100;     % gravity force (direction is -z direction)
     k_error = 100000;   % stiffness for stability term
-    order = 1;          % (1 or 2) linear or quadratic deformation
+    order = 2;          % (1 or 2) linear or quadratic deformation
     rho = .1;           % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
     save_obj = 0;       % (0 or 1) whether to output obj files
@@ -98,15 +98,15 @@ function vem_nurbs
     m = size(V,2);
     
     % Forming gradient of monomial basis w.r.t X
-    dM_dX = monomial_basis_grad2(V, x0_com, order);
+    dM_dX = monomial_basis_grad(V, x0_com, order);
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
     dF_dc = vem_dF_dc(dM_dX, W);
     
     % Computing mass matrices
-    ME = vem_error_matrix2(Y0, W0, W0_S, L);
-    M = vem_mass_matrix2(Y, W, W_S, L);
+    ME = vem_error_matrix(Y0, W0, W0_S, L);
+    M = vem_mass_matrix(Y, W, W_S, L);
     M = ((rho*M + k_error*ME)); % sparse? Doesn't seem to be right now...
     % Save & load these matrices for large models to save time.
     %     save('saveM.mat','M');

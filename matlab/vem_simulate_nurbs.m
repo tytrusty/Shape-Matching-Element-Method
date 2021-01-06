@@ -16,7 +16,12 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'distance_cutoff', 20);
     parse(p,varargin{:});
     config = p.Results;
-
+    
+    d = 3;  % dimension (2 or 3)
+    
+    % The number of elements in the monomial basis.
+    k = basis_size(d, config.order);
+    
     % Read in NURBs 
     fig=figure(1);
     clf;
@@ -63,27 +68,17 @@ function vem_simulate_nurbs(parts, varargin)
     x0_com = mean(x0,2);
         
     % Shape Matrices
-    %E=cell(1);
-    %E{1}=1:size(x0,2);
-    [B,~] = compute_shape_matrices(x0, x0_com, E, config.order);
+    [~,L] = compute_shape_matrices(x0, x0_com, E, config.order);
     
     % Build Monomial bases for all quadrature points
-    Q = monomial_basis(V, x0_com, config.order);
-    Q0 = monomial_basis(x0, x0_com, config.order); 
+    Y = monomial_basis_matrix(V, x0_com, config.order, k);
+    Y0 = monomial_basis_matrix(x0, x0_com, config.order, k);
     
     % Compute Shape weights
-    a = nurbs_blending_weights(parts, V', config.distance_cutoff);
-    a_x = nurbs_blending_weights(parts, x0', config.distance_cutoff);
-    
-    % Form selection matrices for each shape.
-    S = cell(numel(E),1);
-    for i=1:size(E,1)
-        S{i} = sparse(zeros(numel(x0), numel(E{i})*3));
-        for j=1:numel(E{i})
-            idx = E{i}(j);
-            S{i}(3*idx-2:3*idx,3*j-2:3*j) = eye(3);
-        end
-    end
+    w = nurbs_blending_weights(parts, V', config.distance_cutoff);
+    w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff);
+    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
+    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -93,36 +88,21 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Applying fixed point constraints to NURBS jacobian.
     J = P * J;
-    m = size(Q,2);
+    
+    
+    m = size(V,2);  % number of quadrature points
+    n = numel(E);	% number of shapes
     
     % Forming gradient of monomial basis w.r.t X
     dM_dX = monomial_basis_grad(V, x0_com, config.order);
     
-    % Computing gradient of deformation gradient w.r.t configuration, q
-    % Cover your EYES this code is a disaster
-    d = 3;  % dimension (2 or 3)
-    dF_dq = vem_dF_dq(B, dM_dX, E, size(x,2), a);
-    dF_dq = permute(dF_dq, [2 3 1]);
-    SdF = cell(m,1);
-    dF = cell(m,1);
-    dF_I = cell(m,1);
-    for i = 1:m
-       m1 = dF_dq(:,:,i);
-       mm1 = max(abs(m1),[],1);
-       I = find(mm1 > 1e-4);
-       [~,I] = maxk(mm1,60);
-       m1(:,setdiff(1:numel(x),I))=[];
-       sum(mm1 < 1e-4);
-       dF_I{i} = I';
-       SdF{i} = sparse(zeros(numel(I), numel(x)));
-       ind=sub2ind(size(SdF{i}), 1:numel(I),I);
-       SdF{i}(ind)=1;
-       dF{i} = m1;
-    end
+    % Computing each gradient of deformation gradient with respect to
+    % projection operator (c are polynomial coefficients)
+    dF_dc = vem_dF_dc(dM_dX, W);
 
     % Compute mass matrices
-    ME = vem_error_matrix(B, Q0, a_x, d, size(x,2), E);
-    M = vem_mass_matrix(B, Q, a, d, size(x,2), E);
+    ME = vem_error_matrix(Y0, W0, W0_S, L);
+    M = vem_mass_matrix(Y, W, W_S, L);
     M = ((config.rho*M + config.k_stability*ME)); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
@@ -130,57 +110,55 @@ function vem_simulate_nurbs(parts, varargin)
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
 
-    k=4;
-    if config.order == 2
-        k = 10;
-    end
-
     ii=1;
     for t=0:config.dt:30
         tic
         
-        % Compute shape matching matrices
-        A=zeros(d, k, numel(E));
-        for i=1:numel(E)
-            p = x(:,E{i}) - x0_com;
-            Ai = p*B{i};
-            A(:,:,i) = Ai;
-        end
-
         % Preparing input for stiffness matrix mex function.
-        n=size(x0,2);
-        dF_dqij = permute(dF_dq, [3 1 2]);
-        Aij = permute(A, [3 1 2]);
-        Aij = Aij(:,:);        
+        % TODO: don't form this vector this way :)
+        b = [];
+        for i=1:numel(E)
+            b = [b x(:,E{i}) - x0_com];
+        end
+        b = b(:);
+
+        % Solve for polynomial coefficients (projection operators).
+        c = L * b;
+        p = c(end-d+1:end);
+        x_com = x0_com + p;   
         
         % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(Aij, dF_dqij(:,:), ...
-                dM_dX(:,:), a, vol, params,k, n, dF, dF_I);
-
+        K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
+                                      dF_dc, W, W_S, W_I, k, n);
+        K = L' * K * L;
+        
         % Force vector
-        dV_dq = zeros(numel(x),1);
+        dV_dq = zeros(d*(k*numel(E) + 1),1);
 
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
             dMi_dX = squeeze(dM_dX(i,:,:));
             
-            Aij = zeros(size(A(:,:,1)));
-            
-            for j = 1:size(E,1)
-                Aij = Aij + A(:,:,j) * a(i,j);
-            end
-            
             % Deformation Gradient
-            F = Aij * dMi_dX;
-                        
+            F = dMi_dX * W{i} * W_S{i} * c;
+            F = reshape(F,d,d);
+
             % Force vector
-            dV_dF = neohookean_tet_dF(F,config.lambda, config.mu);
-            dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF; % assuming constant area
+            dV_dF = neohookean_tet_dF(F, config.lambda, config.mu);
+
+            % Todo: I should be multiplying by volume here, right?
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
         end
-  
+        dV_dq = L' * dV_dq;
+        
         % Error correction force
-        f_error = - 2 * ME * x(:);
+        x_centered = x(:);
+        x_centered(1:d:end) = x_centered(1:d:end) - x_com(1);
+        x_centered(2:d:end) = x_centered(2:d:end) - x_com(2);
+        x_centered(3:d:end) = x_centered(3:d:end) - x_com(3);
+        f_error = - 2 * ME * x_centered;
+        
         f_error = config.k_stability*(config.dt * P * f_error(:));
        
         % Force from potential energy.
@@ -206,9 +184,8 @@ function vem_simulate_nurbs(parts, varargin)
         drawnow
         
         if config.save_obj
-            warning('Currently cant save to obj! I will fix this...');
-            %obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            %nurbs_write_obj(q,parts,config.obj_res,obj_fn,ii);
+            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
+            nurbs_write_obj(q,parts,obj_fn,ii);
         end
         
         if config.save_output

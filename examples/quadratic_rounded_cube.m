@@ -17,7 +17,7 @@ part = nurbs_from_iges(iges_file, resolution, 0);
 
 options.order = 2;
 options.pin_function = @pin_function;
-options.gravity = -500;
+options.gravity = -100;
 options.lambda = 1700;
 options.mu = 15000;
 options.rho = 1;

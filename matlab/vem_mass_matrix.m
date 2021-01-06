@@ -1,13 +1,12 @@
-function M = vem_mass_matrix(B, Q, w, d, N, E)
-    m = size(Q,2);
-    M = zeros(d*N, d*N);
-    J = zeros(d,d*N,m);
-    for i = 1:size(E,1)
-        n=size(B{i},1);
-        w_i = reshape(w(:,i), [1 1 m]);
-        J = J + bsxfun(@times, vem_jacobian(B{i},Q,n,d,N,E{i}), w_i);
+function M = vem_mass_matrix2(Y, W, W_S, L)
+    m = size(Y,1);
+    M = zeros(size(L,1), size(L,1));
+    d = size(Y,2);
+    for i=1:m
+    	Yi = squeeze(Y(i,:,:))*W{i} * W_S{i}; % weighed monomial basis
+        Yi(:, end-d+1:end) = eye(d);
+        M = M +  Yi'*Yi;
     end
-    for j=1:m
-    	M = M + J(:,:,j)'*J(:,:,j);
-    end
+    M = L' * M * L;
+
 end
