@@ -1,11 +1,7 @@
-function w = distance_weights(parts, X, alpha, beta)
+function w = distance_weights(parts, X, alpha)
     m=size(X,1);
     n=numel(parts);
 
-    if nargin < 4
-        beta = 1; % specifies a minimum cutoff distance 
-    end
-    
     % Weights
     w = zeros(m,n);
 
@@ -47,19 +43,12 @@ function w = distance_weights(parts, X, alpha, beta)
                 if numel(dist_ray) > 0
                     dist_ray = min(dist_ray);
                     min_ray_dist(k) = min(dist_ray, min_ray_dist(k));
-%                     if k == 55
-%                    plot3(X(k,1),X(k,2),X(k,3),'.','Color','g','MarkerSize',20);
-%                    plot3(surf_X(k,1),surf_X(k,2),surf_X(k,3),'.','Color','b','MarkerSize',30);
-%                    hitpnt = or + dist_ray * D;
-%                    plot3(hitpnt(1),hitpnt(2),hitpnt(3),'o','Color','r','MarkerSize',30);
-%                    plot3(P0(fids(1),1),P0(fids(1),2),P0(fids(1),3),'o','Color','r','MarkerSize',30);                
-%                     end
                 end
             end
         end
     
-        bound = max(beta, min(alpha, min_ray_dist));
-        w(:,i) = max(1 -  (abs(dist) ./ bound), 0);
+        bound = min(alpha, min_ray_dist);
+        w(:,i) = min(max(1 -  (abs(dist) ./ bound), 0), 1);
     end
 
 end

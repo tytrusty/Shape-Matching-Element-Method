@@ -3,22 +3,8 @@ function w = nurbs_blending_weights(parts, X, alpha)
 m=size(X,1);
 n=numel(parts);
 
-% Weights
-w = zeros(m,n);
-
 % Compute per-shape distance weights
-for i = 1:n
-    if isfield(parts{i}, 'hires_T')
-        FV.faces = parts{i}.hires_T;
-        FV.vertices = parts{i}.hires_x0';
-    else
-        FV.faces = parts{i}.T;
-        FV.vertices = parts{i}.x0';
-    end
-
-    [dist,~] = point2trimesh(FV, 'QueryPoints', X, 'UseSubSurface', false);
-    w(:,i) = max(1 -  (abs(dist) ./ alpha), 0);
-end
+w = distance_weights(parts, X, alpha);
 
 % Compute weighting coefficients with constraints
 options = optimoptions('quadprog','Display', 'off');

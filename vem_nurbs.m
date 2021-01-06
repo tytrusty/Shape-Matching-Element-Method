@@ -15,7 +15,6 @@ function vem_nurbs
     rho = .1;           % per point density (currently constant)
     save_output = 0;    % (0 or 1) whether to output images of simulation
     save_obj = 0;       % (0 or 1) whether to output obj files
-    obj_res = 18;       % the amount of subdivision for the output obj
     d = 3;              % dimension (2 or 3)
 
     % The number of elements in the monomial basis.
@@ -58,8 +57,8 @@ function vem_nurbs
     % so I'm normalizing them (for now...)
     vol = vol ./ max(vol);  
 
-    V=x0;
-    vol=ones(size(V,2),1);
+%     V=x0;
+%     vol=ones(size(V,2),1);
     % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
     
     % Lame parameters concatenated.
@@ -83,8 +82,8 @@ function vem_nurbs
     Y0 = monomial_basis_matrix(x0, x0_com, order, k);
     
     % Compute Shape weights
-    w = nurbs_blending_weights(parts, V', 10);
-    w_x = nurbs_blending_weights(parts, x0', 10);
+    w = nurbs_blending_weights(parts, V', 20);
+    w_x = nurbs_blending_weights(parts, x0', 20);
     [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
     [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     

@@ -1,6 +1,11 @@
-function [T,UV] = nurbs_triangulate(nurbs, use_triangle)
+function [T,UV] = nurbs_triangulate(nurbs, use_triangle, untrimmed_res)
     if nargin < 2
         use_triangle = 0;
+    end
+    if nargin < 3
+        regen_untrimmed = 0;
+    else
+        regen_untrimmed = 1;
     end
 
     if nurbs.is_trimmed
@@ -17,8 +22,15 @@ function [T,UV] = nurbs_triangulate(nurbs, use_triangle)
     else
         % TODO -- make untrimmed_res optional so that you can optionally
         % add more untrimmed samples
-        T = delaunay(nurbs.UV(1,:), nurbs.UV(2,:));
-        UV = nurbs.UV;
+        if regen_untrimmed
+            s = sample_spline(nurbs.srf.s, nurbs.srf.m1, untrimmed_res);
+            t = sample_spline(nurbs.srf.t, nurbs.srf.m2, untrimmed_res);
+            [U,V] = meshgrid(s,t);
+            UV = [U(:) V(:)]';
+        else
+            UV = nurbs.UV;
+        end
+        T = delaunay(UV(1,:), UV(2,:));
     end
 
     function T = trimmed_trimesh(p1, p2, N, UV)

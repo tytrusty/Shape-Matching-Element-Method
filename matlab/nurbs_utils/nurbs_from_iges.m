@@ -9,6 +9,7 @@ function [nurbs_objects] = nurbs_from_iges(filename, res, rescale)
     enable_trimming = 1;
     use_triangle = 1;
     generate_hires = 1;
+    trimmed_hires_res = 8;
     nurbs_objects = nurbs_sample(data, enable_trimming);
     disp('Done Generating samples');
 
@@ -33,7 +34,8 @@ function [nurbs_objects] = nurbs_from_iges(filename, res, rescale)
         nurbs_objects{i}.T = T;
         
         if generate_hires
-            [T,TUV] = nurbs_triangulate(nurbs_objects{i}, use_triangle);
+            [T,TUV] = nurbs_triangulate(nurbs_objects{i}, ...
+                                        use_triangle, trimmed_hires_res);
             [~, J] = nurbs_coords(srf.nurbs, TUV);
             J = permute(J,[3 2 1]);
             nurbs_objects{i}.hires_T = T;
