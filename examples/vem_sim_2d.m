@@ -123,22 +123,22 @@ function vem_sim_2d
     %
     % Note: each shape (edge in this case) has its own 'B' matrix
     %       because each shape has its own projection operator.
-    [B,L] = compute_shape_matrices(x0, x0_com, E, order);
+    [~,L] = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for quadrature points (Q) and boundary
     % points (Q0). 
     % -- Draft equation (1)
     % -- Shape matching section 4.3
-    Q = monomial_basis(V', x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order);
     Y = monomial_basis_matrix(V', x0_com, order, k);
+    Y0 = monomial_basis_matrix(x0, x0_com, order, k);
     
     % For each sampled point, compute the weighting with respect to all
     % shapes.
     % -- Draft Equation (3)
     w = compute_projected_weights(x0, E, V');
     w_x = compute_projected_weights(x0, E, x0);
-    [W, W_I, W_S] = build_weight_matrix(w,d,k, 'Truncate', false);
+    [W, ~, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
+    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     
     % Forming gradient of monomial basis with respect to X (undeformed)
     % -- Draft Equation (13)
@@ -147,17 +147,14 @@ function vem_sim_2d
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
     dF_dc = vem_dF_dc(dM_dX, W);
-    % dF_dc = permute(dF_dc, [2 3 1]);
     
     % Computing mass matrices
-    ME = vem_error_matrix(B, Q0, w_x, d, size(x,2), E);
+    ME = vem_error_matrix2(Y0, W0, W0_S, L);
     M = vem_mass_matrix2(Y, W, W_S, L);
     M = sparse((rho*M + k_error*ME));
 
     ii=1;
     for t=0:dt:30
-        x_com = mean(x,2);
-        
         b = [];
         for i=1:numel(E)
             b = [b x(:,E{i}) - x0_com];
@@ -169,6 +166,7 @@ function vem_sim_2d
         
         % Extract deformed center of mass translation.
         p = c(end-d+1:end);
+        x_com = x0_com + p;
 
         % force vector
         dV_dq = zeros(d*(k*numel(E) + 1),1); 
@@ -190,7 +188,7 @@ function vem_sim_2d
             
             % Computing new world position of this point.
             Yi = squeeze(Y(i,:,:))*W{i}*W_S{i}; % weighed monomial basis
-            Points(:,i) = Yi * c + x0_com + p;
+            Points(:,i) = Yi * c + x_com;
             
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
@@ -204,11 +202,12 @@ function vem_sim_2d
         dV_dq = L' * dV_dq;
 
         % Error correction force
-        xx = x(:);
-        xx(1:2:end) = xx(1:2:end) - x_com(1);
-        xx(2:2:end) = xx(2:2:end) - x_com(2);
+        x_error = x(:);
+        x_error(1:2:end) = x_error(1:2:end) - x_com(1);
+        x_error(2:2:end) = x_error(2:2:end) - x_com(2);
+
         % should just do xx(1:d:end) - x_com?
-        f_error = - 2 * ME * xx;
+        f_error = - 2 * ME * x_error;
         f_error = k_error*(dt * P * f_error);
         
         % Force from potential energy.

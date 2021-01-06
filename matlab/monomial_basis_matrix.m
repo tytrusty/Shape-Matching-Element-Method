@@ -26,7 +26,7 @@ function Y = monomial_basis_matrix(x, x_com, order, k)
     
     for i=1:d
         col_range = k*(i-1)+1 : k*i;
-    	Y(:, i, col_range) = Q;
+        Y(:, i, col_range) = Q;
     end
 end
 
