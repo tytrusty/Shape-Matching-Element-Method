@@ -36,7 +36,7 @@ function vem_nurbs
     parts=nurbs_plot(parts);
     
     % Assembles global generalized coordinates
-    [J, q, E, x0] = nurbs_assemble_coords(parts);
+    [J, hires_J, q, E, x0] = nurbs_assemble_coords(parts);
 
     % Initial deformed positions and velocities
     x = x0;
@@ -121,7 +121,6 @@ function vem_nurbs
     % Triangulate nurbs patch, for collision detection
     [verts,faces] = triangulate_iges(parts);
     collide_ratio = 0.01; % for rounded cube
-%     vert_normal = per_vertex_normals(verts, faces);
     face_normal = normals(verts, faces);
 
     collide_iges_file = 'rounded_cube.iges';
@@ -190,7 +189,7 @@ function vem_nurbs
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
         
-        f_collision = zeros(size(x,2)*3,1);
+        f_collision = zeros(size(verts,1)*3,1);
         % detect the collision with another mesh
         [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
         for i = 1:size(IF,1)
@@ -198,22 +197,17 @@ function vem_nurbs
           c_fid = IF(i, 2); % colliding face id of the colliding mesh
           f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collide_ratio,f_collision);
         end
-        f_collision = P * (-f_collision);
+        f_collision = hires_J' * f_collision;
         
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - dt*dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_collision + f_error);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
 
         % Update position
         q = q + dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
-        
-        % update the triangulation
-        verts = x';
-%         vert_normal = per_vertex_normals(verts, faces);
-        face_normal = normals(verts, faces);
-        
+                
         % Update NURBs plots
         x_idx=0;
         for i=1:numel(parts)
@@ -223,6 +217,10 @@ function vem_nurbs
             x_idx = x_idx+x_sz;
         end
         drawnow
+        
+        % update the triangulation
+        verts = reshape(hires_J * q, 3, [])';
+        face_normal = normals(verts, faces);
         
         if save_obj
             obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
@@ -269,7 +267,7 @@ function [verts,faces] = triangulate_iges(parts)
   faces=[];
   verts=[];
   for ii=1:numel(parts)
-      if isfield(parts{ii}, 'hires_T') & 0
+      if isfield(parts{ii}, 'hires_T')
           F = parts{ii}.hires_T;
           V = parts{ii}.hires_x0';
       else
@@ -294,9 +292,9 @@ function f_collision = check_collision_between_faces(verts,faces,collide_verts,c
                             [verts(faces(fid,1),:); verts(faces(fid,2),:); verts(faces(fid,3),:)], ...
                             cv);
     if dot(cv-cp, face_normal(fid, :)) > 0
-      f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) = f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
-      f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) = f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
-      f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) = f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) + 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) = f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) - 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) = f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) - 1/3 * collide_ratio * dist * face_normal(fid,:)';
+      f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) = f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) - 1/3 * collide_ratio * dist * face_normal(fid,:)';
       disp('face collide!!');
     end
   end

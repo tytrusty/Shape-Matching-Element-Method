@@ -35,7 +35,7 @@ function vem_nurbs
     parts=nurbs_plot(parts);
     
     % Assembles global generalized coordinates
-    [J, q, E, x0] = nurbs_assemble_coords(parts);
+    [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
 
     % Initial deformed positions and velocities
     x = x0;
