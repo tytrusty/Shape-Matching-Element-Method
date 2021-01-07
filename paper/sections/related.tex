@@ -1,0 +1,66 @@
+\section{Related Work}
+\subsection{Shape Matching Related Papers}
+\begin{enumerate}
+    \item \textit{Shape Matching} \cite{10.1145/1073204.1073216}: Meshless simulation by fitting a polynomial describing the shapes deformation using only the nodal values.
+    \item \textit{Lattice Shape Matching} \cite{10.1145/1275808.1276480}: Voxelize model to construct a lattice of cubes. Use these lattice cubes to construct overlapping shape matching regions (just like clustered shape matching?). The original mesh is deformed using trilinear interpolation of lattice vertex positions.
+    \item \textit{Robust Real-Time Deformation of Incompressible Surface Meshes} \cite{10.1145/2019406.2019438}: Shape matching on trimeshes with overlapping regions (clustered shape matching). Adds an additional volume preservation constraint. Position based dynamics approach to satisfying volume preservation.
+    \item \textit{Shape-Up: Shaping Discrete Geometry with Projections} \cite{10.1111/j.1467-8659.2012.03171.x}: Shape constraints by least squares fitting (like in shape matching). They have some "proximity function" indicating distance to least-squares fit, then uses projection operators to minimize proximity function (pretty much just shape matching). 
+    \item \textit{Shape Matching with Oriented Particles} \cite{10.1145/1964921.1964987}: More general form for shape matching, permitting wider range of motion. Also they use shape matching projection operators for skinning, much like we do. For each skinning point, they specify weights with up to 4 particles (each with their own projection operator)
+    \item \textit{Fast Adaptive Shape Matching Deformations} \cite{10.5555/1632592.1632606}: Essentially same thing as Lattice Shape Matching, but instead they use an octree instead of a basic voxel grid for shape matching. It's not super significant to mention this paper, but it does make clear that much of the followup work after shape matching never didn't emphasize it's utility as a meshless boundary only method. They kept converting it to a mesh-based method!
+    \item \textit{A Geometric Deformation Model for Stable Cloth Simulation} \cite{10.2312/PE/vriphys/vriphys08/039-046} Shape matching for cloth simulation.
+\end{enumerate}
+
+\subsection{Other Meshless Methods in Graphics}
+\begin{enumerate}
+    \item \textit{Point Based Animation }\cite{10.1145/1028523.1028542}: Purely particle based, MLS to approximate derivatives. Appears to be among the earliest meshless methods in graphics based on continuum mechanics. 
+    \item \textit{Position Based Dynamics} \cite{MULLER2007109}: Operates directly on particle positions by forming set of constraints and solving for particle positions that satisfy these constraints. Meshless
+    \item \textit{Projective Dynamics} \cite{10.1145/2601097.2601116}: Similar to position based dynamics but solves the constraints implicitly by minimizing energy potentials. Mesh-based. Global solver unlike PBD which satisfies constraints locally using Gauss-Seidel.
+\end{enumerate}
+
+\subsection{Virtual Element and other Element Methods}
+\begin{enumerate}
+    \item \textit{Mimetic Finite Differences} \cite{10.1142/S0218202505000832} \cite{10.1016/j.jcp.2013.07.031} (they double dipped!): Considered a close relative to VEM and framed as the predecessor to VEM (in VEM papers). I still haven't read on MFD yet. From PolyDDF: "extension of finite volume and finite difference techniques to polygons that first discretizes a prime operator (typically, the gradient or the divergence) via a boundary integral, and then derives other operators by mimicking continuous structural properties."
+    \item \textit{Basic principles of Virtual Element Method} \cite{10.1142/S0218202512500492} Original VEM paper
+    \item \textit{The Hitchhiker's Guide to Virtual Element Method} \cite{10.1142/S021820251440003X}: More understandable versions of original VEM paper.
+    \item \textit{Discrete Differential Operators on Polygonal Meshes} \cite{10.1145/3386569.3392389}: Extends VEM to do discrete differential geometry on arbitrary polygonal meshes.
+    \item \textit{FLexible Simulation of Deformable Models using Discontinuous Galerkin FEM} \cite{10.5555/1632592.1632608}: Uses ordinary hexahedral elements, but uses a cut cell-based approach to support arbitrary polyhedra on the surface. 
+    \item \textit{Generalizing the finite element method: Diffuse approximation and diffuse elements} \cite{Nayroles1992GeneralizingTF} Predecessor to Element Free Galerkin. FEM interpolation replaced with a local Moving Least Square interpolation.
+    \item \textit{Element-free Galerkin methods} \cite{https://doi.org/10.1002/nme.1620370205}: similar to DEM, but more accurate gradients (not sure of all the differences). In MLS methods, they solve least squares for each particle in the domain, weighting nearby particles with a Gaussian-like density function. In contrast to us, we only compute least squares fitting on the boundary, and then precompute some weighting for each particle to the projection operators on the boundaries.
+    \item \textit{Unified Simulation of Elastic Rods, Shells, and Solids} \cite{10.1145/1778765.1778776}: Propose Generalized moving least squares (GMLS) to resolve limitation of MLS shape functions that require many particles in the support of a point (that are not coplonar).  
+\end{enumerate}
+\subsection{Physics based Skinning}
+\begin{enumerate}
+    \item \textit{Skinning Siggraph Course} \cite{10.1145/2614028.2615427}: The linear weighting of polynomials at the exterior is very similar to skinning.
+    \item \textit{Linear Subspace Design for Real-Time Shape Deformation} \cite{10.1145/2766952}: Linear deformation subspace that uses linear blend skinning and generalized barycentric coordinates. Similarly, we have "handles" but they are represented by entire NURBS patches, and our coordinates are the output of a polynomial, whereas barycentric coordinates are linear (I only skimmed this paper, not sure if this description is fair).
+    \item \textit{Complementary dynamics} \cite{Zhang_2020}: Physics based skinning, orthogonality constraint can be seen as similar to our stability term (conformity term, error term, whatever it's called :))
+    \item \textit{Physically-Based Character Skinning} \cite{10.2312/PE.vriphys.vriphys13.025-034}: Linear blend skinning with multiple layers of skin simulated via oriented particle shape matching and position based dynamics to enforce distance constraints (avoiding unwanted intersections).
+\end{enumerate}
+\subsection{Isogeometric Analysis}
+\begin{enumerate}
+    \item \textit{Isogeometric Analysis Book} \cite{10.1002/9780470749081.ch7}: The book everyone references when they write Isogeometric analysis in their papers.
+    \item \textit{Dynamic NURBS} \cite{10.1145/176579.176580}: Outline of how to simulate on NURBS with the control points as the degrees of freedom. Method used in our work.
+    \item \textit{XCAD} \cite{10.1145/3355089.3356576}: Optimize CAD models. CAD embedded in hexahedral mesh, complex integration strategy. Uncut hexahedral elements simulated ordinarily, cut elements use XFEM that add additional DOF to account for new element shapes.
+    \item \textit{Development of a quadratic finite element formulation based on the XFEM and NURBS} \cite{https://doi.org/10.1002/nme.3120}: XFEM to handle curve surface integration of NURBs patches. Complex subdividing of "X-Elements" to produce cut cells along NURBS surfaces.
+    \item \textit{A NURBS enhanced extended finite element approach for unfitted CAD analysis} \cite{10.1007/s00466-013-0854-7}: Pretty much the same as the quadratic, but allows higher-order approximation and better handling of interface.
+    \item \textit{A NURBS-based interface-enriched generalized finite element method for problems with complex discontinuous gradient fields} \cite{https://doi.org/10.1002/nme.4852}: Similar to other XFEM NURBS approaches. Uses NURBS-based enrichment functions with cut cells. Additional DOFs added to handle discontinuities.
+    \item \textit{A NURBS-based generalized finite element scheme for 3D simulation of heterogeneous materials} \cite{SAFDARI2016373}: Similar to previous "NIGFEM" paper above, but now in 3D.
+    \item \textit{Swept Volume Parameterization for Isogeometric} \cite{10.1007/978-3-642-03596-8_2} To provide volumetric simulation of NURBS they introduce a new NURBS volume parameterization (B-Spline Volumes ... jesus christ)
+    \item \textit{A finite volume method on NURBS geometries and its application in isogeometric fluid–structure interaction} \cite{HEINRICH20121645}: Combines NURBS paramaterization with finite volume method (requiring a mesh for the volume). 
+    \item \textit{NURBS-Enhanced Finite Element Method (NEFEM)} \cite{10.1002/nme.2311}: Similar to the above example. They run an order FVM simulation and deal with the interface in a complicated manner (could this be considered XFEM?).
+\end{enumerate}
+
+\subsection{Quadrature}
+\begin{enumerate}
+    \item \textit{A new method for meshless integration in 2D and 3D Galerkin meshfree methods} \cite{KHOSRAVIFARD201030}: Strategy we use for integrating over CAD model volumes. Raycast along single dimension, find intersections, generate quadrature points in the intervals inside the object.
+    \item Adaptive image-based intersection \cite{DBLP:journals/tog/WangFP12}: related to our meshless integration strategy in that we could use this to account for errors in the above approach (increase ray density where we estimate high error to be)
+    \item Efficient and accurate numerical quadrature for immersed boundary methods \cite{10.1186/s40323-015-0031-y}: Finite Cell Method. "Immerses" a shape in a set of cells (mesh!) and computes quadrature over this. To handle curved surface they use an octree to subdivide to the desired level of accuracy.
+    \item Higher-Order Finite Elements for Embedded Simulation \cite{10.1145/3414685.3417853}: Another Finite Cell method like the above, but with a new quadrature generation method (the ones with the circles in the triangles)
+    \item \textit{Highly accurate surface and volume integration on implicit domains by means of moment-fitting} \cite{https://doi.org/10.1002/nme.4569} and \cite{https://doi.org/10.1002/nme.5343}: XCAD paper extends upon this method \myworries{still need to read these}
+\end{enumerate}
+
+\subsection{Misc}
+\begin{enumerate}
+	\item TRACKS: Toward Directable Thin Shells \cite{10.1145/1276377.1276439}: Petrov-Galerkin test functions for weak-form constraints that handles artifacts due to pointwise constraints.
+    \item FEM simulation of 3D deformable solids \cite{10.1145/2343483.2343501}
+    \item Fusion 360 Gallery \cite{willis2020fusion} : source of some models
+\end{enumerate}
