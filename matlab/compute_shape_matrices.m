@@ -1,55 +1,97 @@
-function [B,L] = compute_shape_matrices(x0, x0_com, E, order)
+function L = compute_shape_matrices(x0, x0_com, E, order, mode)
+    if nargin < 5
+        mode = 'default';
+    end
+    fprintf('Computing shape matrices in mode: %s', mode);
     d = size(x0,1); % dimension
 
     % Compute number of monomials
     k = basis_size(d, order);
-
-    Q = cell(numel(E),1);
-    B = cell(numel(E),1);
-
-    M_rows = 0;
+    
+    % Monomial basis vectors
+    M = cell(numel(E),1);
+    
+    % Computing size of A matrix
+    A_rows = 0;
+    row_ranges = cell(numel(E),1);
     for i=1:numel(E)
         x = x0(:,E{i});
-        Q{i} = monomial_basis(x, x0_com, order);
-        M_rows = M_rows + numel(E{i});
+        M{i} = monomial_basis(x, x0_com, order);
+        row_ranges{i} = A_rows+1:A_rows + d*numel(E{i});
+        A_rows = A_rows + numel(E{i});
     end
-    
-    M_cols = d*k*numel(E) + d;
-    M = zeros(d * M_rows, M_cols);
+    A_cols = d*k*numel(E) + d;
+    A = zeros(d * A_rows, A_cols);
 
     col_idx = 0;
     row_idx = 0;
+    % Forming global system matrix ([A S] matrix) 
     for i=1:numel(E)
         for j=1:numel(E{i})
             for n=1:d
                 col_start = col_idx + (n-1)*k + 1;
                 col_end   = col_idx + n*k;
-                M(row_idx+n, col_start:col_end) = Q{i}(:,j);
+                A(row_idx+n, col_start:col_end) = M{i}(:,j);
             end
-            M(row_idx+1:row_idx+d, end-d+1:end) = eye(d);
+            A(row_idx+1:row_idx+d, end-d+1:end) = eye(d); % Identity term
             row_idx = row_idx + d;
         end
         col_idx = col_idx + k * d;
     end
-
-    L = M'*M;
-    L(end-d+1:end,1:end-d) = 0;
-    L = L\M';
     
-%     L = inv(L);
-%     LM = M';
+    
+    fprintf('A matrix: nrows=%d ncols=%d rank=%d\n', ...
+        size(A,1), size(A,2), rank(A));
 
-    for i=1:numel(E)
-        % Monomial basis of DOF for the i-th shape.
-        x = x0(:,E{i});
-        Qi = monomial_basis(x, x0_com, order);
+    ATA = A'*A;
+    ATA(end-d+1:end,1:end-d) = 0; % applying center of mass constraint
+
+    if strcmp(mode, 'default')
+        L = ATA \ A';
         
-        % Build 'B' matrices (Aqq in shape matching)
-        [U, S, V] = svd(Qi*Qi');
+    elseif strcmp(mode, 'global_pinv')
+        L = pinv(ATA) * A';
+        
+    elseif strcmp(mode, 'global_svd_truncated')
+        epsilon = 1e-12;
+        [U, S, V] = svd(ATA);
         S = diag(S);
-        S = 1./ max(S, 1e-4);
-        Bi = Qi' * (V * diag(S) * U');
-        B{i} = Bi;
+        t = find(abs(S) < epsilon, 1, 'first') - 1; %truncation point
+        
+        if isempty(t) % full rank
+            t = numel(S);
+        end
+        
+        S = 1./ S(1:t);
+        truncated_inv = V(:,1:t) * diag(S) * U(:,1:t)';
+        L = truncated_inv * A';
     end
+    %TODO still trying out stuff on local solves
+%     elseif startsWith(str,'local')
+%     	for i=1:numel(E)            
+%             % Forming local system matrix
+%             Ai = zeros(d*numel(E{i}), d*(k+1));
+%             row_idx = 0;
+%             for j=1:numel(E{i})
+%                 for n=1:d
+%                     col_start = (n-1)*k + 1;
+%                     col_end   = n*k;
+%                     Ai(row_idx+n, col_start:col_end) = M{i}(:,j);
+%                 end
+%                 Ai(row_idx+1:row_idx+d, end-d+1:end) = eye(d); % Identity
+%                 row_idx = row_idx + d;
+%             end
+%             
+%             Ai = A(row_ranges{i},:);
+%             
+%             r = rank(Ai);
+%             fprintf('Local A for shape %d: nrows=%d ncols=%d rank=%d\n', ...
+%                 i, size(Ai,1), size(Ai,2), r);
+%             
+%             ATAi_inv = inv(Ai'*Ai);
+%             Li = (Ai'*Ai) \ Ai';
+%             inv1 = inv(Ai'*Ai);
+%             inv2 = pinv(Ai'*Ai);
+% end
 end
 
