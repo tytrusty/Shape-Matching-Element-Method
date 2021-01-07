@@ -1,5 +1,49 @@
 \section{Introduction}
 
+The consumption of geometric surface models by physics-based animation algorithms is fraught with difficulty. 
+For volumetric objects, this process often involves identifying and discretizing the interior of the modelled object, 
+typically either as a tetrahedral or hexahedral mesh.%
+This procedure is both expensive and difficult, especially if the surface model is constructed from higher-order boundary
+representations, or if the volumetric discretization is required to be conforming or feature aligned. 
+Removing explicit volumetric discretization from the physics-based-animation pipeline can avoid these difficulties and 
+also provide a more unified modelling and simulation experience. 
+
+NURBS (Non-uniform Rational B Splines) are a popular higher-order modelling primitive which 
+are used for computer-aided design (CAD), computational fabrication and computer animation. 
+NURBS primitives were the first geometric representation used for physics-based animation, yet,
+despite over three decades of research, animation of NURBS objects remains a challenge.
+
+Isogeometric Analysis (IGA) is a physics simulation methodology that uses the control variables of the NURBS model
+as the degrees-of-freedom (DOFS) of the simulation itself. 
+Unfortunately IGA approaches for volumetric objects still require background volumetric structures, typically
+regular grids that make satisfaction of boundary conditions difficult (which makes collision resolution difficult)
+or more complicated cut-cell grids which introduce non-trivial root finding problems into the mix. 
+Crucially, these simulation schemes typically assume models arise from engineering applications and meet tight geometric
+criteria such as that the mesh is manufacturable. 
+These inputs are much cleaner than those produced by a typical modeller. 
+
+% In this paper we present a new finite element method for isogeometric, physics-based animation of NURBs models.
+% Crucially our method is boundary only, and requires no volumetric meshes (thus avoiding their inherent complications), grids or cutcells of any kind
+% Our method does not need an explicit labelling of the inside/outide of the simulated model
+% Does not require nurbs patches in an object to be explicitly joined
+% Input is just the raw NURBs model with no additional information or annotations
+% The resulting simulation algorithm is compatiable with nonlinear continuum mechanics material models as well as 
+% standard methods for contact resolution. 
+
+We present the first truly meshless (no volumetric discretization generated) algorithm for direct, nonlinear elastodynamic simulation of NURBs models. 
+Our nonlinear elastodynamic simulation scheme requires only a boundary description of the object (we do not strictly require a solid model) and
+approriate physical parameters.  
+Because we explicitly use the NURBS boundary representation in the simulation its is straightforward to handle
+Dirichilet, Neumann boundary conditions and to apply contact resolution. 
+Crucially because we broadly target animation not necessarily simulation for engineering or manufacturing we don't require that models
+satisfy the rigourous geometric requirements common for these applications
+
+Our approach is an extension of the recently developed Virtual Element Method (VEM) for solving PDEs on domains tiled with arbitrary polygons.
+We establish a connection between VEM and the well-known shape matching simulation algorithm  which enables us 
+to derive equations of motion for an arbitrary NURBS model using Lagrangian Mechanics. 
+Importantly, we show how to replace volumetric data structures for integration with ray casting approaches which enables
+our meshless approach to isogeometric elastodynamic simulation of volumetric structures.
+
 % Modelling -> Animation -> Rendering
 % Use physics for animation which requires conversion from modelling to simulation representation
 % for volumetric objects this conversion invovles identififyin and meshing the interior of the modelled object and that's hard
