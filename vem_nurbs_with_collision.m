@@ -9,8 +9,7 @@ function vem_nurbs
     %     rho = .5;           % per point density (currently constant)
     C = 0.5 * 5000;     % Lame parameter 1
     D = 0.5 * 150000;   % Lame parameter 2
-    gravity = -100;     % gravity force (direction is -z direction)
-    gravity = 0;
+    gravity = 0;        % no gravity
     k_error = 100000;   % stiffness for stability term
     order = 2;          % (1 or 2) linear or quadratic deformation
     rho = .1;           % per point density (currently constant)
@@ -28,6 +27,7 @@ function vem_nurbs
     % Read in file, generate coordinates and trimesh.
     iges_file = 'rounded_cube.iges';
 %     iges_file = 'mug.iges';
+%     iges_file = 'rocket_with_nose.iges';
 %     iges_file = 'cylinder2.iges';
 %     iges_file = 'wrench_shrink.igs';
 %     iges_file = 'mug3.iges';
@@ -121,6 +121,7 @@ function vem_nurbs
     % Triangulate nurbs patch, for collision detection
     [verts,faces] = triangulate_iges(parts);
     collide_ratio = 0.01; % for rounded cube
+%     collide_ratio = 1.0; % for rocket
     face_normal = normals(verts, faces);
 
     collide_iges_file = 'rounded_cube.iges';
