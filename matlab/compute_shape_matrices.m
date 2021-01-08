@@ -45,7 +45,6 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     ATA = A'*A;
     ATA(end-d+1:end,1:end-d) = 0; % applying center of mass constraint
-
     if strcmp(mode, 'global')
         L = ATA \ A';
         

@@ -3,7 +3,7 @@ function vem_sim_2d_test_degenerate
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 10;   	% Lame parameter 1
+    C = 0.5 * 100;   	% Lame parameter 1
     D = 0.5 * 150;   	% Lame parameter 2
     gravity = -100;     % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
@@ -19,22 +19,25 @@ function vem_sim_2d_test_degenerate
     % Note: this is just on a simple box for testing purposes.
     
     % Shape matching modes:
-%     mode = 'global';               % global solve with regular inverse
+    mode = 'global';               % global solve with regular inverse
 %     mode = 'global_pinv';           % global solve with pseudoinverse
 %     mode = 'global_svd_truncated';  % global solve with truncated svd inv
 %     mode = 'local';
-    mode = 'local_pinv';
-    mode = 'local_svd_truncated';
+%     mode = 'local_pinv';
+%     mode = 'local_svd_truncated';
     
     % num ber of points along left, bottom, right, and top edges,
     % respectively
     npts = [3 3 3 3]; 
     
+    l1 = 1; % height
+    l2 = 4; % width
+    
     % Generate points along each line
-    left = [repelem(0, npts(1)); linspace(0, 2, npts(1))];
-    bot = [linspace(0, 2, npts(3)); repelem(0, npts(3))];
-    right = [repelem(2, npts(2)); linspace(0, 2, npts(2))];
-    top = [linspace(0, 2, npts(4)); repelem(2, npts(4))];
+    left = [repelem(0, npts(1)); linspace(0, l1, npts(1))];
+    bot = [linspace(0, l2, npts(2)); repelem(0, npts(2))];
+    right = [repelem(l2, npts(3)); linspace(0, l1, npts(3))];
+    top = [linspace(0, l2, npts(4)); repelem(l1, npts(4))];
     
     % Global position vector
     x0 = [left bot right top];
@@ -47,20 +50,20 @@ function vem_sim_2d_test_degenerate
          [idx(3)+1:idx(4)]};    % top
      
     % You can also merge lines so that only one degenerate shape remains:
-    E = {[E{1} E{2} E{3}], E{4}};
-%     E = {[E{1} E{2}], E{3}, E{4}};
-%     E = {[E{1} E{2} E{3} E{4}]};
+%     E = {[E{1} E{2} E{3}], E{4}};
+%     E = {[E{1} E{4} E{3}], E{2}};
+    E = {[E{1} E{2} E{3} E{4}]};
     
     
-    num_verts = 10;
-    [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
+    num_verts = [15 25];
+    [X,Y] = meshgrid(linspace(0,l2,num_verts(2)), linspace(0,l1,num_verts(1)));
     V = [X(:) Y(:)];
 
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
-    % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
-    min_I = find(x0(2,:) == min(x0(2,:))); % pin left side
-    % min_I = [1]; % Pinning the top left corner.
-
+    min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+    %min_I = [1]; % Pinning the top left corner.
+%     min_I = [1 idx(1)];
+min_I = [1 2 3];
     % Initial deformed positions and velocities
     x = x0;
     v = zeros(size(x));
@@ -77,8 +80,8 @@ function vem_sim_2d_test_degenerate
     E_lines = cell(numel(E),1);
     cm=lines(numel(E));
     for i=1:numel(E)
-        E_lines{i} = plot(x0(1,E{i}),x0(2,E{i}),'-','LineWidth',1, ...
-            'Color', cm(i,:));
+        E_lines{i} = plot(x0(1,E{i}),x0(2,E{i}),'.','LineWidth',1, ...
+            'Color', cm(i,:), 'MarkerSize',20);
         hold on;
     end
     
@@ -180,11 +183,11 @@ function vem_sim_2d_test_degenerate
             
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * .10;
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
+            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i} * .10;
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
