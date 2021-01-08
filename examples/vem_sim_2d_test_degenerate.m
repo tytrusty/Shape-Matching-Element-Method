@@ -24,6 +24,7 @@ function vem_sim_2d_test_degenerate
 %     mode = 'global_svd_truncated';  % global solve with truncated svd inv
 %     mode = 'local';
     mode = 'local_pinv';
+    mode = 'local_svd_truncated';
     
     % num ber of points along left, bottom, right, and top edges,
     % respectively
@@ -47,6 +48,7 @@ function vem_sim_2d_test_degenerate
      
     % You can also merge lines so that only one degenerate shape remains:
     E = {[E{1} E{2} E{3}], E{4}};
+%     E = {[E{1} E{2}], E{3}, E{4}};
 %     E = {[E{1} E{2} E{3} E{4}]};
     
     
@@ -55,7 +57,8 @@ function vem_sim_2d_test_degenerate
     V = [X(:) Y(:)];
 
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
-    min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+    % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+    min_I = find(x0(2,:) == min(x0(2,:))); % pin left side
     % min_I = [1]; % Pinning the top left corner.
 
     % Initial deformed positions and velocities
@@ -219,7 +222,7 @@ function vem_sim_2d_test_degenerate
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\100k_%03d.png',ii)
+            fn=sprintf('output\\img\\deficient_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;

@@ -45,7 +45,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     ATA = A'*A;
     ATA(end-d+1:end,1:end-d) = 0; % applying center of mass constraint
-    ATAinv = inv(ATA);
+
     if strcmp(mode, 'global')
         L = ATA \ A';
         
@@ -105,6 +105,18 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
                 else
                     ATA_inv = inv(Ai'*Ai);
                 end
+            elseif strcmp(mode, 'local_svd_truncated')
+                epsilon = 1e-12;
+                [U, S, V] = svd(Ai'*Ai);
+                S = diag(S);
+                t = find(abs(S) < epsilon, 1, 'first') - 1; %truncation point
+
+                if isempty(t) % full rank
+                    t = numel(S);
+                end
+
+                S = 1./ S(1:t);
+                ATA_inv = V(:,1:t) * diag(S) * U(:,1:t)';
             end
             Li = ATA_inv * Ai' * (Sbi - Si*Ti);
             L(col_range,:) = Li;
