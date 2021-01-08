@@ -13,7 +13,6 @@ function [T,UV] = nurbs_triangulate(nurbs, use_triangle, untrimmed_res)
             [T,UV] = trimmed_trimesh_triangle(nurbs.line_1, ...
                 nurbs.line_2, nurbs.line_N);
         else
-            warning('Triangulating trimmed nurbs without triangle!');
             T = trimmed_trimesh(nurbs.line_1, nurbs.line_2, ...
                                 nurbs.line_N, nurbs.UV);
             UV = nurbs.UV;
