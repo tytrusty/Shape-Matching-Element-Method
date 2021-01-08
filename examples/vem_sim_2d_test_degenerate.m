@@ -19,13 +19,15 @@ function vem_sim_2d_test_degenerate
     % Note: this is just on a simple box for testing purposes.
     
     % Shape matching modes:
-    mode = 'default';               % global solve with regular inverse
-    mode = 'global_pinv';           % global solve with pseudoinverse
-    mode = 'global_svd_truncated';  % global solve with truncated svd inv
+%     mode = 'global';               % global solve with regular inverse
+%     mode = 'global_pinv';           % global solve with pseudoinverse
+%     mode = 'global_svd_truncated';  % global solve with truncated svd inv
+%     mode = 'local';
+    mode = 'local_pinv';
     
-    % number of points along left, bottom, right, and top edges,
+    % num ber of points along left, bottom, right, and top edges,
     % respectively
-    npts = [2 2 2 3]; 
+    npts = [3 3 3 3]; 
     
     % Generate points along each line
     left = [repelem(0, npts(1)); linspace(0, 2, npts(1))];

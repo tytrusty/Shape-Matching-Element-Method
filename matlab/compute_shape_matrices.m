@@ -1,8 +1,8 @@
 function L = compute_shape_matrices(x0, x0_com, E, order, mode)
     if nargin < 5
-        mode = 'default';
+        mode = 'global';
     end
-    fprintf('Computing shape matrices in mode: %s', mode);
+    fprintf('Computing shape matrices in mode: %s \n', mode);
     d = size(x0,1); % dimension
 
     % Compute number of monomials
@@ -17,7 +17,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
     for i=1:numel(E)
         x = x0(:,E{i});
         M{i} = monomial_basis(x, x0_com, order);
-        row_ranges{i} = A_rows+1:A_rows + d*numel(E{i});
+        row_ranges{i} = d*A_rows+1:d*A_rows + d*numel(E{i});
         A_rows = A_rows + numel(E{i});
     end
     A_cols = d*k*numel(E) + d;
@@ -45,8 +45,8 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     ATA = A'*A;
     ATA(end-d+1:end,1:end-d) = 0; % applying center of mass constraint
-
-    if strcmp(mode, 'default')
+    ATAinv = inv(ATA);
+    if strcmp(mode, 'global')
         L = ATA \ A';
         
     elseif strcmp(mode, 'global_pinv')
@@ -65,33 +65,50 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
         S = 1./ S(1:t);
         truncated_inv = V(:,1:t) * diag(S) * U(:,1:t)';
         L = truncated_inv * A';
+    elseif startsWith(mode,'local')
+        n = size(x0,2);
+        L = zeros(d*(k*numel(E)+1), numel(x0));
+
+        % Setting constant term rows
+        for i=1:d
+            L(end-d+i,i:d:end) = 1/n;
+        end
+
+    	for i=1:numel(E)
+            m = numel(E{i});
+
+            % Selecting subset of b values for this shape.
+            Sbi = zeros(d*m, numel(x0));
+            Sbi(:, row_ranges{i}) = eye(d*m);
+
+            % 'S' matrix (stacked identities)
+            Si = repmat(eye(d),m,1);
+
+            % Matrix that computes the mean of the nodal values.
+            Ti = repmat(eye(d)*(1/n),1,size(x0,2));
+
+            col_range = d*k*(i-1)+1:d*k*i;
+
+            % Getting the local system for this shape.
+            Ai = A(row_ranges{i},col_range);
+
+            r = rank(Ai);
+            fprintf('Local A for shape %d: nrows=%d ncols=%d rank=%d\n', ...
+                i, size(Ai,1), size(Ai,2), r);
+
+            if strcmp(mode, 'local')
+                ATA_inv = inv(Ai'*Ai);
+            elseif strcmp(mode, 'local_pinv')
+                if r < size(Ai,2)
+                    fprintf('deficient for shape %d\n', i);
+                    ATA_inv = pinv(Ai'*Ai);
+                else
+                    ATA_inv = inv(Ai'*Ai);
+                end
+            end
+            Li = ATA_inv * Ai' * (Sbi - Si*Ti);
+            L(col_range,:) = Li;
+        end
     end
-    %TODO still trying out stuff on local solves
-%     elseif startsWith(str,'local')
-%     	for i=1:numel(E)            
-%             % Forming local system matrix
-%             Ai = zeros(d*numel(E{i}), d*(k+1));
-%             row_idx = 0;
-%             for j=1:numel(E{i})
-%                 for n=1:d
-%                     col_start = (n-1)*k + 1;
-%                     col_end   = n*k;
-%                     Ai(row_idx+n, col_start:col_end) = M{i}(:,j);
-%                 end
-%                 Ai(row_idx+1:row_idx+d, end-d+1:end) = eye(d); % Identity
-%                 row_idx = row_idx + d;
-%             end
-%             
-%             Ai = A(row_ranges{i},:);
-%             
-%             r = rank(Ai);
-%             fprintf('Local A for shape %d: nrows=%d ncols=%d rank=%d\n', ...
-%                 i, size(Ai,1), size(Ai,2), r);
-%             
-%             ATAi_inv = inv(Ai'*Ai);
-%             Li = (Ai'*Ai) \ Ai';
-%             inv1 = inv(Ai'*Ai);
-%             inv2 = pinv(Ai'*Ai);
-% end
 end
 
