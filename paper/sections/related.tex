@@ -1,4 +1,26 @@
 \section{Related Work}
+
+\begin{table*}[h]
+    \caption{Algorithms for simulation of NURBS models. 
+        %A $*$ indicates support for non-manifold meshes via preprocessing using Zhou et al.~\shortcite{Zhou:2016:MASG}. 
+    ``Not Done'' denotes features that are not demonstrated in publication but are theoretically achievable. ``?'' denotes that the feature was not demonstrated or discussed in literature.
+    \emph{Meshless} indicates whether the algorithm requires a volumetric mesh, 
+    \emph{Boundary}  indicates whether the algorithm uses boundary degrees-of-freedom directly in the simulation
+    \emph{Relaxed} indicates the algorithm supports relaxed modelling requirements and does not requiring fabrication quality inputs,
+    \emph{Code} describes whether or not there is a publicly available implementation of the method.}
+    \label{tbl:compare}
+    \begin{center}
+    \begin{tabular}{l c c c c c c c c}
+     \textbf{Algorithm} & \textbf{Meshless} & \textbf{Boundary} & \textbf{Relaxed} & \textbf{Code} \\
+     \hline 
+     \rowcolor[HTML]{DAE8FC} 
+     \textbf{X-CAD~\cite{}} & No (Cutcells) & No & No & No \\  
+     \textbf{Ours~\cite{}} & Yes & Yes & Yes & Planned \\  
+     \hline
+    \end{tabular}
+    \end{center}
+    
+    \end{table*}
 \subsection{Shape Matching Related Papers}
 \begin{enumerate}
     \item \textit{Shape Matching} \cite{10.1145/1073204.1073216}: Meshless simulation by fitting a polynomial describing the shapes deformation using only the nodal values.
