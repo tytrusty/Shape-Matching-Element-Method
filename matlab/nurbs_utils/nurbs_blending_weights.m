@@ -1,10 +1,12 @@
-function w = nurbs_blending_weights(parts, X, alpha)
-
+function w = nurbs_blending_weights(parts, X, alpha, enable_secondary_rays)
+if nargin < 4
+    enable_secondary_rays = true;
+end
 m=size(X,1);
 n=numel(parts);
 
 % Compute per-shape distance weights
-w = distance_weights(parts, X, alpha);
+w = distance_weights(parts, X, alpha, enable_secondary_rays);
 
 % Compute weighting coefficients with constraints
 options = optimoptions('quadprog','Display', 'off');

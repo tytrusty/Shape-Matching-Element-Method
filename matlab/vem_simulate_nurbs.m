@@ -14,6 +14,7 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'pin_function', @(x) 1);
     addParameter(p, 'sample_interior', 1);
     addParameter(p, 'distance_cutoff', 20);
+    addParameter(p, 'enable_secondary_rays', true);
     parse(p,varargin{:});
     config = p.Results;
     
@@ -30,7 +31,7 @@ function vem_simulate_nurbs(parts, varargin)
     parts=nurbs_plot(parts);
     
     % Assembles global generalized coordinates
-    [J, q, E, x0] = nurbs_assemble_coords(parts);
+    [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
 
     % Initial deformed positions and velocities
     x = x0;
@@ -75,8 +76,10 @@ function vem_simulate_nurbs(parts, varargin)
     Y0 = monomial_basis_matrix(x0, x0_com, config.order, k);
     
     % Compute Shape weights
-    w = nurbs_blending_weights(parts, V', config.distance_cutoff);
-    w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff);
+    w = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
+                               config.enable_secondary_rays);
+    w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
+                                 config.enable_secondary_rays);
     [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
     [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
     
