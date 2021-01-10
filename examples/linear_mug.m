@@ -16,7 +16,7 @@ options.pin_function = @pin_function;
 options.lambda = 100;
 options.mu = 1500;
 options.sample_interior = 0; % only sample on boundary
-
+options.distance_cutoff = 1;
 vem_simulate_nurbs(part, options);
 
 end
