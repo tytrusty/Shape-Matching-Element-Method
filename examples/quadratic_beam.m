@@ -19,11 +19,11 @@ part = nurbs_from_iges(iges_file);
 options.order = 2;
 options.pin_function = @pin_function;
 options.gravity = -10;
-options.lambda = 75;
-options.mu = 150;
+options.lambda = 100;
+options.mu = 1500;
 options.sample_interior = 0; 
 options.rho = 1;
-options.distance_cutoff = 1;
+options.distance_cutoff = 0.2;
 
 vem_simulate_nurbs(part, options);
 
