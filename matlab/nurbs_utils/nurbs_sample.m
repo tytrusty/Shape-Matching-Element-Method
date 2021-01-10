@@ -129,7 +129,7 @@ end
 
 function UV = sample_rays(p1, p2, nurbs)
     UV = [];
-    alpha = 4;
+    alpha = 3;
 
     origin_u = nurbs.u(1);
     v_range = [min([p1(2,:) p2(2,:)]) max([p1(2,:) p2(2,:)])];
