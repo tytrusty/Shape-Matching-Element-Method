@@ -2,7 +2,7 @@
 # include<../include/vem3dmesh_neohookean_dq2.h>
 #endif
 
-#ifdef BARTELS_USE_OPENMP
+#ifdef VEM_USE_OPENMP
 #include <omp.h>
 #endif
 
@@ -21,35 +21,38 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 	g.resize(3 * (k * n + 1), 3 * (k * n + 1));
 	g.setZero();
 
-	//std::cout << "num threads from eigen: " << Eigen::nbThreads() << std::endl;
-	//#pragma omp parallel for
 	for (int i = 0; i < dM_dX.rows(); ++i) {
 		
 		Eigen::MatrixXx<DerivedDM> dMi_dX = dM_dX.row(i);
 		Eigen::MatrixXx<DerivedParam> CD = params.row(i);
 
 		Eigen::Map<const Eigen::MatrixXx<DerivedDM>> dMi_map(dMi_dX.data(), 9, 3*k);
-
 		Eigen::Matrix<DerivedC, 9, 9> d2psi_dF2;
 
+		// TODO move this to separate file
 		Eigen::Matrix3d F = unflatten<3, 3>((dMi_map * W[i] * W_S[i] * c).eval());
+
 
 		d2psi_neohookean_dF2(d2psi_dF2, F, CD);
 
-		Eigen::MatrixXx<DerivedRet> tmp = W_S[i].transpose() * (dF_dc[i].transpose() * d2psi_dF2 * dF_dc[i]) * W_S[i] * volume(i);
+		Eigen::MatrixXx<DerivedRet> tmp = dF_dc[i].transpose() * d2psi_dF2 * dF_dc[i] * volume(i);
+		//Eigen::MatrixXx<DerivedRet> tmp2 = W_S[i].transpose() *  (dF_dc[i].transpose() * d2psi_dF2 * dF_dc[i]) * W_S[i] * volume(i);
+		//g += tmp2;
 
-		g += tmp;
-		/*
-		for (unsigned int jj = 0; jj < tmp.cols(); ++jj) {
-			for (unsigned int ii = 0; ii < tmp.rows(); ++ii) {
-				int r = E[i](ii);
-				int c = E[i](jj);
+		// Assembly
+		int kd = 3 * k;
+		for (int jj = 0; jj < tmp.cols(); ++jj) {
+			for (int ii = 0; ii < tmp.rows(); ++ii) {
+				int r_i = W_I[i](ii / kd);
+				int c_j = W_I[i](jj / kd);
+				int r_offset = ii % kd;
+				int c_offset = jj % kd;
+				int r = r_i * kd + r_offset;
+				int c = c_j * kd + c_offset;
 
-				//std::cout << "i: " << i << " rows " << tmp.rows() << " cols: " << tmp.cols() << " r: " << r << " c: " << c << std::endl;
 				g.coeffRef(r, c) += tmp(ii,jj);
 			}
 		}
-		*/
 	}
 }
 
