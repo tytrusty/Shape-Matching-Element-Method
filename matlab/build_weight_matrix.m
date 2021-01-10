@@ -23,7 +23,7 @@ function [W,W_I,W_S] = build_weight_matrix(w, d, k, varargin)
         end
         
         % Shape indices for weights above the threshold.
-        W_I{i} = find(ToKeep);
+        W_I{i} = find(ToKeep)';
         t = numel(W_I{i});
        
         % Forming selection and weight matrices.
