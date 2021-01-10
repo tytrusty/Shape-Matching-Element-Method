@@ -68,7 +68,7 @@ function vem_simulate_nurbs(parts, varargin)
     x0_com = mean(x0,2);
         
     % Shape Matrices
-    [~,L] = compute_shape_matrices(x0, x0_com, E, config.order);
+    L = compute_shape_matrices(x0, x0_com, E, config.order);
     
     % Build Monomial bases for all quadrature points
     Y = monomial_basis_matrix(V, x0_com, config.order, k);

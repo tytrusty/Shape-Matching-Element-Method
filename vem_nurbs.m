@@ -13,7 +13,7 @@ function vem_nurbs
     k_error = 100000;   % stiffness for stability term
     order = 2;          % (1 or 2) linear or quadratic deformation
     rho = .1;           % per point density (currently constant)
-    save_output = 1;    % (0 or 1) whether to output images of simulation
+    save_output = 0;    % (0 or 1) whether to output images of simulation
     save_obj = 0;       % (0 or 1) whether to output obj files
     d = 3;              % dimension (2 or 3)
 
@@ -75,7 +75,7 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    [~,L] = compute_shape_matrices(x0, x0_com, E, order);
+    L = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for all quadrature points
     Y = monomial_basis_matrix(V, x0_com, order, k);

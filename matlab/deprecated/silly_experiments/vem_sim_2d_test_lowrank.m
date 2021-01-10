@@ -3,11 +3,11 @@ function vem_sim_2d_test_degenerate
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 100;   	% Lame parameter 1
-    D = 0.5 * 150;   	% Lame parameter 2
-    gravity = -100;     % gravity strength
+    C = 0.5 * 5;   	% Lame parameter 1
+    D = 0.5 * 10;   	% Lame parameter 2
+    gravity = -500;     % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
-    order = 2;          % (1 or 2) linear or quadratic deformation
+    order = 1;          % (1 or 2) linear or quadratic deformation
     rho = 1;            % density
 	d = 2;              % dimension (2 or 3)
     save_output = 0;    % (0 or 1) whether to output images of simulation
@@ -19,19 +19,20 @@ function vem_sim_2d_test_degenerate
     % Note: this is just on a simple box for testing purposes.
     
     % Shape matching modes:
-    mode = 'global';               % global solve with regular inverse
+%     mode = 'global';               % global solve with regular inverse
 %     mode = 'global_pinv';           % global solve with pseudoinverse
 %     mode = 'global_svd_truncated';  % global solve with truncated svd inv
 %     mode = 'local';
 %     mode = 'local_pinv';
 %     mode = 'local_svd_truncated';
+    mode = 'hierarchical';
     
     % num ber of points along left, bottom, right, and top edges,
     % respectively
-    npts = [3 3 3 3]; 
+    npts = [8 8 8 8]; 
     
     l1 = 1; % height
-    l2 = 4; % width
+    l2 = 2; % width
     
     % Generate points along each line
     left = [repelem(0, npts(1)); linspace(0, l1, npts(1))];
@@ -50,20 +51,23 @@ function vem_sim_2d_test_degenerate
          [idx(3)+1:idx(4)]};    % top
      
     % You can also merge lines so that only one degenerate shape remains:
+%     x0 = [left top right bot];
 %     E = {[E{1} E{2} E{3}], E{4}};
-%     E = {[E{1} E{4} E{3}], E{2}};
-    E = {[E{1} E{2} E{3} E{4}]};
+%     E = {[E{1} E{2} E{3} E{4}]};
     
     
-    num_verts = [15 25];
+    num_verts = [25 50];
     [X,Y] = meshgrid(linspace(0,l2,num_verts(2)), linspace(0,l1,num_verts(1)));
     V = [X(:) Y(:)];
 
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
     min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+    min_I = find(x0(2,:) == min(x0(2,:)));
+    min_I = min_I(5:6);
+    min_I = find(x0(2,:) == max(x0(2,:)) & (x0(1,:) == min(x0(1,:)) | x0(1,:) == max(x0(1,:))));
     %min_I = [1]; % Pinning the top left corner.
 %     min_I = [1 idx(1)];
-min_I = [1 2 3];
+% min_I = [1 2 3];
     % Initial deformed positions and velocities
     x = x0;
     v = zeros(size(x));
@@ -80,7 +84,7 @@ min_I = [1 2 3];
     E_lines = cell(numel(E),1);
     cm=lines(numel(E));
     for i=1:numel(E)
-        E_lines{i} = plot(x0(1,E{i}),x0(2,E{i}),'.','LineWidth',1, ...
+        E_lines{i} = plot(x0(1,E{i}(1:end-1)),x0(2,E{i}(1:end-1)),'.','LineWidth',3, ...
             'Color', cm(i,:), 'MarkerSize',20);
         hold on;
     end
@@ -88,7 +92,7 @@ min_I = [1 2 3];
     % Plot pinned vertices
     plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
     axis equal
-    ylim([-4.5 2.5])
+    ylim([-2 1.5])
     
     % The number of quadrature points where at each point we
     % add stiffness matrix contributions.
@@ -140,12 +144,17 @@ min_I = [1 2 3];
     dF_dc = vem_dF_dc(dM_dX, W);
     
     % Computing mass matrices
+    tic
     ME = vem_error_matrix(Y0, W0, W0_S, L);
+    toc
+    tic
     M = vem_mass_matrix(Y, W, W_S, L);
+    toc
     M = sparse((rho*M + k_error*ME));
 
     ii=1;
     for t=0:dt:30
+        tic
         b = [];
         for i=1:numel(E)
             b = [b x(:,E{i}) - x0_com];
@@ -183,11 +192,11 @@ min_I = [1 2 3];
             
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * .10;
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * 1;
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i} * .10;
+            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i} * 1;
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
@@ -229,5 +238,6 @@ min_I = [1 2 3];
             saveas(fig,fn);
         end
         ii=ii+1;
+        toc
     end
 end
