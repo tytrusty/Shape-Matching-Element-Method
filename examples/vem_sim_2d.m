@@ -123,7 +123,7 @@ function vem_sim_2d
     %
     % Note: each shape (edge in this case) has its own 'B' matrix
     %       because each shape has its own projection operator.
-    [~,L] = compute_shape_matrices(x0, x0_com, E, order);
+    L = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for quadrature points (Q) and boundary
     % points (Q0). 
