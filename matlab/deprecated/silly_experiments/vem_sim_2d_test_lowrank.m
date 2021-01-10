@@ -1,11 +1,11 @@
-function vem_sim_2d
+function vem_sim_2d_test_degenerate
     % Example 2D VEM simulation.
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
-    gravity = -100;     % gravity strength
+    C = 0.5 * 5;   	% Lame parameter 1
+    D = 0.5 * 10;   	% Lame parameter 2
+    gravity = -500;     % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
     rho = 1;            % density
@@ -15,64 +15,59 @@ function vem_sim_2d
     % The number of elements in the monomial basis.
     % -- example: Draft equation 1 is second order with k == 5
     k = basis_size(d, order);
-    
-    % Load a basic square mesh
-    [V,F] = readOBJ('models/plane.obj');
-    V = V(:,1:2);
-    
-    % Get boundary edges. The points on each edge will be our nodal
-    % values used in computing the "projection" operator in VEM.
-    % Each edge here represents a single "shape" in the shape matching
-    % context.
-    F = boundary_faces(F);
-        
-    % Get undeformed boundary vertices. 
-    V_bnd = unique(F(:));
-    x0 = V(V_bnd,:)';
 
-    % Remap edge vertex IDs to IDs into 'x0'
-    new_Idx = find(V_bnd);
-    [toreplace, bywhat] = ismember(F, V_bnd);
-    F(toreplace) = new_Idx(bywhat(toreplace));
+    % Note: this is just on a simple box for testing purposes.
     
-    % Todo -- only use cells for all edge stuff
-    E = cell(size(F,1),1);
-    for i =1:size(F,1)
-       E{i} = F(i,:);
-    end
-
-    % Simpler cube example.
-    x0  = [0 0; 0 2;  2 2; 2 0; ]';
+    % Shape matching modes:
+%     mode = 'global';               % global solve with regular inverse
+%     mode = 'global_pinv';           % global solve with pseudoinverse
+%     mode = 'global_svd_truncated';  % global solve with truncated svd inv
+%     mode = 'local';
+%     mode = 'local_pinv';
+%     mode = 'local_svd_truncated';
+    mode = 'hierarchical';
     
-    num_verts = 10;
-    [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
-    V = [X(:) Y(:)];
+    % num ber of points along left, bottom, right, and top edges,
+    % respectively
+    npts = [8 8 8 8]; 
     
-    shapes_per_line = 1;
+    l1 = 1; % height
+    l2 = 2; % width
+    
+    % Generate points along each line
+    left = [repelem(0, npts(1)); linspace(0, l1, npts(1))];
+    bot = [linspace(0, l2, npts(2)); repelem(0, npts(2))];
+    right = [repelem(l2, npts(3)); linspace(0, l1, npts(3))];
+    top = [linspace(0, l2, npts(4)); repelem(l1, npts(4))];
+    
+    % Global position vector
+    x0 = [left bot right top];
+    
+    % Creating "shapes. Each shape is a vector of indices into x.
+    idx = cumsum(npts);
+    E = {[1:idx(1)], ...        % left
+         [idx(1)+1:idx(2)], ... % bottom
+         [idx(2)+1:idx(3)], ... % right
+         [idx(3)+1:idx(4)]};    % top
      
-    % Generates line segment samples along a specified line.
-    function s=sample_func(a,b)
-        s1 = linspace(a(1),b(1),shapes_per_line+1);
-        s2 = linspace(a(2),b(2),shapes_per_line+1);
-        s = [];
-        for ii=1:shapes_per_line
-            s = [s [s1(ii:ii+1); s2(ii:ii+1)]];
-        end
-    end
-
-    % Generate lines on each of the 4 lines of a box.
-    xa = sample_func(x0(:,1),x0(:,2));
-    xb = sample_func(x0(:,2),x0(:,3));
-    xc = sample_func(x0(:,3),x0(:,4));
-    xd = sample_func(x0(:,4),x0(:,1));
-    x0 = [xa xb xc xd];
-    E = reshape(1:size(x0,2), 2, []);
-    E = num2cell(E', 2);
+    % You can also merge lines so that only one degenerate shape remains:
+%     x0 = [left top right bot];
+%     E = {[E{1} E{2} E{3}], E{4}};
+%     E = {[E{1} E{2} E{3} E{4}]};
+    
+    
+    num_verts = [25 50];
+    [X,Y] = meshgrid(linspace(0,l2,num_verts(2)), linspace(0,l1,num_verts(1)));
+    V = [X(:) Y(:)];
 
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
-    % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
-    min_I = [1]; % Pinning the top left corner.
-
+    min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
+    min_I = find(x0(2,:) == min(x0(2,:)));
+    min_I = min_I(5:6);
+    min_I = find(x0(2,:) == max(x0(2,:)) & (x0(1,:) == min(x0(1,:)) | x0(1,:) == max(x0(1,:))));
+    %min_I = [1]; % Pinning the top left corner.
+%     min_I = [1 idx(1)];
+% min_I = [1 2 3];
     % Initial deformed positions and velocities
     x = x0;
     v = zeros(size(x));
@@ -89,15 +84,15 @@ function vem_sim_2d
     E_lines = cell(numel(E),1);
     cm=lines(numel(E));
     for i=1:numel(E)
-        E_lines{i} = plot(x0(1,E{i}),x0(2,E{i}),'-','LineWidth',3, ...
-            'Color', cm(i,:));
+        E_lines{i} = plot(x0(1,E{i}(1:end-1)),x0(2,E{i}(1:end-1)),'.','LineWidth',3, ...
+            'Color', cm(i,:), 'MarkerSize',20);
         hold on;
     end
     
     % Plot pinned vertices
     plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
     axis equal
-    ylim([-4.5 2.5])
+    ylim([-2 1.5])
     
     % The number of quadrature points where at each point we
     % add stiffness matrix contributions.
@@ -123,7 +118,7 @@ function vem_sim_2d
     %
     % Note: each shape (edge in this case) has its own 'B' matrix
     %       because each shape has its own projection operator.
-    L = compute_shape_matrices(x0, x0_com, E, order);
+    L = compute_shape_matrices(x0, x0_com, E, order, mode);
     
     % Build Monomial bases for quadrature points (Q) and boundary
     % points (Q0). 
@@ -149,12 +144,17 @@ function vem_sim_2d
     dF_dc = vem_dF_dc(dM_dX, W);
     
     % Computing mass matrices
+    tic
     ME = vem_error_matrix(Y0, W0, W0_S, L);
+    toc
+    tic
     M = vem_mass_matrix(Y, W, W_S, L);
+    toc
     M = sparse((rho*M + k_error*ME));
 
     ii=1;
     for t=0:dt:30
+        tic
         b = [];
         for i=1:numel(E)
             b = [b x(:,E{i}) - x0_com];
@@ -192,11 +192,11 @@ function vem_sim_2d
             
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * 1;
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
+            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i} * 1;
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
@@ -234,9 +234,10 @@ function vem_sim_2d
         drawnow
         
         if save_output
-            fn=sprintf('output_png\\100k_%03d.png',ii)
+            fn=sprintf('output\\img\\deficient_%03d.png',ii)
             saveas(fig,fn);
         end
         ii=ii+1;
+        toc
     end
 end
