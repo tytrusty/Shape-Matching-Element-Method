@@ -8,11 +8,11 @@ set(vem_INCLUDE_DIR ${vem_ROOT}/include)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${vem_SOURCE_DIR}/cmake)
 
-option(vem_USE_OPENMP OFF)
+option(VEM_USE_OPENMP OFF)
 
 find_package(LIBIGL REQUIRED)
 
-if(vem_USE_OPENMP)
+if(VEM_USE_OPENMP)
     find_package(OpenMP REQUIRED)
 endif()
 
@@ -61,10 +61,10 @@ if(OpenMP_CXX_FOUND)
 
         if(vem_USE_STATIC_LIBRARY)
             target_link_libraries(vem PUBLIC OpenMP::OpenMP_CXX)
-            target_compile_definitions(vem PUBLIC -Dvem_USE_OPENMP)
+            target_compile_definitions(vem PUBLIC -DVEM_USE_OPENMP)
         else()
             target_link_libraries(vem INTERFACE OpenMP::OpenMP_CXX)
-            target_compile_definitions(vem INTERFACE -Dvem_USE_OPENMP)
+            target_compile_definitions(vem INTERFACE -DVEM_USE_OPENMP)
         endif()
 
     elseif()
@@ -72,10 +72,10 @@ if(OpenMP_CXX_FOUND)
 
         if(vem_USE_STATIC_LIBRARY)
             target_link_libraries(vem PUBLIC OpenMP::OpenMP_CXX)
-            target_compile_definitions(vem PUBLIC -Dvem_USE_OPENMP)
+            target_compile_definitions(vem PUBLIC -DVEM_USE_OPENMP)
         else()
             target_link_libraries(vem INTERFACE OpenMP::OpenMP_CXX)
-            target_compile_definitions(vem INTERFACE -Dvem_USE_OPENMP)
+            target_compile_definitions(vem INTERFACE -DVEM_USE_OPENMP)
         endif()
     endif()
     
