@@ -24,6 +24,7 @@ options.mu = 1500;
 options.sample_interior = 0; 
 options.rho = 1;
 options.distance_cutoff = 0.2;
+options.fitting_mode = 'hierarchical';
 
 vem_simulate_nurbs(part, options);
 

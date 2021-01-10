@@ -75,7 +75,7 @@ function vem_nurbs
     % Shape Matrices
     %E=cell(1);
     %E{1}=1:size(x0,2);
-    L = compute_shape_matrices(x0, x0_com, E, order);
+    L = compute_shape_matrices(x0, x0_com, E, order, 'global');
     
     % Build Monomial bases for all quadrature points
     Y = monomial_basis_matrix(V, x0_com, order, k);

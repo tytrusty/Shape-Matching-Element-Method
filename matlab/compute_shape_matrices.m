@@ -1,6 +1,6 @@
 function L = compute_shape_matrices(x0, x0_com, E, order, mode)
     if nargin < 5
-        mode = 'hierarchical';
+        mode = 'global';
     end
     fprintf('Computing shape matrices in mode: %s \n', mode);
     d = size(x0,1); % dimension
