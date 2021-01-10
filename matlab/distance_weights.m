@@ -8,14 +8,17 @@ function w = distance_weights(parts, X, alpha, enable_secondary_rays)
     % Compute per-shape distance weights
     for i = 1:n
         if isfield(parts{i}, 'hires_T')
-            FV.faces = parts{i}.hires_T;
-            FV.vertices = parts{i}.hires_x0';
+            F = parts{i}.hires_T;
+            V = parts{i}.hires_x0';
         else
-            FV.faces = parts{i}.T;
-            FV.vertices = parts{i}.x0';
+            F = parts{i}.T;
+            V = parts{i}.x0';
         end
-        [dist, surf_X] = point2trimesh(FV, 'QueryPoints', X, ...
-                                       'UseSubSurface', false);
+
+        % Find closest points on the surface for each point.
+        [sqrD,~,surf_X] = point_mesh_squared_distance(X,V,F);
+        dist = sqrt(sqrD);
+
         if enable_secondary_rays
             rays = X - surf_X;
             rays = rays ./ vecnorm(rays,2,2);

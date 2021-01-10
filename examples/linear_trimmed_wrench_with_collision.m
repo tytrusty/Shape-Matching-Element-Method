@@ -1,4 +1,4 @@
-function linear_trimmed_wrech
+function linear_trimmed_wrench_with_collision
 
 function pinned_ids = pin_function(x)
     verts_to_pin = 2; 
