@@ -41,6 +41,7 @@ function [nurbs_objects] = nurbs_from_iges(filename, res, rescale)
             nurbs_objects{i}.hires_T = T;
             nurbs_objects{i}.hires_J = J;
             nurbs_objects{i}.hires_x0 = squeeze(sum(J .* p,1));
+            nurbs_objects{i}.hires_UV = TUV;
         end
     end
 end

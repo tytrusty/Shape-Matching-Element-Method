@@ -1,4 +1,4 @@
-function [q, J] = nurbs_coords2(srf, UV)
+function [q, J] = nurbs_coords(srf, UV)
     % generalized coordinates
     q = zeros(3*size(srf.coefs,2)*size(srf.coefs,3), 1);
 
