@@ -7,15 +7,18 @@ function pinned_ids = pin_function(x)
 end
 
 iges_file = 'rounded_cube.iges';
+part = nurbs_from_iges(iges_file);
 
-% Resolution indicates how many point samples we will take on each
-% e.g. 6 means we have 6 samples in both the U & V coordinates, so
-%      a total of 36 samples across the NURBs patch.
-resolution = 6;
-part = nurbs_from_iges(iges_file, resolution, 0);
+YM = 1; %in Pascals
+pr =  0.02;
+[lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
+options.rho = 1e-5;
+options.gravity = -100;
 options.pin_function = @pin_function;
+options.lambda = lambda;
+options.mu = mu;
 
 vem_simulate_nurbs(part, options);
 

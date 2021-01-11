@@ -10,12 +10,17 @@ iges_file = 'mug_complex.iges';
 
 part = nurbs_from_iges(iges_file);
 
+YM = 2e3; %in Pascals
+pr =  0.25;
+[lambda, mu] = emu_to_lame(YM, pr);
+
+options.rho = 0.1;
 options.order = 1;
 options.pin_function = @pin_function;
-options.gravity = 0;
-options.enable_secondary_rays = true;
-options.lambda = 0.5 * 1700;
-options.mu = 0.5 * 15000;
+options.gravity = -10;
+options.enable_secondary_rays = false;
+options.lambda = lambda;
+options.mu = mu;
 options.sample_interior = 0;
 options.collision_ratio = 0.1;
 vem_simulate_nurbs_with_collision(part, options);

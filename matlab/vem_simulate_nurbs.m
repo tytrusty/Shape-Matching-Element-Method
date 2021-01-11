@@ -42,14 +42,13 @@ function vem_simulate_nurbs(parts, varargin)
     pin_I = config.pin_function(x0);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
-    % Plot all vertices
+    % Plotting pinned vertices.
     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
     
-    % Raycasting quadrature as described nowhere yet :)
+    % Sampling points used to compute energies.
     if config.sample_interior
         [V, vol] = raycast_quadrature(parts, [9 9], 5);
-        vol = vol ./ max(vol); % temporary
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -59,7 +58,7 @@ function vem_simulate_nurbs(parts, varargin)
     % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
     
     % Lame parameters concatenated.
-    params = [config.lambda, config.mu];
+    params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
@@ -92,8 +91,7 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Applying fixed point constraints to NURBS jacobian.
     J = P * J;
-    
-    
+
     m = size(V,2);  % number of quadrature points
     n = numel(E);	% number of shapes
     
@@ -106,8 +104,8 @@ function vem_simulate_nurbs(parts, varargin)
 
     % Compute mass matrices
     ME = vem_error_matrix(Y0, W0, W0_S, L);
-    M = vem_mass_matrix(Y, W, W_S, L);
-    M = ((config.rho*M + config.k_stability*ME)); % sparse?
+    M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
+    M = (M + config.k_stability*ME); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
@@ -149,10 +147,8 @@ function vem_simulate_nurbs(parts, varargin)
             F = reshape(F,d,d);
 
             % Force vector
-            dV_dF = neohookean_tet_dF(F, config.lambda, config.mu);
-
-            % Todo: I should be multiplying by volume here, right?
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
+            dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * vol(i);
         end
         dV_dq = L' * dV_dq;
         
@@ -193,7 +189,7 @@ function vem_simulate_nurbs(parts, varargin)
         end
         
         if config.save_output
-            fn=sprintf('output/img/cutoff_ten_%03d.png',ii);
+            fn=sprintf('output/img/simulate_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
