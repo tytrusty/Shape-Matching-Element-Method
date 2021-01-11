@@ -1,5 +1,4 @@
 function [normals, areas] = nurbs_normals(srf, UV, p)
-
     [f, f_grad, g, g_grad] = nurbs_grad(srf, UV);
 
     n = size(UV,2);
@@ -20,4 +19,11 @@ function [normals, areas] = nurbs_normals(srf, UV, p)
     end
     normals = normals ./ vecnorm(normals,2,2);
 
+    % TODO use this version of computing nurbs gradients. It's much faster
+    %      than my crummy version.
+    %     dcrv = nrbderiv(srf);
+    %     [pnts,jac] = nrbdeval(srf, dcrv, UV);
+    %     C = cross(jac{1}, jac{2});
+    %     lengths = vecnorm(C,2,1)';
+    %     normals = C ./ lengths;
 end

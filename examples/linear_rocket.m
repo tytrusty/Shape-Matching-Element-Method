@@ -6,18 +6,19 @@ end
 
 iges_file = 'rocket.iges';
 
-resolution = repelem(7, 13);
+part = nurbs_from_iges(iges_file);
 
-% The first NURBS is the rocket hull, which should receive more samples.
-resolution(1) = 11;
-part = nurbs_from_iges(iges_file, resolution, 1);
+YM = 3e1; %in Pascals
+pr =  0.15;
+[lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.gravity = -20;
-options.rho = .2;
+options.gravity = -25.95;
+options.rho = 1e-4;
 options.pin_function = @pin_function;
-options.lambda = 100;
-options.mu = 1500;
+options.lambda = lambda;
+options.mu = mu;
+options.distance_cutoff = 10;
 
 vem_simulate_nurbs(part, options);
 

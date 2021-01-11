@@ -16,14 +16,19 @@ iges_file = 'beam.iges';
 
 part = nurbs_from_iges(iges_file);
 
+%material properties
+YM = 5e3; %in Pascals
+pr =  0.25;
+[lambda, mu] = emu_to_lame(YM, pr);
+
 options.order = 2;
 options.pin_function = @pin_function;
 options.gravity = -10;
-options.lambda = 100;
-options.mu = 1500;
-options.sample_interior = 0; 
+options.lambda = lambda;
+options.mu = mu;
+% options.sample_interior = 0;
 options.rho = 1;
-options.distance_cutoff = 0.2;
+options.distance_cutoff = 0.55;
 options.fitting_mode = 'hierarchical';
 
 vem_simulate_nurbs(part, options);

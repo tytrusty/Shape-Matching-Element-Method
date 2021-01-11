@@ -10,9 +10,17 @@ iges_file = 'cylinder.iges';
 
 part = nurbs_from_iges(iges_file);
 
+YM = 1e2; %in Pascals
+pr =  0.15;
+[lambda, mu] = emu_to_lame(YM, pr);
+
 options.order = 1;
-options.pin_function = @pin_function;
+options.rho = 0.1;
 options.gravity = -10;
+options.lambda = lambda;
+options.mu = mu;
+options.pin_function = @pin_function;
+
 vem_simulate_nurbs(part, options);
   
 end
