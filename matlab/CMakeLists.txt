@@ -10,13 +10,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/../cpp/cmake)
 set(CMAKE_CXX_STANDARD 17)
 
 #Disable OpenMP because I need to use a MATLAB specific setup to get this to work
-if (vem_USE_OPENMP)
-	set(vem_MATLAB_USE_OPENMP ON)
+if (VEM_USE_OPENMP)
+	set(VEM_MATLAB_USE_OPENMP ON)
 else()
-	set(vem_MATLAB_USE_OPENMP OFF)
+	set(VEM_MATLAB_USE_OPENMP OFF)
 endif()
 
-set(vem_USE_OPENMP OFF CACHE BOOL "Override option" FORCE)
+set(VEM_USE_OPENMP OFF CACHE BOOL "Override option" FORCE)
 
 include(${CMAKE_SOURCE_DIR}/../cpp/cmake/vem.cmake)
 
@@ -37,7 +37,7 @@ message(${Matlab_OMP_LIB})
 file(GLOB vem_MATLAB_SRCS ${CMAKE_SOURCE_DIR}/mex/*.cpp)
 
 #compiler options
-if(vem_MATLAB_USE_OPENMP)
+if(VEM_MATLAB_USE_OPENMP)
 	find_package(OpenMP)
 	if(OpenMP_CXX_FOUND)
 		
@@ -47,7 +47,7 @@ if(vem_MATLAB_USE_OPENMP)
 			set(OpenMP_CXX_FLAGS -Xpreprocessor -fopenmp)
 		endif()
 
-		target_compile_definitions(vem INTERFACE -Dvem_USE_OPENMP)
+		target_compile_definitions(vem INTERFACE -DVEM_USE_OPENMP)
 
 	endif()
 endif()
@@ -61,11 +61,11 @@ foreach( file ${vem_MATLAB_SRCS})
 			LINK_TO ${Matlab_MX_LIBRARY} ${Matlab_MEX_LIBRARY} ${Matlab_OMP_LIB} vem
 			OUTPUT_NAME ${name})
 
-	if(vem_MATLAB_USE_OPENMP)
+	if(VEM_MATLAB_USE_OPENMP)
 		target_compile_options(${name} PUBLIC ${OpenMP_CXX_FLAGS})
 		target_link_options(${name} PUBLIC ${OpenMP_CXX_FLAGS})
 
-		set(vem_USE_OPENMP ON CACHE BOOL "Override option" FORCE)
+		set(VEM_USE_OPENMP ON CACHE BOOL "Override option" FORCE)
 	endif()
 	
 
