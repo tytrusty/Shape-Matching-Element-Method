@@ -1,10 +1,20 @@
 function test_weight_grad
 %load a mesh
-[V,T] = readOBJ([data_dir() '/meshes_obj/star.obj']);
-V(1,:) = [];
-T = T - 1;
+[V,T] = readOBJ([data_dir() '/meshes_obj/star2.obj']);
+%[V,T] = readOBJ([data_dir() '/meshes_obj/star.obj']);
+% V(1,:) = [];
+% T = T - 1;
   
 F = boundary_faces(T);
+
+X=V;
+ids = unique(F(:));
+X(ids,:) = [];
+
+vids = 1:size(V,1);
+vids(ids) = [];
+
+disp('asdf')
 
 function [a,w] = weights(X)
     % From Dave's weight code
@@ -21,8 +31,8 @@ function [a,w] = weights(X)
     %bound constraints
     dEdotdV = min(max(dEdotdV, 0),1);
 
-    a = zeros(size(V,1), size(F,1));
-    w = zeros(size(V,1), size(F,1));
+    a = zeros(size(X,1), size(F,1));
+    w = zeros(size(X,1), size(F,1));
     
     %%% THIS BIT DOES THE RAYTRACING WEIGHTS %%%%%
     for jj=1:size(F,1)
@@ -74,12 +84,12 @@ function [a,w] = weights(X)
         %reconstruct the points I hit
         [min_gamma, edge_id] = min(gamma, [], 2);
 
-        hit_points = diag(beta(sub2ind(size(beta), (1:size(V,1))', edge_id)))*dE(edge_id,:)  + V(F(edge_id,1),:);
+        hit_points = diag(beta(sub2ind(size(beta), (1:size(X,1))', edge_id)))*dE(edge_id,:)  + V(F(edge_id,1),:);
 
         dt = sqrt((hit_points(:,1) - VE_X).^2 + (hit_points(:,2) - VE_Y).^2);
         dx = sqrt((X(:,1) - VE_X).^2 + (X(:,2) - VE_Y).^2);
-        w(:,jj) = max(1.0 - dx./0.5,0);
-%         w(:,jj) = max(1.0 - dx./min(0.5,dt),0);
+%         w(:,jj) = max(1.0 - dx./0.8,0);
+        w(:,jj) = max(1.0 - dx./min(0.5,dt),0);
     end
 
     for ii = 1:size(a,1)
@@ -95,12 +105,12 @@ function [a,w] = weights(X)
 %     w = a;
 end
 
-h = 1e-8;
-[w,a]= weights(V);
-w_posx = weights(V + [h 0 0]);
-w_negx = weights(V - [h 0 0]);
-w_posy = weights(V + [0 h 0]);
-w_negy = weights(V - [0 h 0]);
+h = 1e-6;
+[w,a]= weights(X);
+w_posx = weights(X + [h 0 0]);
+w_negx = weights(X - [h 0 0]);
+w_posy = weights(X + [0 h 0]);
+w_negy = weights(X - [0 h 0]);
 dw_dx = (w_posx - w_negx) / (2 * h);
 dw_dy = (w_posy - w_negy) / (2 * h);
 find(max(dw_dx(:,1)))
@@ -116,15 +126,21 @@ hold on
 % srf = tsurf(T, V);
 map = parula(256);
 w_i = floor(a(:,1)*255) + 1;
-C = map(w_i,:);
+
+C = zeros(size(V,1), 3);
+C(vids,:) = map(w_i,:);
+% 
+% C = map(w_i,:);
+
 p=patch('Faces',T,'Vertices',V, 'FaceColor', 'interp', 'EdgeColor', 'none');
 p.FaceVertexCData = C;
 p.CDataMapping = 'scaled';
-quiver(V(:,1),V(:,2),dw_dx(:,1), dw_dy(:,1), 'r');
+quiver(X(:,1),X(:,2),dw_dx(:,1), dw_dy(:,1), 'r');
 axis equal
 
 drawnow;
 hold off
 
 lengths = sqrt(dw_dx(:,1).*dw_dx(:,1) + dw_dy(:,1).*dw_dy(:,1));
+lengths = sort(lengths)
 end
