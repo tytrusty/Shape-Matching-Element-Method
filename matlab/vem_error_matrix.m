@@ -1,18 +1,17 @@
-function ME = vem_error_matrix(B, Q, w, d, N, E)
-    ME = zeros(d*N, d*N);
-    
-    J = zeros(d,d*N,N);
-    for i = 1:size(E,1)
-        n=size(B{i},1);
-        w_i = reshape(w(:,i), [1 1 N]);
-        J = J + bsxfun(@times, vem_jacobian(B{i},Q,n,d,N,E{i}), w_i);
-    end
+function ME = vem_error_matrix(Y, W, W_S, L)
+    m = size(Y,1);
+    ME = zeros(size(L,2), size(L,2));
+    d = size(Y,2);
 
-    for j=1:N
-        I = zeros(d,d*N);
-        I(:, d*j-(d-1):d*j) = eye(d);
-        Jtmp = I - J(:,:,j);
-        ME = ME + Jtmp'*Jtmp;
-    end
+    for i=1:m
+    	Yi = squeeze(Y(i,:,:))*W{i} * W_S{i}; % weighed monomial basis
+        Yi(:, end-d+1:end) = eye(d);
         
+        I = zeros(d,size(L,2));
+        I(:, d*(i-1)+1: d*i) = eye(d);
+        
+        J = I - Yi*L;
+        
+        ME = ME + J'*J;
+    end     
 end

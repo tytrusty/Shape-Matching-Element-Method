@@ -17,7 +17,6 @@ else()
 endif()
 
 set(vem_USE_OPENMP OFF CACHE BOOL "Override option" FORCE)
-set(vem_USE_MKL OFF CACHE BOOL "Override option" FORCE)
 
 include(${CMAKE_SOURCE_DIR}/../cpp/cmake/vem.cmake)
 

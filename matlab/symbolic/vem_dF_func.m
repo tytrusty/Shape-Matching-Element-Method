@@ -21,7 +21,7 @@ function dF = vem_dF_func(n,ne)
 
     ONE=repmat([1 0; 0 1], 1, n);
     x_com=(1/n)*ONE*qdot;
-
+    x_com = sym('x_com',[2,1]);
     qE = E * qdot;
     P=sym(zeros(2, ne));
     for i=1:ne

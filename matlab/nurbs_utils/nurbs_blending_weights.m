@@ -1,19 +1,12 @@
-function w = nurbs_blending_weights(parts, X, alpha)
-
+function w = nurbs_blending_weights(parts, X, alpha, enable_secondary_rays)
+if nargin < 4
+    enable_secondary_rays = true;
+end
 m=size(X,1);
 n=numel(parts);
 
-% Weights
-w = zeros(m,n);
-
 % Compute per-shape distance weights
-for i = 1:n
-    fvc = surf2patch(parts{i}.plt,'triangles');
-    FV.faces = fvc.faces;
-    FV.vertices = fvc.vertices;
-    [dist,~] = point2trimesh(FV, 'QueryPoints', X, 'UseSubSurface', false);
-    w(:,i) = max(1 -  (abs(dist) ./ alpha), 0);
-end
+w = distance_weights(parts, X, alpha, enable_secondary_rays);
 
 % Compute weighting coefficients with constraints
 options = optimoptions('quadprog','Display', 'off');

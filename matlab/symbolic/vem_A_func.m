@@ -15,16 +15,16 @@ function A = vem_A_func(n,ne)
 
     ONE=repmat([1 0; 0 1], 1, n);
     x_com=(1/n)*ONE*qdot;
-
+    x_com = sym('x_com',[2,1]);
     
     qE = E * qdot;
-    P=sym(zeros(2, ne));
+     P=sym(zeros(2, ne));
     for i=1:ne
-        P(:,i) = qdot(2*i-1:2*i)-x_com;
+        %P(:,i) = qdot(2*i-1:2*i)-x_com;
         P(:,i) = qE(2*i-1:2*i)-x_com;
     end
     
-    C=([qdot(1) qdot(2)]' -  (P*BM + x_com)); % Error matrix term
+    C=([qdot(3) qdot(4)]' -  (P*BM + x_com)); % Error matrix term
 %     C=(P*BM + x_com);                     % Mass matrix term
     dT_dqdot = jacobian(C,qdot)
 %     M = jacobian(dT_dqdot,qdot)

@@ -8,7 +8,7 @@ function J = vem_jacobian(B, Q, n, d, N, E)
         for j = 1:d
            J(j,j:d:end,i)  = dcom_i;
         end
-        
+        % BM_i = B * Q(:,i);
         for j = 1:numel(E)
             for k = 1:d
                 idx = d*(E(j)-1);

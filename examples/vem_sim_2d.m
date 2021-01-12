@@ -3,13 +3,18 @@ function vem_sim_2d
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 17;   	% Lame parameter 1
-    D = 0.5 * 150;   	% Lame parameter 2
-    gravity = -10;      % gravity strength
+    C = 0.5 * 170;   	% Lame parameter 1
+    D = 0.5 * 1500;   	% Lame parameter 2
+    gravity = -100;     % gravity strength
     k_error = 100000;   % Stiffness for VEM stability term
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1;            % mass
+    rho = 1;            % density
+	d = 2;              % dimension (2 or 3)
     save_output = 0;    % (0 or 1) whether to output images of simulation
+    
+    % The number of elements in the monomial basis.
+    % -- example: Draft equation 1 is second order with k == 5
+    k = basis_size(d, order);
     
     % Load a basic square mesh
     [V,F] = readOBJ('models/plane.obj');
@@ -19,37 +24,55 @@ function vem_sim_2d
     % values used in computing the "projection" operator in VEM.
     % Each edge here represents a single "shape" in the shape matching
     % context.
-    E = boundary_faces(F);
+    F = boundary_faces(F);
         
     % Get undeformed boundary vertices. 
-    V_bnd = unique(E(:));
+    V_bnd = unique(F(:));
     x0 = V(V_bnd,:)';
-    
+
     % Remap edge vertex IDs to IDs into 'x0'
     new_Idx = find(V_bnd);
-    [toreplace, bywhat] = ismember(E, V_bnd);
-    E(toreplace) = new_Idx(bywhat(toreplace));
-    % Todo -- only use cells for all edge stuff
-    E_cell = cell(size(E,1),1);
-    for i =1:size(E,1)
-       E_cell{i} = E(i,:); 
-    end
+    [toreplace, bywhat] = ismember(F, V_bnd);
+    F(toreplace) = new_Idx(bywhat(toreplace));
     
+    % Todo -- only use cells for all edge stuff
+    E = cell(size(F,1),1);
+    for i =1:size(F,1)
+       E{i} = F(i,:);
+    end
+
+    % Simpler cube example.
+    x0  = [0 0; 0 2;  2 2; 2 0; ]';
+    
+    num_verts = 10;
+    [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
+    V = [X(:) Y(:)];
+    
+    shapes_per_line = 1;
+     
+    % Generates line segment samples along a specified line.
+    function s=sample_func(a,b)
+        s1 = linspace(a(1),b(1),shapes_per_line+1);
+        s2 = linspace(a(2),b(2),shapes_per_line+1);
+        s = [];
+        for ii=1:shapes_per_line
+            s = [s [s1(ii:ii+1); s2(ii:ii+1)]];
+        end
+    end
+
+    % Generate lines on each of the 4 lines of a box.
+    xa = sample_func(x0(:,1),x0(:,2));
+    xb = sample_func(x0(:,2),x0(:,3));
+    xc = sample_func(x0(:,3),x0(:,4));
+    xd = sample_func(x0(:,4),x0(:,1));
+    x0 = [xa xb xc xd];
+    E = reshape(1:size(x0,2), 2, []);
+    E = num2cell(E', 2);
+
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
     % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
     min_I = [1]; % Pinning the top left corner.
 
-    % Form selection matrices for each shape, allowing us to project
-    % out the points that are pinned.
-    S = cell(size(E,1),1);
-    for i=1:size(E,1)
-        S{i} = sparse(zeros(numel(x0), size(E,2)*2));
-        for j=1:size(E,2)
-            idx = E(i,j);
-            S{i}(2*idx-1:2*idx,2*j-1:2*j) = eye(2);
-        end
-    end
-    
     % Initial deformed positions and velocities
     x = x0;
     v = zeros(size(x));
@@ -63,14 +86,22 @@ function vem_sim_2d
     hold on;
     
     % Create plot of boundary edges.
-    E_lines = plot([x0(1,E(:,1)); x0(1,E(:,2))], ...
-                   [x0(2,E(:,1)); x0(2,E(:,2))],'LineWidth',3);
-    hold on;
+    E_lines = cell(numel(E),1);
+    cm=lines(numel(E));
+    for i=1:numel(E)
+        E_lines{i} = plot(x0(1,E{i}),x0(2,E{i}),'-','LineWidth',3, ...
+            'Color', cm(i,:));
+        hold on;
+    end
     
     % Plot pinned vertices
     plot(x0(1,min_I), x0(2,min_I),'.','MarkerSize', 30,'Color','r');
     axis equal
     ylim([-4.5 2.5])
+    
+    % The number of quadrature points where at each point we
+    % add stiffness matrix contributions.
+    m = size(V,1);
     
     % Constraint matrix for boundary conditions.
     P = fixed_point_constraint_matrix(x0',sort(min_I)');
@@ -92,65 +123,56 @@ function vem_sim_2d
     %
     % Note: each shape (edge in this case) has its own 'B' matrix
     %       because each shape has its own projection operator.
-    [B,~] = compute_shape_matrices(x0, x0_com, E_cell, order);
+    L = compute_shape_matrices(x0, x0_com, E, order);
     
     % Build Monomial bases for quadrature points (Q) and boundary
     % points (Q0). 
     % -- Draft equation (1)
     % -- Shape matching section 4.3
-    Q = monomial_basis(V', x0_com, order);
-    Q0 = monomial_basis(x0, x0_com, order);     
+    Y = monomial_basis_matrix(V', x0_com, order, k);
+    Y0 = monomial_basis_matrix(x0, x0_com, order, k);
     
     % For each sampled point, compute the weighting with respect to all
     % shapes.
     % -- Draft Equation (3)
-    w = compute_projected_weights(x0, E_cell, V');
-    w_x = compute_projected_weights(x0, E_cell, x0);
-        
+    w = compute_projected_weights(x0, E, V');
+    w_x = compute_projected_weights(x0, E, x0);
+    [W, ~, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
+    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
+    
     % Forming gradient of monomial basis with respect to X (undeformed)
     % -- Draft Equation (13)
     dM_dX = monomial_basis_grad(V', x0_com, order);
         
-    % Computing each dF_dq
-    d = 2;  % dimension (2 or 3)
-    dF_dq = vem_dF_dq(B, dM_dX, E_cell, size(x,2), w);
-    dF_dq = permute(dF_dq, [2 3 1]);
- 
+    % Computing each gradient of deformation gradient with respect to
+    % projection operator (c are polynomial coefficients)
+    dF_dc = vem_dF_dc(dM_dX, W);
+    
     % Computing mass matrices
-    % Note: I haven't written up this bit yet in the draft, so
-    %       I'll get on that
-    ME = vem_error_matrix(B, Q0, w_x, d, size(x,2), E_cell);
-    M = vem_mass_matrix(B, Q, w, d, size(x,2), E_cell);
+    ME = vem_error_matrix(Y0, W0, W0_S, L);
+    M = vem_mass_matrix(Y, W, W_S, L);
     M = sparse((rho*M + k_error*ME));
-    
-    % The number of elements in the monomial basis.
-    % -- example: Draft equation 1 is second order with k == 5
-    % TODO: compute this the right way :) 
-    k=2;
-    if order == 2
-        k = 5;
-    end
-    
-    % The number of quadrature points where at each point we
-    % add stiffness matrix contributions and do all that fun
-    % Neohookean stuff.
-    m = size(Q,2);
-        
+
     ii=1;
     for t=0:dt:30
-        % Center of mass of deformed shape
-        x_com = mean(x,2);
-        
-        % Compute projection operators for each shape (edge)
-        A=zeros(d, k, size(E,1));
-        for i=1:size(E,1)
-            p = x(:,E(i,:)) - x_com;
-            Ai = p*B{i};
-            A(:,:,i) = Ai;
+        b = [];
+        for i=1:numel(E)
+            b = [b x(:,E{i}) - x0_com];
         end
+        b = b(:);
         
-        dV_dq = zeros(numel(x),1);     % force vector
-        K = zeros(numel(x), numel(x)); % stiffness matrix
+        % Solve for polynomial coefficients (projection operators).
+        c = L * b;
+        
+        % Extract deformed center of mass translation.
+        p = c(end-d+1:end);
+        x_com = x0_com + p;
+
+        % force vector
+        dV_dq = zeros(d*(k*numel(E) + 1),1); 
+        
+        % stiffness matrix
+        K = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1));
         
         % New deformed positions of quadrature points.
         % (only for visualization)
@@ -158,32 +180,34 @@ function vem_sim_2d
         
         % Computing force and stiffness contributions
         for i = 1:m
-            
-            % Projection operator for this particular point
-            % -- Draft equation 3
-            Aij = zeros(size(A(:,:,1)));
-            for j = 1:size(E,1)
-                Aij = Aij + A(:,:,j) * w(i,j);
-            end
-            
-            % Deformation Gradient (Draft equation 13)
             dMi_dX = squeeze(dM_dX(i,:,:));
-            F = Aij * dMi_dX;
+           
+            % Deformation Gradient (Draft equation 13)
+            F = dMi_dX * W{i} * W_S{i} * c;
+            F = reshape(F,d,d);
             
             % Computing new world position of this point.
-            Points(:,i) = F * Q(1:2,i) + x_com;
-                        
+            Yi = squeeze(Y(i,:,:))*W{i}*W_S{i}; % weighed monomial basis
+            Points(:,i) = Yi * c + x_com;
+            
             % Force vector contribution
             dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + dF_dq(:,:,i)' * dV_dF;
-
+            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
+            
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - dF_dq(:,:,i)' * d2V_dF2 * dF_dq(:,:,i);
+            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
         end
-        
+        K = L' * K * L;
+        dV_dq = L' * dV_dq;
+
         % Error correction force
-        f_error = - 2 * ME * x(:);
+        x_error = x(:);
+        x_error(1:2:end) = x_error(1:2:end) - x_com(1);
+        x_error(2:2:end) = x_error(2:2:end) - x_com(2);
+
+        % should just do xx(1:d:end) - x_com?
+        f_error = - 2 * ME * x_error;
         f_error = k_error*(dt * P * f_error);
         
         % Force from potential energy.
@@ -198,11 +222,11 @@ function vem_sim_2d
 
         % Update position
         x = x + dt*v;
-        
+
         % Update plots
         for i = 1:numel(E_lines)
-            E_lines(i).XData = x(1,E(i,:)); 
-            E_lines(i).YData = x(2,E(i,:)); 
+            E_lines{i}.XData = x(1,E{i});
+            E_lines{i}.YData = x(2,E{i});
         end
      
         X_plot.XData = Points(1,:);
