@@ -45,8 +45,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
   EmbreeIntersector ei;
   ei.init(V,F,true);
 
-  //igl::parallel_for(n,[&](const int si)
-  //for (int si = 0; si < n; si++)
   igl::parallel_for(n, [&](const int si)
   {
     Eigen::Vector3f s = source.row(si);
@@ -57,7 +55,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
     if(!ei.intersectRay(s,d,hit,num_rays,tnear))
     {
 	  nhits(si) = hit.size();
-	  //std::cout << "si: " << si << " nrays: " << num_rays << " hitsize: "<< hit.size() << std::endl;
 	  for (int i = 0; i < hit.size(); ++i) {
 	    ids(si, i) = hit[i].id;
 		t(si, i) = hit[i].t;
