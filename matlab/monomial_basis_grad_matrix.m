@@ -1,4 +1,4 @@
-function dY = monomial_basis_grad_matrix(x, x_coms, w, W_I, order, k)
+function dY = monomial_basis_grad_matrix(x, x_coms, w, W_I, com_map, order, k)
     d = size(x,1);
     n = size(x,2);
     
@@ -7,11 +7,10 @@ function dY = monomial_basis_grad_matrix(x, x_coms, w, W_I, order, k)
     for ii=1:n
         m = numel(W_I{ii});
         
-        dYi = zeros(d*d, d*(k+1)*m);
-        
+        dYi = zeros(d*d, d*(k*m + size(x_coms,2)));
         for jj=1:m
             idx = W_I{ii}(jj);
-            dYij = squeeze(monomial_basis_grad(x(:,ii), x_coms(:,idx), order));
+            dYij = squeeze(monomial_basis_grad(x(:,ii), x_coms(:,com_map(idx)), order));
             
             for i = 1:d
                 for j = 1:d

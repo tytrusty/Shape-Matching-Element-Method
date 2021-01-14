@@ -19,6 +19,9 @@ function ME = vem_error_matrix(Y, W, W_S, L, w, E)
 %         J = I - Yi*L;
         J = I - Y{i}*L;
         
+        % Do the multiplication in the loop without L
+        % (I-Yi)T(I-Yi) = I - two inner terms + outer term (can add these
+        % terms separately, then multiply the L later)
         ME = ME + J'*J;
     end     
 end

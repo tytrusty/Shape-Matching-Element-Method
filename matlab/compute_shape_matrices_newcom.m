@@ -55,30 +55,32 @@ function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, or
         n = size(x0,2);
         
         % (k+1) - the +1 accounts for each shapes' constant term.
-        L = zeros(d*(k+1)*numel(E), numel(x0));
+        L = zeros(d*(k*numel(E) + numel(adjacent)), numel(x0));
         
         % Forming T&S matrices
-        S=sparse(zeros(n,d*numel(E)));
-        T=zeros(d*numel(E),n);
-        for i=1:numel(E)
-        	m = numel(E{i});
-            S(row_ranges{i},d*(i-1)+1:d*i) = repmat(eye(d),m,1);
+        S=sparse(zeros(n,d*numel(adjacent)));
+        T=zeros(d*numel(adjacent),n);
+ 
+        % Setting constant term solutions for each center of mass as
+        % the mean of their adjacent points.
+        for i=1:numel(adjacent)
             for j=1:d
                 row = d*(i-1)+j;
                 cols = d*(adjacent{i}-1)+j;
                 T(row,cols) = 1/numel(adjacent{i});
-            end
-        end
- 
-        % Set constant term solutions for each shape as the mean of their
-        % adjacent points. Same as 'T' matrix, but substitued into the
-        % final 'L' matrix.
-        for i=1:numel(E)
-            for j=1:d
+                
+                
                 row = d*k*numel(E) + d*(i-1)+j;
                 cols = d*(adjacent{i}-1)+j;
                 L(row,cols) = 1/numel(adjacent{i});  
             end
+        end
+        
+        % Forming selection matrices for each shape.
+        for i=1:numel(E)
+        	m = numel(E{i});
+            idx = com_map(i);
+            S(row_ranges{i},d*(idx-1)+1:d*idx) = repmat(eye(d),m,1);
         end
 
         I = eye(numel(x0));
@@ -107,7 +109,7 @@ function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, or
 
         if order == 2
             k_quad = nchoosek(d+2-1,2);
-            quad_cols = zeros(k_quad*numel(E),1);
+            quad_cols = zeros(d*k_quad*numel(E),1);
 
             for i = 1:numel(E)
                 for j = 1:d

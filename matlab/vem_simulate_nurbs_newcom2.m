@@ -62,6 +62,8 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     
     %%%% Test single com %%%%
     com_map = ones(n,1);
+    com_adjacent = cell(1,1);
+    com_adjacent{1} = 1:size(x0,2);
     x0_coms = mean(x0,2);
     %%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -86,7 +88,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [3 3], 10);
+        [V, vol] = raycast_quadrature(parts, [4 4 ], 10);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -105,12 +107,14 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     f_gravity = config.dt*P*f_gravity(:);
             
     % Shape Matrices
-    L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, ...
-        config.order, config.fitting_mode);
+    L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, ...
+        com_adjacent, config.order, config.fitting_mode);
     %     nnz(L)
+       asdf= null(L);
     Lz = abs(L(:)) < 1e-12;
     L(Lz) = 0;
     L=sparse(L);
+
 
     % Compute Shape weights
     w = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
@@ -124,8 +128,8 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
                              
 
     % Build Monomial bases for all quadrature points
-    Y = monomial_basis_matrix(V, x0_coms, w, W_I, config.order, k);
-    Y0 = monomial_basis_matrix(x0, x0_coms, w_x, W0_I, config.order, k);
+    Y = monomial_basis_matrix(V, x0_coms, w, W_I, com_map, config.order, k);
+    Y0 = monomial_basis_matrix(x0, x0_coms, w_x, W0_I, com_map, config.order, k);
 
     
     % Fixed x values.
@@ -138,7 +142,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     J = P * J;    
     
     % Forming gradient of monomial basis w.r.t X
-    dF_dc = monomial_basis_grad_matrix(V, x0_coms, w, W_I, config.order, k);
+    dF_dc = monomial_basis_grad_matrix(V, x0_coms, w, W_I, com_map, config.order, k);
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
@@ -148,6 +152,9 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     ME = vem_error_matrix(Y0, W0, W0_S, L, w_x, E);
     M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
     M = (M + config.k_stability*ME); % sparse?
+    asdf=inv(M);
+    asdf2=null(M);
+    rank(M)
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
@@ -158,7 +165,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     for t=0:config.dt:30
         tic
         % Recompute shape coms
-        for i=1:n
+        for i=1:size(x_coms,2)
             x_coms(:,i) = mean(x(:,adjacent{i}),2);
         end
 
@@ -178,8 +185,8 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
 %         K = L' * K * L;
 
         % Force vector
-        K = zeros(d*(k+1)*numel(E), d*(k+1)*numel(E));
-        dV_dq = zeros(d*(k+1)*numel(E),1);
+        K = zeros(d*(k*n + size(x_coms,2)), d*(k*n + size(x_coms,2)));
+        dV_dq = zeros(d*(k*n + size(x_coms,2)),1);
 
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
@@ -210,7 +217,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
        
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
-%         f_internal=0;K=0;
+        f_internal=0;K=0;
         % Computing linearly-implicit velocity update
 
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
