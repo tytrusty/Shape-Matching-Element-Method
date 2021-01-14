@@ -18,7 +18,7 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & W_I,
 	int k, int n) {
 
-	g.resize(3 * (k * n + 1), 3 * (k * n + 1));
+	g.resize(3 * (k+1) * n, 3 * (k + 1) * n);
 	g.setZero();
 
 	for (int i = 0; i < dM_dX.rows(); ++i) {

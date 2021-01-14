@@ -1,4 +1,4 @@
-function L = compute_shape_matrices(x0, x0_com, E, order, mode)
+function L = compute_shape_matrices_newcom(x0, x0_com, E, adjacent, order, mode)
     if nargin < 5
         mode = 'global';
     end
@@ -49,21 +49,35 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     if strcmp(mode, 'hierarchical')
         n = size(x0,2);
-
-        L = zeros(d*(k*numel(E)+1), numel(x0));
-
-        % Setting constant term rows
-        for i=1:d
-            L(end-d+i,i:d:end) = 1/n;
+        
+        % (k+1) - the +1 accounts for each shapes' constant term.
+        L = zeros(d*(k+1)*numel(E), numel(x0));
+        
+        % Forming T&S matrices
+        S=sparse(zeros(n,d*numel(E)));
+        T=zeros(d*numel(E),n);
+        for i=1:numel(E)
+        	m = numel(E{i});
+            S(row_ranges{i},d*(i-1)+1:d*i) = repmat(eye(d),m,1);
+            for j=1:d
+                row = d*(i-1)+j;
+                cols = d*(adjacent{i}-1)+j;
+                T(row,cols) = 1/numel(adjacent{i});
+            end
+        end
+ 
+        % Set constant term solutions for each shape as the mean of their
+        % adjacent points. Same as 'T' matrix, but substitued into the
+        % final 'L' matrix.
+        for i=1:numel(E)
+            for j=1:d
+                row = d*k*numel(E) + d*(i-1)+j;
+                cols = d*(adjacent{i}-1)+j;
+                L(row,cols) = 1/numel(adjacent{i});  
+            end
         end
 
         I = eye(numel(x0));
-
-        % 'S' matrix (stacked identities)
-        S = repmat(eye(d),n,1);
-
-        % Matrix that computes the mean of the nodal values.
-        T = repmat(eye(d)*(1/n),1,n);
 
         k_linear = nchoosek(d+1-1,1);
         linear_cols = zeros(k_linear*d*numel(E),1);
@@ -111,24 +125,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
         end
     elseif strcmp(mode, 'global')
         L = ATA \ A';
-        
-    elseif strcmp(mode, 'global_pinv')
-        L = pinv(ATA) * A';
-        
-    elseif strcmp(mode, 'global_svd_truncated')
-        epsilon = 1e-12;
-        [U, S, V] = svd(ATA);
-        S = diag(S);
-        t = find(abs(S) < epsilon, 1, 'first') - 1; %truncation point
-        
-        if isempty(t) % full rank
-            t = numel(S);
-        end
-        
-        S = 1./ S(1:t);
-        truncated_inv = V(:,1:t) * diag(S) * U(:,1:t)';
-        L = truncated_inv * A';
-
+   
     elseif strcmp(mode,'local')
         n = size(x0,2);
         L = zeros(d*(k*numel(E)+1), numel(x0));

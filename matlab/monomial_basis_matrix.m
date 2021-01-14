@@ -6,7 +6,6 @@ function Y = monomial_basis_matrix(x, x_com, order, k)
     
     Q = x - x_com;
     
-
     % TODO -- make this general
     if order == 2
         if d==2
