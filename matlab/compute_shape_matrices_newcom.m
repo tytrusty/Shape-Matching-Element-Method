@@ -1,4 +1,7 @@
-function L = compute_shape_matrices_newcom(x0, x0_com, E, adjacent, order, mode)
+function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, order, mode)
+    
+    % TOOODO --- appears problematic that we have multiple center of masses
+
     if nargin < 5
         mode = 'global';
     end
@@ -17,7 +20,8 @@ function L = compute_shape_matrices_newcom(x0, x0_com, E, adjacent, order, mode)
     for i=1:numel(E)
         x = x0(:,E{i});
 %         M{i} = monomial_basis(x, x0_com, order);
-        M{i} = monomial_basis(x, x0_com(:,i), order);
+%         M{i} = monomial_basis(x, x0_coms(:,i), order);
+        M{i} = monomial_basis(x, x0_coms(:,com_map(i)), order);
         row_ranges{i} = d*A_rows+1:d*A_rows + d*numel(E{i});
         A_rows = A_rows + numel(E{i});
     end

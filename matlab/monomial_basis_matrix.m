@@ -1,31 +1,27 @@
-function Y = monomial_basis_matrix(x, x_com, order, k)
+function Y = monomial_basis_matrix(x, x_coms, w, W_I, order, k)
     d = size(x,1);
     n = size(x,2);
     
-    Y = zeros(n, d, d*k);
+    Y = cell(n,1);
     
-    Q = x - x_com;
-    
-    % TODO -- make this general
-    if order == 2
-        if d==2
-            Q(3,:) = Q(1,:).^2;
-            Q(4,:) = Q(2,:).^2;
-            Q(5,:) = Q(1,:).*Q(2,:);
-        else
-            Q(4,:) = Q(1,:).^2;
-            Q(5,:) = Q(2,:).^2;
-            Q(6,:) = Q(3,:).^2;
-            Q(7,:) = Q(1,:).*Q(2,:);
-            Q(8,:) = Q(2,:).*Q(3,:);
-            Q(9,:) = Q(3,:).*Q(1,:);
+    for ii=1:n
+        m = numel(W_I{ii});
+        
+        Yi = zeros(d, d*(k+1)*m);
+        
+        I_offset = d*k*m;
+        for i=1:m
+            idx = W_I{ii}(i);
+            Yij = monomial_basis(x(:,ii), x_coms(:,idx), order);
+            for j = 1:d
+                col_b = d*k*(i-1)+k*(j-1)+1;
+                col_e = d*k*(i-1)+k*j;
+                Yi(j,col_b:col_e) = w(ii,idx)*Yij;
+            end
+            I_range = I_offset+d*(i-1)+1 : I_offset+d*i;
+            Yi(:,I_range) = w(ii,idx)*eye(d);
         end
-    end
-    Q = Q';
-    
-    for i=1:d
-        col_range = k*(i-1)+1 : k*i;
-        Y(:, i, col_range) = Q;
+        Y{ii}=Yi;
     end
 end
 
