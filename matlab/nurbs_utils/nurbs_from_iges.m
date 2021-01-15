@@ -1,6 +1,6 @@
-function [nurbs_objects] = nurbs_from_iges(filename, res, rescale)
-    if nargin < 3
-        rescale=1;
+function [nurbs_objects] = nurbs_from_iges(filename, sample_density)
+    if nargin < 2
+        sample_density=2;
     end
 %     nurbs_object = {};
     data=iges2matlab(filename);
@@ -10,7 +10,7 @@ function [nurbs_objects] = nurbs_from_iges(filename, res, rescale)
     use_triangle = 1;
     generate_hires = 1;
     trimmed_hires_res = 8;
-    nurbs_objects = nurbs_sample(data, enable_trimming);
+    nurbs_objects = nurbs_sample(data, enable_trimming, sample_density);
     disp('Done Generating samples');
 
     for i=1:numel(nurbs_objects)

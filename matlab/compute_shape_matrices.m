@@ -1,4 +1,4 @@
-function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, order, mode)
+function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mode)
     
     % TOOODO --- appears problematic that we have multiple center of masses
 
@@ -19,8 +19,6 @@ function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, or
     row_ranges = cell(numel(E),1);
     for i=1:numel(E)
         x = x0(:,E{i});
-%         M{i} = monomial_basis(x, x0_com, order);
-%         M{i} = monomial_basis(x, x0_coms(:,i), order);
         M{i} = monomial_basis(x, x0_coms(:,com_map(i)), order);
         row_ranges{i} = d*A_rows+1:d*A_rows + d*numel(E{i});
         A_rows = A_rows + numel(E{i});
@@ -55,24 +53,24 @@ function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, or
         n = size(x0,2);
         
         % (k+1) - the +1 accounts for each shapes' constant term.
-        L = zeros(d*(k*numel(E) + numel(adjacent)), numel(x0));
+        L = zeros(d*(k*numel(E) + numel(cluster)), numel(x0));
         
         % Forming T&S matrices
-        S=sparse(zeros(n,d*numel(adjacent)));
-        T=zeros(d*numel(adjacent),n);
+        S=sparse(zeros(n,d*numel(cluster)));
+        T=zeros(d*numel(cluster),n);
  
         % Setting constant term solutions for each center of mass as
         % the mean of their adjacent points.
-        for i=1:numel(adjacent)
+        for i=1:numel(cluster)
             for j=1:d
                 row = d*(i-1)+j;
-                cols = d*(adjacent{i}-1)+j;
-                T(row,cols) = 1/numel(adjacent{i});
+                cols = d*(cluster{i}-1)+j;
+                T(row,cols) = 1/numel(cluster{i});
                 
                 
                 row = d*k*numel(E) + d*(i-1)+j;
-                cols = d*(adjacent{i}-1)+j;
-                L(row,cols) = 1/numel(adjacent{i});  
+                cols = d*(cluster{i}-1)+j;
+                L(row,cols) = 1/numel(cluster{i});
             end
         end
         

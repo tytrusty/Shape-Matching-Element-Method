@@ -18,6 +18,8 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'fitting_mode', 'global');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
+    addParameter(p, 'com_threshold', 100);
+
     parse(p,varargin{:});
     config = p.Results;
     
@@ -35,36 +37,9 @@ function vem_simulate_nurbs(parts, varargin)
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
 
-    %%%%%%%%%%%%%%%%%%%%%%%%
-    % Creating centers of mass
-    %%
-    centroids = zeros(n, 3);
-    x0_coms = zeros(3,n);
-    for i=1:n
-        centroids(i,:) = mean(parts{i}.x0,2)';
-    end
-    
-    cutoff_sqr = (2*config.distance_cutoff)^2;
-    adj = zeros(n,n);
-    for i=1:n
-    	F = parts{i}.hires_T;
-        V = parts{i}.hires_x0';
-        sqrD = point_mesh_squared_distance(centroids,V,F);
-        adj(:,i) = sqrD < cutoff_sqr;
-    end
-    
-    adjacent = cell(n,1);
-    for i=1:n
-       	adj_idx = find(adj(i,:));
-        x_idx=cell2mat(E(adj_idx));
-        adjacent{i} = x_idx(:);
-        x0_coms(:,i) = mean(x0(:,adjacent{i}),2);
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%
-    [C,IA,com_map] = uniquetol(x0_coms(1,:));
-    com_adjacent = adjacent(IA);
-    x0_coms = x0_coms(:,IA);
+    % Generating centers of mass. Temporary method!
+    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
+        config.com_threshold, n);
     
     if config.plot_com
         com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
@@ -108,7 +83,7 @@ function vem_simulate_nurbs(parts, varargin)
 
     % Shape Matrices
     L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_adjacent, config.order, config.fitting_mode);
+        com_cluster, config.order, config.fitting_mode);
 
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
@@ -228,7 +203,7 @@ function vem_simulate_nurbs(parts, varargin)
         end
         
         if config.save_output
-            fn=sprintf('output/img/simulate_%03d.png',ii);
+            fn=sprintf('output/img/simulate_beem_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1

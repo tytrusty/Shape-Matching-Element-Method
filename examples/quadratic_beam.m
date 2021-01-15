@@ -1,28 +1,18 @@
 function quadratic_beam
 
 function pinned_ids = pin_function(x)
-    x_max = 1e-2;
-    y_min = 0.3;
-    y_max = 0.7;
-    y_min = 0.4;
-    y_max = 0.6;
-%     z_min = 0.3;
-%     z_max = 0.7;
-    z_min = -100.005;
-    z_max = 100.5;
-    pinned_ids = find(x(1,:) < x_max & x(2,:) > y_min & x(2,:) < y_max ...
-                    & x(3,:) > z_min & x(3,:) < z_max);
-
     pinned_ids1 = find(x(1,:) == min(x(1,:)) & x(2,:) > 0.6 & (x(3,:) > 0.8 | x(3,:) < 0.2));
     pinned_ids2 = find(x(1,:) == min(x(1,:)) & x(2,:) < 0.4 & (x(3,:) > 0.8 | x(3,:) < 0.2));
     pinned_ids = [pinned_ids2 pinned_ids1];
 end
 
 iges_file = 'beam2.igs';
-% iges_file = 'beam1.igs';
-% iges_file = 'beam_1_half.igs';
 
-part = nurbs_from_iges(iges_file);
+% To avoid singular nurbs jacobian with excessive pinning, I up the sample
+% density to ensure we have enough unpinned samples.
+sample_density=3;
+
+part = nurbs_from_iges(iges_file, sample_density);
 
 %material properties
 % YM = 5e3; %in Pascals
@@ -38,9 +28,8 @@ options.mu = mu;
 options.rho = 1;
 % options.distance_cutoff = 1.5;
 options.distance_cutoff = 0.7;
+options.com_threshold = 1.4;
 options.k_stability = 1e5;
-% options.k_stability = 1e7;
-% options.k_stability = 0;
 options.enable_secondary_rays = 0;
 options.fitting_mode = 'hierarchical';
 options.save_output = 0;
