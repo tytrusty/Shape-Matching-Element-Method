@@ -1,4 +1,4 @@
-function Y = monomial_basis_matrix(x, x_coms, w, W_I, com_map, order, k)
+function Y = vem_dx_dc(x, x_coms, w, W_I, com_map, order, k)
     d = size(x,1);
     n = size(x,2);
     

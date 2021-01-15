@@ -19,7 +19,8 @@ function vem_simulate_nurbs(parts, varargin)
     parse(p,varargin{:});
     config = p.Results;
     
-    d = 3;  % dimension (2 or 3)
+    d = 3;              % dimension (2 or 3)
+    n = numel(parts);	% number of shapes
     
     % The number of elements in the monomial basis.
     k = basis_size(d, config.order);
@@ -27,13 +28,67 @@ function vem_simulate_nurbs(parts, varargin)
     % Read in NURBs 
     fig=figure(1);
     clf;
-    
-    % resolution = repelem(8,9); resolution(1)=11; % resolution(17)=11;
     parts=nurbs_plot(parts);
-    
+
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
 
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    % Creating centers of mass
+    %%
+    centroids = zeros(n, 3);
+    x0_coms = zeros(3,n);
+    for i=1:n
+        centroids(i,:) = mean(parts{i}.x0,2)';
+    end
+    
+    cutoff_sqr = (2*config.distance_cutoff)^2;
+    adj = zeros(n,n);
+    for i=1:n
+    	F = parts{i}.hires_T;
+        V = parts{i}.hires_x0';
+        sqrD = point_mesh_squared_distance(centroids,V,F);
+        adj(:,i) = sqrD < cutoff_sqr;
+    end
+    
+    adjacent = cell(n,1);
+    for i=1:n
+       	adj_idx = find(adj(i,:));
+        x_idx=cell2mat(E(adj_idx));
+        adjacent{i} = x_idx(:);
+        x0_coms(:,i) = mean(x0(:,adjacent{i}),2);
+    end
+    %%
+    %%%% Test single com %%%%
+%     com_map = ones(n,1);
+%     com_adjacent = cell(1,1);
+%     com_adjacent{1} = 1:size(x0,2);
+%     x0_coms = mean(x0,2);
+%     %%%%%%%%%%%%%%%%%%%%%%%%%
+%     %%%% Test two com for beam_1_half %%%%
+%     com_map = [1 2 1 2 1 2 1 2 2 1];
+%     
+%     x0_coms =zeros(3,2);
+%     com_adjacent = cell(2,1);
+%     for i=1:numel(com_map)
+%         x0_coms(:,com_map(i)) = x0_coms(:,com_map(i)) +  mean(x0(:,E{i}),2);
+%         com_adjacent{com_map(i)} = [com_adjacent{com_map(i)} E{i}];
+%     end
+%     x0_coms = x0_coms ./ 5;
+    %%%%%%%%%%%%%%%%%%%%%%%%%
+    [C,IA,com_map] = uniquetol(x0_coms(1,:));
+    com_adjacent = adjacent(IA);
+    x0_coms = x0_coms(:,IA);
+%     plot3(x0(1,com_adjacent{1}),x0(2,com_adjacent{1}),x0(3,com_adjacent{1}),'.','Color','r'); hold on
+%     plot3(x0(1,com_adjacent{2}),x0(2,com_adjacent{2}),x0(3,com_adjacent{2}),'.','Color','b'); hold on
+
+    com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                    '.','Color','g','MarkerSize',20);
+    hold on;
+    x_coms=x0_coms;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
     % Initial deformed positions and velocities
     x = x0;
     qdot=zeros(size(q));
@@ -48,14 +103,16 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [9 9], 5);
+%         [V, vol] = raycast_quadrature(parts, [5 5], 35);
+        [V, vol] = raycast_quadrature(parts, [3 3], 10);
     else
     	V=x0;
         vol=ones(size(V,2),1);
     end
+    m = size(V,2);  % number of quadrature points
     
     % TODO: add option to visualization quadrature points
-    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
+    V_plot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
     
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
@@ -64,25 +121,28 @@ function vem_simulate_nurbs(parts, varargin)
     % Gravity force vector.
   	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
-    
-    % Undeformed Center of mass
-    x0_com = mean(x0,2);
-        
+
     % Shape Matrices
-    L = compute_shape_matrices(x0, x0_com, E, config.order, config.fitting_mode);
-    
-    % Build Monomial bases for all quadrature points
-    Y = monomial_basis_matrix(V, x0_com, config.order, k);
-    Y0 = monomial_basis_matrix(x0, x0_com, config.order, k);
-    
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_adjacent, config.order, config.fitting_mode);
+    %     Lz = abs(L(:)) < 1e-12;
+    %     L(Lz) = 0;
+    %     L=sparse(L);
+
     % Compute Shape weights
     w = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
                                config.enable_secondary_rays);
     w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
                                  config.enable_secondary_rays);
-    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
-    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
-    
+
+    % TODO support truncated!
+    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
+    [W0, W0_I, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
+                             
+    % Build Monomial bases for all quadrature points
+    Y = vem_dx_dc(V, x0_coms, w, W_I, com_map, config.order, k);
+    Y0 = vem_dx_dc(x0, x0_coms, w_x, W0_I, com_map, config.order, k);
+
     % Fixed x values.
     x_fixed = zeros(size(x0));
     for i = 1:numel(pin_I)
@@ -90,20 +150,14 @@ function vem_simulate_nurbs(parts, varargin)
     end
     
     % Applying fixed point constraints to NURBS jacobian.
-    J = P * J;
-
-    m = size(V,2);  % number of quadrature points
-    n = numel(E);	% number of shapes
-    
-    % Forming gradient of monomial basis w.r.t X
-    dM_dX = monomial_basis_grad(V, x0_com, config.order);
+    J = P * J;    
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(dM_dX, W);
+    dF_dc = vem_dF_dc(V, x0_coms, w, W_I, com_map, config.order, k);
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, W0, W0_S, L);
+    ME = vem_error_matrix(Y0, W0, W0_S, L, w_x, E, d);
     M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
     M = (M + config.k_stability*ME); % sparse?
     % Save & load these matrices for large models to save time.
@@ -111,60 +165,67 @@ function vem_simulate_nurbs(parts, varargin)
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-
+   
     ii=1;
     for t=0:config.dt:30
         tic
-        
+        % Recompute shape coms
+        for i=1:size(x_coms,2)
+            x_coms(:,i) = mean(x(:,com_adjacent{i}),2);
+        end
+
         % Preparing input for stiffness matrix mex function.
-        % TODO: don't form this vector this way :)
         b = [];
         for i=1:numel(E)
-            b = [b x(:,E{i}) - x0_com];
+            b = [b (x(:,E{i}))];
         end
         b = b(:);
 
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
-        p = c(end-d+1:end);
-        x_com = x0_com + p;   
         
         % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
-                                      dF_dc, W, W_S, W_I, k, n);
-        K = L' * K * L;
-        
+%         K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
+%                                       dF_dc, W, W_S, W_I, k, n);
+%         K = L' * K * L;
+
         % Force vector
-        dV_dq = zeros(d*(k*numel(E) + 1),1);
+        K = zeros(d*(k*n + size(x_coms,2)), d*(k*n + size(x_coms,2)));
+        dV_dq = zeros(d*(k*n + size(x_coms,2)),1);
 
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
-            dMi_dX = squeeze(dM_dX(i,:,:));
             
             % Deformation Gradient
-            F = dMi_dX * W{i} * W_S{i} * c;
+            F = dF_dc{i} * c;
             F = reshape(F,d,d);
-
+            
+            V(:,i) = Y{i} * c;
+            
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * vol(i);
+            dV_dq = dV_dq +  dF_dc{i}' * dV_dF * vol(i);
+            
+            % Stiffness matrix contribution
+            d2V_dF2 = neohookean_tet_dF2(F, params(i,1), params(i,2));
+%             K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
+            K = K - dF_dc{i}' * d2V_dF2 * dF_dc{i};
         end
+        K = L' * K * L;
         dV_dq = L' * dV_dq;
         
         % Error correction force
         x_centered = x(:);
-        x_centered(1:d:end) = x_centered(1:d:end) - x_com(1);
-        x_centered(2:d:end) = x_centered(2:d:end) - x_com(2);
-        x_centered(3:d:end) = x_centered(3:d:end) - x_com(3);
         f_error = - 2 * ME * x_centered;
-        
         f_error = config.k_stability*(config.dt * P * f_error(:));
        
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
         
         % Computing linearly-implicit velocity update
+        % Note: I believe i'm forgetting the error matrix stiffness matrix
+        %       but I don't wanna break things so I haven't added it yet.
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;
@@ -172,7 +233,7 @@ function vem_simulate_nurbs(parts, varargin)
         % Update position
         q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
-        
+
         % Update NURBs plots
         x_idx=0;
         for i=1:numel(parts)
@@ -181,6 +242,14 @@ function vem_simulate_nurbs(parts, varargin)
             parts{i}.plt.Vertices =xi';
             x_idx = x_idx+x_sz;
         end
+        
+        com_plt.XData = x_coms(1,:);
+        com_plt.YData = x_coms(2,:);
+        com_plt.ZData = x_coms(3,:);
+        
+        V_plot.XData = V(1,:);
+        V_plot.YData = V(2,:);
+        V_plot.ZData = V(3,:);
         drawnow
         
         if config.save_obj
