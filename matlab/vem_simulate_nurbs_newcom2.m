@@ -77,6 +77,16 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
 %     end
 %     x0_coms = x0_coms ./ 5;
     %%%%%%%%%%%%%%%%%%%%%%%%%
+    [C,IA,com_map] = uniquetol(x0_coms(1,:));
+    com_adjacent = adjacent(IA);
+    x0_coms = x0_coms(:,IA);
+%     com_adjacent = cell(numel(C),1);
+%     for i=1:numel(com_map)
+% %         x0_coms(:,com_map(i)) = x0_coms(:,com_map(i)) +  sum(x0(:,E{i}),2);
+%         com_adjacent{com_map(i)} = [com_adjacent{com_map(i)} E{i}];
+%     end
+
+    
 %     plot3(x0(1,com_adjacent{1}),x0(2,com_adjacent{1}),x0(3,com_adjacent{1}),'.','Color','r'); hold on
 %     plot3(x0(1,com_adjacent{2}),x0(2,com_adjacent{2}),x0(3,com_adjacent{2}),'.','Color','b'); hold on
 
@@ -101,7 +111,8 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [4 4], 10);
+        [V, vol] = raycast_quadrature(parts, [1 1], 35);
+        [V, vol] = raycast_quadrature(parts, [3 3], 10);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -122,7 +133,6 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     % Shape Matrices
     L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, ...
         com_adjacent, config.order, config.fitting_mode);
-%     L2 = compute_shape_matrices(x0, x0_coms, E, config.order, config.fitting_mode);
 %     diff=L-L2;
 %     norm(L(:)-L2(:))
     %     nnz(L)
@@ -250,9 +260,9 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
             x_idx = x_idx+x_sz;
         end
         
-%         com_plt.XData = x_coms(1,:);
-%         com_plt.YData = x_coms(2,:);
-%         com_plt.ZData = x_coms(3,:);
+        com_plt.XData = x_coms(1,:);
+        com_plt.YData = x_coms(2,:);
+        com_plt.ZData = x_coms(3,:);
         
         V_plot.XData = V(1,:);
         V_plot.YData = V(2,:);
