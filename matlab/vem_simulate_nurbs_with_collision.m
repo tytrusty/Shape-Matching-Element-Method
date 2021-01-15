@@ -11,12 +11,16 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     addParameter(p, 'save_output', 0);        	% (0 or 1) whether to output images of simulation
     addParameter(p, 'save_obj', 0);          	% (0 or 1) whether to output obj files
     addParameter(p, 'save_resultion', 20);    	% the amount of subdivision for the output obj
-    addParameter(p, 'collision_ratio', 0.1);    % parameter for the collision penalty force
     addParameter(p, 'pin_function', @(x) 1);
     addParameter(p, 'sample_interior', 1);
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
     addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'collision_ratio', 0.1);    % parameter for the collision penalty force
+    addParameter(p, 'self_collision', false);
+    addParameter(p, 'collision_with_other', true);
+    addParameter(p, 'collision_with_plane', true);
+    addParameter(p, 'collision_plane_z', -10.0);
     parse(p,varargin{:});
     config = p.Results;
     
@@ -117,14 +121,31 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     [verts,faces] = triangulate_iges(parts);
     collision_ratio = config.collision_ratio;
     face_normal = normals(verts, faces);
-
-    collide_iges_file = 'rounded_cube.iges';
-    collide_parts = nurbs_from_iges(collide_iges_file);
-    [collide_verts, collide_faces] = triangulate_iges(collide_parts);
-    collide_verts = collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)))  + [0 0 max(verts(:,3))];
-    t_collide = tsurf(collide_faces, collide_verts);
-    move_ratio = (max(collide_verts(:,1))-min(collide_verts(:,1)));
-    set(fig, 'KeyPressFcn', @keypress)
+    
+    if config.collision_with_other
+      collide_iges_file = 'rounded_cube.iges';
+      collide_parts = nurbs_from_iges(collide_iges_file);
+      [collide_verts, collide_faces] = triangulate_iges(collide_parts);
+      collide_verts = collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)))  + [0 0 max(verts(:,3))];
+      t_collide = tsurf(collide_faces, collide_verts);
+      move_ratio = (max(collide_verts(:,1))-min(collide_verts(:,1)));
+      set(fig, 'KeyPressFcn', @keypress)
+    end
+    
+    % draw the plane if needed
+    if config.collision_with_plane
+      if config.collision_plane_z > min(verts(:,3))
+        config.collision_plane_z = min(verts(:,3)) - 20.0;
+      end
+      hold on
+      x_range = 2 * (max(verts(:,1))-min(verts(:,1)));
+      y_range = 2 * (max(verts(:,2))-min(verts(:,2)));
+      p = patch('XData', x_range*[-1 -1 1 1],'YData', y_range*[-1 1 1 -1], ...
+                'ZData', config.collision_plane_z * [1 1 1 1], ...
+                'FaceColor',[0.5 0.5 0.5], 'FaceAlpha', 0.5, 'FaceLighting', 'gouraud');
+      axis equal
+      hold off
+    end
 
     ii=1;
     for t=0:config.dt:30
@@ -181,12 +202,47 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         % Force for collision.
         f_collision = zeros(size(verts,1)*3,1);
         % detect the collision with another mesh
-        [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
-        for i = 1:size(IF,1)
-          fid = IF(i, 1); % colliding face id of the origin mesh
-          c_fid = IF(i, 2); % colliding face id of the colliding mesh
-          f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision);
+        if config.collision_with_other
+          [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
+          for i = 1:size(IF,1)
+            fid = IF(i, 1); % colliding face id of the origin mesh
+            c_fid = IF(i, 2); % colliding face id of the colliding mesh
+            f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision);
+          end
         end
+        % self-collision detection
+        if config.self_collision
+          [~,~,IF] = selfintersect(verts,faces,'DetectOnly',true);
+          for i = 1:size(IF,1)
+            fid = IF(i, 1); % colliding face id of the origin mesh
+            c_fid = IF(i, 2); % colliding face id of the colliding mesh
+            if size(intersect(faces(fid,:), faces(c_fid,:)), 2) == 0 
+              continue; % skip the face pairs if they share a vertex
+            end
+            f_collision = check_collision_between_faces(verts,faces,verts,faces,fid,c_fid,face_normal,collision_ratio,f_collision);
+            f_collision = check_collision_between_faces(verts,faces,verts,faces,c_fid,fid,face_normal,collision_ratio,f_collision);
+          end
+        end
+        % collision with the plane
+        if config.collision_with_plane
+          [collide_plane_vid, ~] = find(verts(:,3) < config.collision_plane_z);
+          f_collision_plane = zeros(size(verts,1), 3);
+          f_collision_plane(collide_plane_vid, 3) = 10 * collision_ratio * ...
+                                                    (config.collision_plane_z*ones(size(collide_plane_vid,1), 1) - verts(collide_plane_vid,3));
+          f_collision_plane = reshape(f_collision_plane', [], 1);                           
+          f_collision = f_collision + f_collision_plane;
+        end
+%         B = barycenter(verts, faces);
+%         for i = 1:size(IF,1)
+%           fid = IF(i, 1); % colliding face id of the origin mesh
+%           c_fid = IF(i, 2); % colliding face id of the colliding mesh
+%            if size(intersect(faces(fid,:), faces(c_fid,:)), 2) == 0 
+%              continue;
+%            end
+%           hold on
+%           plot3(B([fid;c_fid],1),B([fid;c_fid],2),B([fid;c_fid],3));
+%         end
+%         hold off
         f_collision = hires_J' * f_collision;
         
         % Computing linearly-implicit velocity update

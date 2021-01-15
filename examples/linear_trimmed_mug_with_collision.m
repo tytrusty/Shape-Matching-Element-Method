@@ -1,7 +1,8 @@
 function linear_trimmed_mug_with_collision
 
 function pinned_ids = pin_function(x)
-    verts_to_pin = 3; 
+%     verts_to_pin = 3; 
+    verts_to_pin = 10; 
     [~,I] = maxk(x(1,:),verts_to_pin);
     pinned_ids = I(1:verts_to_pin);
 end
@@ -22,7 +23,12 @@ options.enable_secondary_rays = false;
 options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0;
+
 options.collision_ratio = 0.1;
+options.collision_with_other = true;
+options.self_collision = false;
+options.collision_with_plane = true;
+options.collision_plane_z = -20.0;
 vem_simulate_nurbs_with_collision(part, options);
   
 end
