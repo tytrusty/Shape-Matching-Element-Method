@@ -3,3 +3,12 @@
 *.mat
 *.asv
 extern/
+
+*.poly
+*.neigh
+*.m~
+*.mexmaci64
+
+*.fdb_latexmk
+*.fls
+*.blend

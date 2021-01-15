@@ -20,8 +20,11 @@ options.gravity = -10;
 options.lambda = lambda;
 options.mu = mu;
 options.pin_function = @pin_function;
-options.gravity = 0;
+
 options.collision_ratio = 0.1;
+options.collision_with_other = true;
+options.self_collision = false;
+options.collision_with_plane = true;
 vem_simulate_nurbs_with_collision(part, options);
   
 end
