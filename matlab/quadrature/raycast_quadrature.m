@@ -60,7 +60,7 @@ for i = 1:size(UV,1)
             pnts = xrange(2) - dist;
             pnts = [pnts UV_rep];
             X = [X; pnts];
-            vol = [vol; dA];
+            vol = [vol; repelem(dA, numel(dist))'];
         end
         
     end    
