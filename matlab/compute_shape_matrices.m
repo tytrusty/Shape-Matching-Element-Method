@@ -16,8 +16,8 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
     row_ranges = cell(numel(E),1);
     for i=1:numel(E)
         x = x0(:,E{i});
-%         M{i} = monomial_basis(x, x0_com, order);
-        M{i} = monomial_basis(x, x0_com(:,i), order);
+        M{i} = monomial_basis(x, x0_com, order);
+%         M{i} = monomial_basis(x, x0_com(:,i), order);
         row_ranges{i} = d*A_rows+1:d*A_rows + d*numel(E{i});
         A_rows = A_rows + numel(E{i});
     end

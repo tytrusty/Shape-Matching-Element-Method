@@ -2,7 +2,7 @@ function ME = vem_error_matrix(Y, W, W_S, L, w, E)
     m = size(Y,1);
     ME = zeros(size(L,2), size(L,2));
     d = size(Y,2);
-    
+    d=3;
     n = size(w,2);
     dk = size(Y,3);
 
