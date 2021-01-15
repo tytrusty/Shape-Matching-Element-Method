@@ -61,12 +61,25 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     %%
     
     %%%% Test single com %%%%
-    com_map = ones(n,1);
-    com_adjacent = cell(1,1);
-    com_adjacent{1} = 1:size(x0,2);
-    x0_coms = mean(x0,2);
+%     com_map = ones(n,1);
+%     com_adjacent = cell(1,1);
+%     com_adjacent{1} = 1:size(x0,2);
+%     x0_coms = mean(x0,2);
+%     %%%%%%%%%%%%%%%%%%%%%%%%%
+%     %%%% Test two com for beam_1_half %%%%
+%     com_map = [1 2 1 2 1 2 1 2 2 1];
+%     
+%     x0_coms =zeros(3,2);
+%     com_adjacent = cell(2,1);
+%     for i=1:numel(com_map)
+%         x0_coms(:,com_map(i)) = x0_coms(:,com_map(i)) +  mean(x0(:,E{i}),2);
+%         com_adjacent{com_map(i)} = [com_adjacent{com_map(i)} E{i}];
+%     end
+%     x0_coms = x0_coms ./ 5;
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    
+%     plot3(x0(1,com_adjacent{1}),x0(2,com_adjacent{1}),x0(3,com_adjacent{1}),'.','Color','r'); hold on
+%     plot3(x0(1,com_adjacent{2}),x0(2,com_adjacent{2}),x0(3,com_adjacent{2}),'.','Color','b'); hold on
+
     com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
                     '.','Color','g','MarkerSize',20);
     hold on;
@@ -88,7 +101,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [4 4 ], 10);
+        [V, vol] = raycast_quadrature(parts, [4 4], 10);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -109,11 +122,14 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     % Shape Matrices
     L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, ...
         com_adjacent, config.order, config.fitting_mode);
+%     L2 = compute_shape_matrices(x0, x0_coms, E, config.order, config.fitting_mode);
+%     diff=L-L2;
+%     norm(L(:)-L2(:))
     %     nnz(L)
-       asdf= null(L);
-    Lz = abs(L(:)) < 1e-12;
-    L(Lz) = 0;
-    L=sparse(L);
+%        asdf= null(L);
+%     Lz = abs(L(:)) < 1e-12;
+%     L(Lz) = 0;
+%     L=sparse(L);
 
 
     % Compute Shape weights
@@ -152,9 +168,6 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
     ME = vem_error_matrix(Y0, W0, W0_S, L, w_x, E);
     M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
     M = (M + config.k_stability*ME); % sparse?
-    asdf=inv(M);
-    asdf2=null(M);
-    rank(M)
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
@@ -166,7 +179,7 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
         tic
         % Recompute shape coms
         for i=1:size(x_coms,2)
-            x_coms(:,i) = mean(x(:,adjacent{i}),2);
+            x_coms(:,i) = mean(x(:,com_adjacent{i}),2);
         end
 
         % Preparing input for stiffness matrix mex function.
@@ -213,15 +226,14 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
         % Error correction force
         x_centered = x(:);
         f_error = - 2 * ME * x_centered;
-        f_error = 0*config.k_stability*(config.dt * P * f_error(:));
+        f_error = config.k_stability*(config.dt * P * f_error(:));
        
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
-        f_internal=0;K=0;
+        
         % Computing linearly-implicit velocity update
-
-        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-%         lhs = J' * (P*(M - config.dt*config.dt*(K+ME))*P') * J;
+%         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+        lhs = J' * (P*(M - config.dt*config.dt*(K+ME))*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
         qdot = lhs \ rhs;
 
@@ -238,9 +250,9 @@ function vem_simulate_nurbs_newcom2(parts, varargin)
             x_idx = x_idx+x_sz;
         end
         
-        com_plt.XData = x_coms(1,:);
-        com_plt.YData = x_coms(2,:);
-        com_plt.ZData = x_coms(3,:);
+%         com_plt.XData = x_coms(1,:);
+%         com_plt.YData = x_coms(2,:);
+%         com_plt.ZData = x_coms(3,:);
         
         V_plot.XData = V(1,:);
         V_plot.YData = V(2,:);
