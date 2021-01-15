@@ -20,31 +20,31 @@ end
 
 iges_file = 'beam2.igs';
 % iges_file = 'beam1.igs';
+% iges_file = 'beam_1_half.igs';
 
 part = nurbs_from_iges(iges_file);
 
 %material properties
 % YM = 5e3; %in Pascals
-YM = 5e4; %in Pascals
+YM = 5e5; %in Pascals
 pr =  0.45;
 [lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 2;
 options.pin_function = @pin_function;
-options.gravity = -100;
+options.gravity = -50;
 options.lambda = lambda;
 options.mu = mu;
-options.rho = 10;
-options.distance_cutoff = 1;
-% options.distance_cutoff = 0.5;
-options.k_stability = 1e6;
+options.rho = 1;
+% options.distance_cutoff = 1.5;
+options.distance_cutoff = 0.7;
+options.k_stability = 1e5;
 % options.k_stability = 1e7;
-options.k_stability = 1e6;
-options.enable_secondary_rays = 1;
+% options.k_stability = 0;
+options.enable_secondary_rays = 0;
 options.fitting_mode = 'hierarchical';
 options.save_output = 0;
 
-% vem_simulate_nurbs(part, options);
-vem_simulate_nurbs_newcom(part, options);
+vem_simulate_nurbs(part, options);
 
 end

@@ -129,6 +129,11 @@ function L = compute_shape_matrices_newcom(x0, x0_coms, com_map, E, adjacent, or
             L_quad = (A_quad'*A_quad) \ rhs;
             L(quad_cols,:) = L_quad;
         end
+        
+        % Convert to sparse matrix.
+        Lz = abs(L(:)) < 1e-12;
+        L(Lz) = 0;
+        L=sparse(L);
     elseif strcmp(mode, 'global')
         L = ATA \ A';
    

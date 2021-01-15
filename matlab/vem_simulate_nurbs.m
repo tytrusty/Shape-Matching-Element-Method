@@ -104,7 +104,7 @@ function vem_simulate_nurbs(parts, varargin)
     % Sampling points used to compute energies.
     if config.sample_interior
 %         [V, vol] = raycast_quadrature(parts, [5 5], 35);
-        [V, vol] = raycast_quadrature(parts, [3 3], 10);
+        [V, vol] = raycast_quadrature(parts, [1 1], 30);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -125,23 +125,16 @@ function vem_simulate_nurbs(parts, varargin)
     % Shape Matrices
     L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
         com_adjacent, config.order, config.fitting_mode);
-    %     Lz = abs(L(:)) < 1e-12;
-    %     L(Lz) = 0;
-    %     L=sparse(L);
 
     % Compute Shape weights
-    w = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
-                               config.enable_secondary_rays);
-    w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
-                                 config.enable_secondary_rays);
-
-    % TODO support truncated!
-    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
-    [W0, W0_I, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
+    [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
+        'Enable_Secondary_Rays', config.enable_secondary_rays);
+    [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
+        'Enable_Secondary_Rays', config.enable_secondary_rays);
                              
     % Build Monomial bases for all quadrature points
-    Y = vem_dx_dc(V, x0_coms, w, W_I, com_map, config.order, k);
-    Y0 = vem_dx_dc(x0, x0_coms, w_x, W0_I, com_map, config.order, k);
+    [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
+    [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
 
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -154,11 +147,11 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(V, x0_coms, w, W_I, com_map, config.order, k);
+    [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, W0, W0_S, L, w_x, E, d);
-    M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
+    ME = vem_error_matrix(Y0, Y0_S, L, d);
+    M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
     M = (M + config.k_stability*ME); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
@@ -169,10 +162,6 @@ function vem_simulate_nurbs(parts, varargin)
     ii=1;
     for t=0:config.dt:30
         tic
-        % Recompute shape coms
-        for i=1:size(x_coms,2)
-            x_coms(:,i) = mean(x(:,com_adjacent{i}),2);
-        end
 
         % Preparing input for stiffness matrix mex function.
         b = [];
@@ -183,34 +172,32 @@ function vem_simulate_nurbs(parts, varargin)
 
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
-        
+
         % Stiffness matrix (mex function)
-%         K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
-%                                       dF_dc, W, W_S, W_I, k, n);
-%         K = L' * K * L;
+        %         K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
+        %                                       dF_dc, W, W_S, W_I, k, n);
+        %         K = L' * K * L;
 
         % Force vector
-        K = zeros(d*(k*n + size(x_coms,2)), d*(k*n + size(x_coms,2)));
-        dV_dq = zeros(d*(k*n + size(x_coms,2)),1);
+        K = zeros(d*(k*n + size(x0_coms,2)), d*(k*n + size(x0_coms,2)));
+        dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
 
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
-            
             % Deformation Gradient
-            F = dF_dc{i} * c;
+            F = dF_dc{i} * dF_dc_S{i} * c;
             F = reshape(F,d,d);
             
-            V(:,i) = Y{i} * c;
+            V(:,i) = Y{i} * Y_S{i} * c;
             
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
-            dV_dq = dV_dq +  dF_dc{i}' * dV_dF * vol(i);
+            dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_tet_dF2(F, params(i,1), params(i,2));
-%             K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
-            K = K - dF_dc{i}' * d2V_dF2 * dF_dc{i};
+            K = K - dF_dc_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * dF_dc_S{i};
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
@@ -243,9 +230,10 @@ function vem_simulate_nurbs(parts, varargin)
             x_idx = x_idx+x_sz;
         end
         
-        com_plt.XData = x_coms(1,:);
-        com_plt.YData = x_coms(2,:);
-        com_plt.ZData = x_coms(3,:);
+        x_coms = c(d*k*n + 1:end); % extract centers of mass
+        com_plt.XData = x_coms(1:d:end);
+        com_plt.YData = x_coms(2:d:end);
+        com_plt.ZData = x_coms(3:d:end);
         
         V_plot.XData = V(1,:);
         V_plot.YData = V(2,:);
