@@ -16,6 +16,8 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
     addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'plot_points', false);
+    addParameter(p, 'plot_com', true);
     parse(p,varargin{:});
     config = p.Results;
     
@@ -58,35 +60,17 @@ function vem_simulate_nurbs(parts, varargin)
         adjacent{i} = x_idx(:);
         x0_coms(:,i) = mean(x0(:,adjacent{i}),2);
     end
-    %%
-    %%%% Test single com %%%%
-%     com_map = ones(n,1);
-%     com_adjacent = cell(1,1);
-%     com_adjacent{1} = 1:size(x0,2);
-%     x0_coms = mean(x0,2);
-%     %%%%%%%%%%%%%%%%%%%%%%%%%
-%     %%%% Test two com for beam_1_half %%%%
-%     com_map = [1 2 1 2 1 2 1 2 2 1];
-%     
-%     x0_coms =zeros(3,2);
-%     com_adjacent = cell(2,1);
-%     for i=1:numel(com_map)
-%         x0_coms(:,com_map(i)) = x0_coms(:,com_map(i)) +  mean(x0(:,E{i}),2);
-%         com_adjacent{com_map(i)} = [com_adjacent{com_map(i)} E{i}];
-%     end
-%     x0_coms = x0_coms ./ 5;
+
     %%%%%%%%%%%%%%%%%%%%%%%%%
     [C,IA,com_map] = uniquetol(x0_coms(1,:));
     com_adjacent = adjacent(IA);
     x0_coms = x0_coms(:,IA);
-%     plot3(x0(1,com_adjacent{1}),x0(2,com_adjacent{1}),x0(3,com_adjacent{1}),'.','Color','r'); hold on
-%     plot3(x0(1,com_adjacent{2}),x0(2,com_adjacent{2}),x0(3,com_adjacent{2}),'.','Color','b'); hold on
-
-    com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                    '.','Color','g','MarkerSize',20);
-    hold on;
-    x_coms=x0_coms;
     
+    if config.plot_com
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
+    end
     %%%%%%%%%%%%%%%%%%%%%%%%
     
     % Initial deformed positions and velocities
@@ -103,16 +87,16 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-%         [V, vol] = raycast_quadrature(parts, [5 5], 35);
-        [V, vol] = raycast_quadrature(parts, [1 1], 30);
+        [V, vol] = raycast_quadrature(parts, [3 3], 10);
     else
     	V=x0;
         vol=ones(size(V,2),1);
     end
     m = size(V,2);  % number of quadrature points
     
-    % TODO: add option to visualization quadrature points
-    V_plot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+    if config.plot_points
+        V_plot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+    end
     
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
@@ -197,7 +181,7 @@ function vem_simulate_nurbs(parts, varargin)
             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_tet_dF2(F, params(i,1), params(i,2));
-            K = K - dF_dc_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * dF_dc_S{i};
+            K = K - dF_dc_S{i}' * (dF_dc{i}' * d2V_dF2 * dF_dc{i}) * dF_dc_S{i};
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
@@ -230,14 +214,18 @@ function vem_simulate_nurbs(parts, varargin)
             x_idx = x_idx+x_sz;
         end
         
-        x_coms = c(d*k*n + 1:end); % extract centers of mass
-        com_plt.XData = x_coms(1:d:end);
-        com_plt.YData = x_coms(2:d:end);
-        com_plt.ZData = x_coms(3:d:end);
+        if config.plot_com
+            x_coms = c(d*k*n + 1:end); % extract centers of mass
+            com_plt.XData = x_coms(1:d:end);
+            com_plt.YData = x_coms(2:d:end);
+            com_plt.ZData = x_coms(3:d:end);
+        end
         
-        V_plot.XData = V(1,:);
-        V_plot.YData = V(2,:);
-        V_plot.ZData = V(3,:);
+        if config.plot_points
+            V_plot.XData = V(1,:);
+            V_plot.YData = V(2,:);
+            V_plot.ZData = V(3,:);
+        end
         drawnow
         
         if config.save_obj
