@@ -12,3 +12,8 @@ extern/
 *.fdb_latexmk
 *.fls
 *.blend
+
+output/*
+figures/*.pdf
+blender/*
+matlab/libigl/
