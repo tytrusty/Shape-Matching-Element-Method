@@ -156,8 +156,7 @@ function vem_simulate_nurbs(parts, varargin)
         dV_dq = L' * dV_dq;
         
         % Error correction force
-        x_centered = x(:);
-        f_error = - 2 * ME * x_centered;
+        f_error = - 2 * ME * x(:);
         f_error = config.k_stability*(config.dt * P * f_error(:));
        
         % Force from potential energy.
