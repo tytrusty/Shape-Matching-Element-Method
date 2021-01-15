@@ -158,8 +158,8 @@ function vem_simulate_nurbs(parts, varargin)
         c = L * b;
 
         % Stiffness matrix (mex function)
-        %         K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
-        %                                       dF_dc, W, W_S, W_I, k, n);
+        K2 = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
+                                      size(x0_coms,2));
         %         K = L' * K * L;
 
         % Force vector
@@ -180,7 +180,7 @@ function vem_simulate_nurbs(parts, varargin)
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
             
             % Stiffness matrix contribution
-            d2V_dF2 = neohookean_tet_dF2(F, params(i,1), params(i,2));
+            d2V_dF2 = neohookean_tet_dF2(F, params(i,1), params(i,2)) * vol(i);
             K = K - dF_dc_S{i}' * (dF_dc{i}' * d2V_dF2 * dF_dc{i}) * dF_dc_S{i};
         end
         K = L' * K * L;

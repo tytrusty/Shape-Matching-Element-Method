@@ -57,27 +57,23 @@ void mexFunction(int nlhs, mxArray *plhs[],
     /* variable declarations here */
     Eigen::MatrixXd g;
 
-    Eigen::MatrixXd dM_dX, params;
+    Eigen::MatrixXd params;
     Eigen::VectorXd c, volumes; 
 
 	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > dF_dc;
-	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > W;
-	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > W_S;
 	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > W_I;
 
     igl::matlab::parse_rhs_double(prhs+0, c);
-    igl::matlab::parse_rhs_double(prhs+1, dM_dX);
-    igl::matlab::parse_rhs_double(prhs+2, volumes);
-    igl::matlab::parse_rhs_double(prhs+3, params);
-	parse_cell(prhs, 4, dF_dc);
-	parse_cell(prhs, 5, W);
-	parse_cell(prhs, 6, W_S);
-	parse_cell_index(prhs, 7, W_I);
+    igl::matlab::parse_rhs_double(prhs+1, volumes);
+    igl::matlab::parse_rhs_double(prhs+2, params);
+	parse_cell(prhs, 3, dF_dc);
+	parse_cell_index(prhs, 4, W_I);
 
-	int k = (int)*mxGetPr(prhs[8]);
-	int n = (int)*mxGetPr(prhs[9]);
+	int k = (int)*mxGetPr(prhs[5]);
+	int n = (int)*mxGetPr(prhs[6]);
+	int m = (int)*mxGetPr(prhs[7]);
 
-	sim::vem3dmesh_neohookean_dq2(g, c, dM_dX, volumes, params, dF_dc, W, W_S, W_I, k, n);
+	sim::vem3dmesh_neohookean_dq2(g, c, volumes, params, dF_dc, W_I, k, n, m);
 
     igl::matlab::prepare_lhs_double(g, plhs);
 }
