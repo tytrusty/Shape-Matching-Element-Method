@@ -10,6 +10,10 @@ extern/
 *.mexmaci64
 
 *.fdb_latexmk
-*.pdf
 *.fls
 *.blend
+
+output/*
+figures/*.pdf
+blender/*
+matlab/libigl/

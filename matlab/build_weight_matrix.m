@@ -28,7 +28,7 @@ function [W,W_I,W_S] = build_weight_matrix(w, d, k, varargin)
        
         % Forming selection and weight matrices.
         W{i} = zeros(d*k, d*k*t);
-        W_S{i} = zeros(d*k*t, d*(k*n + 1));
+        W_S{i} = zeros(d*k*t, d*(k)*n);
         for j = 1:t
             I = W_I{i}(j);
             

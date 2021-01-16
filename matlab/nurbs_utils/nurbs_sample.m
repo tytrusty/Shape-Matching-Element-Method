@@ -1,4 +1,4 @@
-function surfaces=nurbs_sample(data, enable_trimming)
+function surfaces=nurbs_sample(data, enable_trimming, sample_density)
 
 nsurfaces = 0;
 
@@ -7,8 +7,8 @@ for ii=1:numel(data)
 	if data{ii}.type == 128
         data{ii}.is_trimmed = 0;
        
-        s = sample_spline(data{ii}.s, data{ii}.m1);
-        t = sample_spline(data{ii}.t, data{ii}.m2);
+        s = sample_spline(data{ii}.s, data{ii}.m1, sample_density);
+        t = sample_spline(data{ii}.t, data{ii}.m2, sample_density);
         [U,V] = meshgrid(s,t);
         UV = [U(:) V(:)]';
         data{ii}.UV = UV;

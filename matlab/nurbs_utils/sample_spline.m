@@ -3,7 +3,6 @@ function t_new = sample_spline(u, degree, alpha)
         alpha = 2; % 1 sample in the range (midpoint)
     end
     u = u(degree+1:end-degree);
-    %u = unique(u);
     t_new = [];
     for i=1:numel(u)-1
         s_b = u(i);

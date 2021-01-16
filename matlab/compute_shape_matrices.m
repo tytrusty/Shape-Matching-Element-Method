@@ -1,4 +1,7 @@
-function L = compute_shape_matrices(x0, x0_com, E, order, mode)
+function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mode)
+    
+    % TOOODO --- appears problematic that we have multiple center of masses
+
     if nargin < 5
         mode = 'global';
     end
@@ -16,7 +19,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
     row_ranges = cell(numel(E),1);
     for i=1:numel(E)
         x = x0(:,E{i});
-        M{i} = monomial_basis(x, x0_com, order);
+        M{i} = monomial_basis(x, x0_coms(:,com_map(i)), order);
         row_ranges{i} = d*A_rows+1:d*A_rows + d*numel(E{i});
         A_rows = A_rows + numel(E{i});
     end
@@ -49,21 +52,37 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     if strcmp(mode, 'hierarchical')
         n = size(x0,2);
-
-        L = zeros(d*(k*numel(E)+1), numel(x0));
-
-        % Setting constant term rows
-        for i=1:d
-            L(end-d+i,i:d:end) = 1/n;
+        
+        % (k+1) - the +1 accounts for each shapes' constant term.
+        L = zeros(d*(k*numel(E) + numel(cluster)), numel(x0));
+        
+        % Forming T&S matrices
+        S=sparse(zeros(n,d*numel(cluster)));
+        T=zeros(d*numel(cluster),n);
+ 
+        % Setting constant term solutions for each center of mass as
+        % the mean of their adjacent points.
+        for i=1:numel(cluster)
+            for j=1:d
+                row = d*(i-1)+j;
+                cols = d*(cluster{i}-1)+j;
+                T(row,cols) = 1/numel(cluster{i});
+                
+                
+                row = d*k*numel(E) + d*(i-1)+j;
+                cols = d*(cluster{i}-1)+j;
+                L(row,cols) = 1/numel(cluster{i});
+            end
+        end
+        
+        % Forming selection matrices for each shape.
+        for i=1:numel(E)
+        	m = numel(E{i});
+            idx = com_map(i);
+            S(row_ranges{i},d*(idx-1)+1:d*idx) = repmat(eye(d),m,1);
         end
 
         I = eye(numel(x0));
-
-        % 'S' matrix (stacked identities)
-        S = repmat(eye(d),n,1);
-
-        % Matrix that computes the mean of the nodal values.
-        T = repmat(eye(d)*(1/n),1,n);
 
         k_linear = nchoosek(d+1-1,1);
         linear_cols = zeros(k_linear*d*numel(E),1);
@@ -89,7 +108,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
         if order == 2
             k_quad = nchoosek(d+2-1,2);
-            quad_cols = zeros(k_quad*numel(E),1);
+            quad_cols = zeros(d*k_quad*numel(E),1);
 
             for i = 1:numel(E)
                 for j = 1:d
@@ -109,26 +128,14 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
             L_quad = (A_quad'*A_quad) \ rhs;
             L(quad_cols,:) = L_quad;
         end
+        
+        % Convert to sparse matrix.
+        Lz = abs(L(:)) < 1e-12;
+        L(Lz) = 0;
+        L=sparse(L);
     elseif strcmp(mode, 'global')
         L = ATA \ A';
-        
-    elseif strcmp(mode, 'global_pinv')
-        L = pinv(ATA) * A';
-        
-    elseif strcmp(mode, 'global_svd_truncated')
-        epsilon = 1e-12;
-        [U, S, V] = svd(ATA);
-        S = diag(S);
-        t = find(abs(S) < epsilon, 1, 'first') - 1; %truncation point
-        
-        if isempty(t) % full rank
-            t = numel(S);
-        end
-        
-        S = 1./ S(1:t);
-        truncated_inv = V(:,1:t) * diag(S) * U(:,1:t)';
-        L = truncated_inv * A';
-
+   
     elseif strcmp(mode,'local')
         n = size(x0,2);
         L = zeros(d*(k*numel(E)+1), numel(x0));

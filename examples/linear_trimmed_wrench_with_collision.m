@@ -24,6 +24,11 @@ options.mu = mu;
 options.gravity = 0;
 
 options.sample_interior = 0;
-options.collision_ratio = 10.0;
+options.collision_ratio = 1.0;
+options.collision_with_other = true;
+options.self_collision = false;
+options.collision_with_plane = true;
+options.collision_plane_z = -40.0;
+
 vem_simulate_nurbs_with_collision(part, options);
 end

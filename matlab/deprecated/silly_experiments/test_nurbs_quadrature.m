@@ -6,7 +6,6 @@ parts=nurbs_plot(parts);
 
 X = raycast_quadrature(parts, [8 8], 5);
 
-%[flag, t, lambda] = ray_mesh_intersect(ray(:,1:3), ray(:,4:6), fv.vertices, fv.faces);
 
 % Triangulate nurbs patch
 faces=[];
@@ -23,6 +22,8 @@ for ii=1:numel(parts)
     faces=[faces; F];
     verts=[verts; V];
 end
+
+
 
 clf;
 
@@ -43,7 +44,7 @@ xrange = [OT.BinBoundaries(1,1) OT.BinBoundaries(1,4)];
 yrange = [OT.BinBoundaries(1,2) OT.BinBoundaries(1,5)];
 zrange = [OT.BinBoundaries(1,3) OT.BinBoundaries(1,6)];
 
-subd = [8 8];
+subd = [38 38];
 samples = 5;
 [U, V] = meshgrid(linspace(yrange(1), yrange(2), subd(1)), ...
                   linspace(zrange(1), zrange(2), subd(2)));
@@ -60,7 +61,16 @@ ray_origins = [repelem(xrange(2), size(UV,1), 1) UV];
 ray_dirs = repmat([-1 0 0], size(UV,1), 1);
 
 % TODO this wont suffice since we need all intersections :/
-% [flag, t, lambda] = ray_mesh_intersect(ray_origins, ray_dirs, verts, faces);
+tic
+[fid, t, nhits] = ray_mesh_intersections(ray_origins, ray_dirs, verts, faces);
+toc 
+
+tic
+for i = 1:size(UV,1)
+    % Intersect along x-axis
+    [dist, face_intersect] = ray_intersect(xrange, UV(i,:), verts, face_bins, OT);
+end
+toc
 
 for i = 1:size(UV,1)
     % Intersect along x-axis
