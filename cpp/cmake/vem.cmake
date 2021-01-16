@@ -9,7 +9,11 @@ set(vem_INCLUDE_DIR ${vem_ROOT}/include)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${vem_SOURCE_DIR}/cmake)
 
 option(VEM_USE_OPENMP OFF)
-option(LIBIGL_WITH_EMBREE ON)
+if(NOT APPLE)
+    option(LIBIGL_WITH_EMBREE ON)
+else ()
+    option(LIBIGL_WITH_EMBREE "Use Embree" ON)
+endif()
 
 find_package(LIBIGL REQUIRED)
 
