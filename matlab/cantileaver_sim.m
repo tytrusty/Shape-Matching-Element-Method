@@ -1,5 +1,5 @@
 %cantileaver simulation
-[V,T,F] = readMESH('vem_beam_tet2.mesh');
+[V,T,F] = readMESH('vem_beam_tet0.mesh');
 
 
 %setup simulation variables
@@ -15,7 +15,7 @@ rho =  100.0*ones(size(T,1),1);
 M = linear_tetmesh_mass_matrix(V,T, rho, vol);
 
 %material properties 
-YM = 5e5; %in Pascals
+YM = 1e5; %in Pascals
 pr =  0.45;
 [lambda, mu] = emu_to_lame(YM*ones(size(T,1),1), pr*ones(size(T,1),1));
 

@@ -25,6 +25,7 @@ function L = compute_shape_matrices(x0, x0_com, E, order, mode)
 
     col_idx = 0;
     row_idx = 0;
+    
     % Forming global system matrix ([A S] matrix) 
     for i=1:numel(E)
         for j=1:numel(E{i})
