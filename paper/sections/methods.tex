@@ -243,7 +243,7 @@ Finally, to solve for the full set of non-constant term coefficients, $\hat{\mat
 \subsection{Hierarchical fitting}
 A problem may emerge in the shape matching process where the system may be underdetermined. To account for this we solve for the coefficients in a hierarchical manner where we initially solve for the linear terms and at each step solve the coefficients for the next higher order of deformation. The produces a set of smaller systems which are guaranteed to be determined \myworries{probably need to justify this more}. The intuition behind this can be described by the \textit{hierarchical ordering principle}, which argues that the behavior of a system is typically dominated by lower order effects \myworries{cite something here.}. To describe our fitting strategy, we begin with the following shape matching system for a single element
 \begin{equation}
-\label{eqn:fitting_one}
+\label{eqn:fitting_one_copy}
 \left[
 \mathbf{A} \quad \mathbf{S}
 \right]
@@ -311,6 +311,7 @@ The recursive nature of this process permits a more general description for arbi
 \section{The Deformation Map}
 At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
 \begin{equation}
+\label{eqn:deformation_map}
 	\mathbf{x}(\mathbf{X}) = \sum_i^n w_i(\mathbf{X}) \left[ \mathbf{M}(\mathbf{X-\bar{X}}_j)\mathbf{c}_i + \mathbf{t}_j \right]
 	\text{,}
 \end{equation}
@@ -351,98 +352,103 @@ This paper addresses the integration of volume integrals of the form $\mathbf{I}
 In our approach we modify the raycasting procedure by allowing integration over intersecting NURBS surfaces. It is common in NURBS modeling to produce models in which many surfaces overlap. To account for this we augment the raycasting intersection step to use an approach common in Constructive Solid Geometry (CSG). For the set of intersection intervals, we instead take the union over all intervals to yield a new set of intervals handling intersecting solids. We find that this extension serves as a simple and practical approach to support inexact models (\myworries{not sure what to right here}). We note that this solution is not perfect and making this intersection step more robust serves as future work.
 
 \section{Dynamic Simulation}
+With our definition of the deformation map as well as a strategy for integrating the volume, we now have the necessary ingredient to perform dynamic simulation. We follow the Variational Mechanics approach that defines a pair of kinetic and potential energies, and we apply the Euler-Lagrange equation to develop our equations of motion.
+
+Before we define these energies we first would like to simplify the form of the deformation map presented in equation \ref{eqn:deformation_map}. We may write $\mathbf{x}(\mathbf{X})$ in matrix form as
+\begin{equation}
+\mathbf{x}(\mathbf{X}) = \underbrace{\left[w_1\mathbf{M}(\mathbf{X - \bar{X}}_j) \dots w_n\mathbf{M}(\mathbf{X - \bar{X}}_j) \middle| \sum_i^{n_1}w_1^i\mathbf{I} \dots \sum_i^{n_m}w_m^i\mathbf{I} \right]}_{\mathbf{Y}(\mathbf{X})}
+\begin{bmatrix}
+\mathbf{\hat{c}} \\
+\mathbf{\hat{t}}
+\end{bmatrix}
+\text{,}
+\end{equation}
+\myworries{I'm not sure how to write this matrix form for x(X), especially on finding the best notation for the center of mass indexing. So this above equation is temporary.}
+where we have $n$ shape elements, $m$ centers of mass. We simplify the above equation and use the following form
+\begin{equation}
+\label{eqn:x_simple_form}
+\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{L}\hat{\mathbf{b}}
+\text{,}
+\end{equation}
+where we make use of equation \ref{eqn:c_multiple_elements} to rewrite this in terms of the boundary points $\mathbf{\hat{b}}$. As one final step, we rewrite this again in terms of the control points of our NURBS surfaces:
+\begin{equation}
+\label{eqn:compact_x_map}
+\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{LJq}
+\text{,}
+\end{equation}
+where we use the fact that $\mathbf{\hat{b}} = \mathbf{Jq}$. \myworries{not a fan of this, perhaps we change $\hat{b}$ to something else...} This gives us an expression for the deformed position in terms of our generalized coordinates, $\mathbf{q}$.
+
 \subsection{Generalized Inertia}
+The kinetic energy for a model may be expressed as
+\begin{equation}
+T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
+\text{,}
+\end{equation}
+where $\Omega$ is the 3D integration domain, $\rho$ is the density, and $\dot{\mathbf{x}}$ is the velocity for some point in the domain. Using the deformation map defined in \ref{eqn:compact_x_map}, we may rewrite this kinetic energy as
+\begin{equation}
+\begin{split}
+T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)}^T\mathbf{Y(X)}\ d\Omega \\
+  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{J}^T \left[ \int_{ \Omega} \rho \mathbf{Y(X)}^T\mathbf{Y(X)} d\Omega \right] \mathbf{J}\dot{\mathbf{q}} \\
+  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{M} \dot{\mathbf{q}}
+\end{split}
+\text{.}
+\end{equation}
+The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
+\subsection{Error Potential}
 \subsection{Generalized Forces}
 \subsection{Equations of Motion}
+\subsection{Time Integration}
 %This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface.
 
 
+\subsection{Deformation Gradient}
+\begin{equation}
+        \mathbf{F} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
+               = \frac{\partial \hat{\mathbf{\Pi}}\mathbf{M(X)}}{\partial \mathbf{X}}
+               = \hat{\mathbf{\Pi}} \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}}
+\end{equation}
 
-% \textbf{x}(\textbf{X}) = \hat{A}M(\textbf{X}) + \bar{\textbf{x}}$ \\
-% $\hat{A} = \sum_i^{|S|}w_i(\textbf{X})A_i$
-%
-%\subsection{Deformation Gradient}
-%\begin{equation}
-%        \mathbf{F} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
-%               = \frac{\partial \hat{\mathbf{\Pi}}\mathbf{M(X)}}{\partial \mathbf{X}}
-%               = \hat{\mathbf{\Pi}} \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}} 
-%\end{equation}
-%The $\frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}}$ terms may be precomputed and using the previous $\mathbf{M(X)}$ example, we have
-%\begin{equation}
-%     \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}} = \begin{bmatrix}
-%     1&0 \\ 
-%     0&1 \\ 
-%     2(X_0 - \bar{X}_0)&0 \\ 
-%     0&2(X_1 - \bar{X}_1) \\ 
-%     (X_1 - \bar{X}_1)&(X_0 - \bar{X}_0) 
-%    \end{bmatrix}
-%\end{equation}
-%
-%In computing the forces and the stiffness matrix, we require the gradient of the deformation gradient with respect to the configuration,  $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$. Usually the form of this gradient is simple. For example, in linear tetrahedral FEM each quadrature point's deformation map only involves the four surrounding nodal values, simplifying this gradient. In our case, the presence of the projection operator $\hat{\mathbf{\Pi}}$ means that each quadrature point is computed using the nodal values of the entire model. 
-%
-%\begin{equation}
-%    \frac{\partial \mathbf{F}}{\partial \mathbf{q}} = \frac{\partial \mathbf{P}}{\partial q}\mathbf{M(q_0)}^\dagger  \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}} 
-%\end{equation}
-%
-%
-%Naively handled, this gives us a $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ of size $3 x |q|$. However, many of the columns of have values all near zero, allowing us to prune many columns for each quadrature point. Currently, I'm computing the infinity norm of each column and prune all except some fixed number of columns. \\
-%
-%
-%\subsection{Variational Mechanics}
-%We have now provided all the necessary ingredient to produce equations of motion for deformable bodies, which we derive via Euler-Lagrange equation. We begin with the Lagrangian
-%\begin{equation}
-%    L=T-V
-%\end{equation}
-%where $T$ is the kinetic energy, and $V$ is the potential energy. From the Euler-Lagrange equation we have:
-%\begin{equation}
-%    \frac{d}{dt} \frac{\partial L}{\partial \dot{\mathbf{p}}} + \frac{\partial L}{\partial {\mathbf{p}}} = 0
-%\end{equation}
-%\begin{equation}
-%    V =  \int_\Omega \psi(\mathbf{F(X)} dX
-%\end{equation}
-%then discretizing this over $m$ quadrature points, we have
-%\begin{equation}
-%    V =  \sum_i^m \psi(\mathbf{F(X_i)} A_i
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
-%\end{equation}
-%Next we have the equation of the kinetic energy
-%\begin{equation}
-%    T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} dV
-%\end{equation}
-%which we rewrite in terms of our control points configuration
-%\begin{equation}
-%    T = \frac{1}{2} \int_{\partial \Omega} \dot{\mathbf{p}}^T \mathbf{J}(u,v)^T \mathbf{M} \mathbf{J}(u,v) \dot{\mathbf{p}} du dv
-%\end{equation}
-%\myworries{change notation to not use M for the monomial basis}
-%where
-%\begin{equation}
-%    \mathbf{M} = \int_\Omega \rho \mathbf{J_{\hat{\Pi}}(X)}^T \mathbf{J_{\hat{\Pi}}(X)}
-%\end{equation}
-%From the potential energy (which uses dF/dq) and this potential energy, we discretize in time and right now I'm using linearly implicit backward euler
-%
-%\subsection{Stability term}
-%\begin{figure}[h]
-%  \centering
-%  \includegraphics[width=\linewidth]{figures/error_energy}
-%  \caption{A figure showing the spring energy error for each sampled point on the NURBS curve. I should change the colors of the lines to show higher energies where the error is higher.}
-%  \Description{Showing an example error of a NURBS curve.}
-%\end{figure}
-%
-%\subsection{Projection Operator Weighting}
-%\begin{figure}[h]
-%  \centering
-%  \includegraphics[width=\linewidth]{figures/distance_weighting}
-%  \caption{A 2D example showing how $\theta$ is computed for $\Pi_B$. $d_1$ shows the distance to the closest point on $\Pi_B$ to $\mathbf{x}$ and $d_2$ shows the distance to the surface hit by the ray in the opposite direction.}
-%  \Description{Showing a 2D NURBS curve with a quadrature point in the center. A ray is cast to the nearest point on a shape, showing the distance between the quadrature point and the nearest point as well as the distance to the "back surface".}
-%\end{figure}
-%
-%
-%\subsection{Integrating the volume}
-%\begin{figure}[h]
-%  \centering
-%  \includegraphics[width=\linewidth]{figures/raycasting_quadrature}
-%  \caption{An example raycasting quadrature on a 2D NURBS curve.}
-%  \Description{Shows a 2D NURBs curve with horizontal rays intersecting the curve. }
-%\end{figure}
+
+In computing the forces and the stiffness matrix, we require the gradient of the deformation gradient with respect to the configuration,  $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$. Usually the form of this gradient is simple. For example, in linear tetrahedral FEM each quadrature point's deformation map only involves the four surrounding nodal values, simplifying this gradient. In our case, the presence of the projection operator $\hat{\mathbf{\Pi}}$ means that each quadrature point is computed using the nodal values of the entire model. 
+
+\begin{equation}
+    \frac{\partial \mathbf{F}}{\partial \mathbf{q}} = \frac{\partial \mathbf{P}}{\partial q}\mathbf{M(q_0)}^\dagger  \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}} 
+\end{equation}
+
+
+Naively handled, this gives us a $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ of size $3 x |q|$. However, many of the columns of have values all near zero, allowing us to prune many columns for each quadrature point. Currently, I'm computing the infinity norm of each column and prune all except some fixed number of columns. \\
+
+
+\subsection{Variational Mechanics}
+We have now provided all the necessary ingredient to produce equations of motion for deformable bodies, which we derive via Euler-Lagrange equation. We begin with the Lagrangian
+\begin{equation}
+    L=T-V
+\end{equation}
+where $T$ is the kinetic energy, and $V$ is the potential energy. From the Euler-Lagrange equation we have:
+\begin{equation}
+    \frac{d}{dt} \frac{\partial L}{\partial \dot{\mathbf{p}}} + \frac{\partial L}{\partial {\mathbf{p}}} = 0
+\end{equation}
+\begin{equation}
+    V =  \int_\Omega \psi(\mathbf{F(X)} dX
+\end{equation}
+then discretizing this over $m$ quadrature points, we have
+\begin{equation}
+    V =  \sum_i^m \psi(\mathbf{F(X_i)} A_i
+\end{equation}
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
+\end{equation}
+Next we have the equation of the kinetic energy
+\begin{equation}
+    T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} dV
+\end{equation}
+which we rewrite in terms of our control points configuration
+\begin{equation}
+    T = \frac{1}{2} \int_{\partial \Omega} \dot{\mathbf{p}}^T \mathbf{J}(u,v)^T \mathbf{M} \mathbf{J}(u,v) \dot{\mathbf{p}} du dv
+\end{equation}
+\myworries{change notation to not use M for the monomial basis}
+where
+\begin{equation}
+    \mathbf{M} = \int_\Omega \rho \mathbf{J_{\hat{\Pi}}(X)}^T \mathbf{J_{\hat{\Pi}}(X)}
+\end{equation}
+From the potential energy (which uses dF/dq) and this potential energy, we discretize in time and right now I'm using linearly implicit backward euler
