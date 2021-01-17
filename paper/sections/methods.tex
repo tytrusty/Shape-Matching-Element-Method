@@ -394,61 +394,69 @@ T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)
 \text{.}
 \end{equation}
 The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
-\subsection{Error Potential}
+\subsection{Error Energy}
+Over the course of the simulation we may see the true boundary values deviate from their positions estimated by the polynomial. This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface. To address this we augment our kinetic energy with a term to account for this error. The error for a boundary point $\mathbf{x}_i^*$ that is known to lie on the limit surface of the NURBS can be written as
+\begin{equation}
+\begin{split}
+\epsilon_i & = ||\mathbf{x}(\mathbf{X}_i) - \mathbf{x}_i^*|| \\
+		   & = ||(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{\hat{b}}||
+\end{split}
+\text{,}
+\end{equation}
+where $\mathbf{S_i}$ extracts $\mathbf{x}_i^*$ from $\mathbf{\hat{b}}$. We modify this error further to be expressed in terms of the control points. We note that $\mathbf{x}^*(u,v)$ yields the position on the NURBS surface whereas $\mathbf{x(X)}$ is the deformed value estimated by the polynomial fitting. Furthermore $\mathbf{X}$ may be written as a function of the parametric coordinates $\mathbf{X}(u,v)$ as its position on the surface is produced using the initial set of control points representing the undeformed model. This leads to an energy potential over the NURBS surface in parametric space
+\begin{equation}
+T_E = \iint (\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v))^T(\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v)) du dv
+\text{.}
+\end{equation}
+The discrete form of this written in terms of the control points may be written as
+\begin{equation}
+\begin{split}
+T_E & = \sum_i^N  \dot{\mathbf{q}}^T\mathbf{J}^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{J}\dot{\mathbf{q}} \\
+  & = \dot{\mathbf{q}}^T\mathbf{J}^T \left[ \sum_i^N  (\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i}) \right] \mathbf{J}\dot{\mathbf{q}} \\
+  & = \dot{\mathbf{q}}^T \mathbf{M}_E \dot{\mathbf{q}}
+\end{split}
+\text{,}
+\end{equation}
+where $N$ is the total number of boundary points and $\mathbf{M}_E$ is our \textit{error mass matrix}.
 \subsection{Generalized Forces}
-\subsection{Equations of Motion}
+We write our potential energy as 
+\begin{equation}
+    V = \int_\Omega \psi(\mathbf{F(X)}) d\Omega
+\text{.}
+\end{equation}
+To evaluate this energy (as well as its derivatives), we require a definition for the deformation gradient, $\mathbf{F(X)}$:
+\begin{equation}
+        \mathbf{F(X)} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
+               = \frac{\partial \mathbf{Y(X)}}{\partial \mathbf{X}}\mathbf{L}\hat{\mathbf{b}}
+\text{.}
+\end{equation}
+In the expression for the deformed position $\mathbf{x(X)}$ we see that the dependence on $\mathbf{X}$ only exists in $\mathbf{Y(X)}$, making $\mathbf{L}$ and $\hat{\mathbf{b}}$ constant terms when compute $\mathbf{F}$. Full details on how to compute $\mathbf{F}$ and its derivative $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ may be found in the appendix. (\myworries{I just wrote this because I'm too tired to right the d etails right now :p}. Now that we have an expression for the deformation gradient, we discretize our potential energy as follows
+\begin{equation}
+    V =  \sum_i^m \psi(\mathbf{F(X}_i) A_i
+\text{,}
+\end{equation}
+where $m$ is the number of integration points and $A_i$ is the volume for the $i$-th integration point.
+
+Like in the case of the kinetic energy, we also introduce an error force potential, which takes the simple form
+\begin{equation}
+V_E = \mathbf{q}^T \mathbf{M}_E \mathbf{q}
+\end{equation}
+
+
 \subsection{Time Integration}
-%This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface.
-
-
-\subsection{Deformation Gradient}
-\begin{equation}
-        \mathbf{F} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
-               = \frac{\partial \hat{\mathbf{\Pi}}\mathbf{M(X)}}{\partial \mathbf{X}}
-               = \hat{\mathbf{\Pi}} \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}}
-\end{equation}
-
-
-In computing the forces and the stiffness matrix, we require the gradient of the deformation gradient with respect to the configuration,  $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$. Usually the form of this gradient is simple. For example, in linear tetrahedral FEM each quadrature point's deformation map only involves the four surrounding nodal values, simplifying this gradient. In our case, the presence of the projection operator $\hat{\mathbf{\Pi}}$ means that each quadrature point is computed using the nodal values of the entire model. 
-
-\begin{equation}
-    \frac{\partial \mathbf{F}}{\partial \mathbf{q}} = \frac{\partial \mathbf{P}}{\partial q}\mathbf{M(q_0)}^\dagger  \frac{\partial \mathbf{M(X)}}{\partial \mathbf{X}} 
-\end{equation}
-
-
-Naively handled, this gives us a $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ of size $3 x |q|$. However, many of the columns of have values all near zero, allowing us to prune many columns for each quadrature point. Currently, I'm computing the infinity norm of each column and prune all except some fixed number of columns. \\
-
-
-\subsection{Variational Mechanics}
 We have now provided all the necessary ingredient to produce equations of motion for deformable bodies, which we derive via Euler-Lagrange equation. We begin with the Lagrangian
 \begin{equation}
-    L=T-V
+    L=(T+T_E)-(V + V_E)
 \end{equation}
-where $T$ is the kinetic energy, and $V$ is the potential energy. From the Euler-Lagrange equation we have:
+Then from the Euler-Lagrange equation we have:
 \begin{equation}
     \frac{d}{dt} \frac{\partial L}{\partial \dot{\mathbf{p}}} + \frac{\partial L}{\partial {\mathbf{p}}} = 0
 \end{equation}
-\begin{equation}
-    V =  \int_\Omega \psi(\mathbf{F(X)} dX
-\end{equation}
-then discretizing this over $m$ quadrature points, we have
-\begin{equation}
-    V =  \sum_i^m \psi(\mathbf{F(X_i)} A_i
-\end{equation}
-\begin{equation}
-    \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
-\end{equation}
-Next we have the equation of the kinetic energy
-\begin{equation}
-    T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} dV
-\end{equation}
-which we rewrite in terms of our control points configuration
-\begin{equation}
-    T = \frac{1}{2} \int_{\partial \Omega} \dot{\mathbf{p}}^T \mathbf{J}(u,v)^T \mathbf{M} \mathbf{J}(u,v) \dot{\mathbf{p}} du dv
-\end{equation}
-\myworries{change notation to not use M for the monomial basis}
-where
-\begin{equation}
-    \mathbf{M} = \int_\Omega \rho \mathbf{J_{\hat{\Pi}}(X)}^T \mathbf{J_{\hat{\Pi}}(X)}
-\end{equation}
-From the potential energy (which uses dF/dq) and this potential energy, we discretize in time and right now I'm using linearly implicit backward euler
+\myworries{todo: not totally sure what to write here since we're experimenting with both linearly implicit backward euler as well as Newton's method soon}
+
+
+
+%\begin{equation}
+%    \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
+%\end{equation}
+%\
