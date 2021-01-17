@@ -21,6 +21,7 @@ To evaluate the volumetric integrals in solid mechanics models, we require mater
 In the following sections, we will first review the simplified D-NURBS model used to form our generalized coordinates. We then present our shape matching algorithm for fitting polynomials to surfaces .... In section ... we next describe how to blend these surface polynomials to construct a general deformation map for material points. Section ... describes our strategy for selecting integration points in the volume through a raycasting approach. Finally, we formulate our equations of motions from a Lagrangian formulation.
 
 \section{D-NURBS Model}
+\myworries{TODO: Most of these matrices should be paranthesis matrices}
 We provide a brief overview of the D-NURBS formulation presented in \cite{10.1145/176579.176580}. Our models in our method are composed of a collection of NURBS surfaces. 
 
 \subsection{D-NURBS Formulation}
@@ -143,6 +144,7 @@ The remaining step in defining a single element is to describe how to solve for 
 \end{equation}
 and then in the more compact form
 \begin{equation}
+\label{eqn:fitting_one}
 \left[
 \mathbf{A} \quad \mathbf{S}
 \right]
@@ -154,6 +156,7 @@ and then in the more compact form
 \end{equation}
 where $\mathbf{A}$ is the block containing the monomial matrices of the system, and $\mathbf{S}$ is the block of identity matrices. Next, to reduce the degrees of freedom of this system we let the deformed center of mass (the constant term coefficients), $t$, be equal to the mean of the deformed positions influenced by this center of mass. In the case of one element we have $t = \frac{1}{n}\sum_i^n x_i^*$. We describe the details on center of mass selection in section \myworries{insert here}. In matrix form we have
 \begin{equation}
+\label{eqn:t_solution}
 t = 
 \underbrace{
 \left[\begin{array}{ccccccc}
@@ -170,6 +173,7 @@ t =
 \end{equation}
 Like in the original Shape Matching \cite{10.1145/1073204.1073216}, we solve for the coefficients by minimizing the error in a least squares sense, resulting in
 \begin{equation}
+\label{eqn:c_one_element}
 \begin{split}
 \mathbf{c} & = (\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T(\mathbf{I-ST})\mathbf{b} \\
            & = \mathbf{L}\mathbf{b}
@@ -179,8 +183,133 @@ Like in the original Shape Matching \cite{10.1145/1073204.1073216}, we solve for
 This $\mathbf{L}$ matrix thus gives us our file ingredient in the element, coefficients defining the polynomial. We emphasize that $\mathbf{L}$ is constant throughout the simulation, therefore as $\mathbf{b}$ varies in the simulation, $\mathbf{Lb}$ gives us a new set of polynomial coefficients as $\mathbf{b}$ changes. 
 
 \subsection{Shape Matching with Multiple Elements}
+In a typical simulation we will have multiple shape matching elements where the boundary of each element is defined by a different NURBS surface. Therefore for the entire model each shape has a boundary, a polynomial describing its deformation, as well as an associated center of mass. These centers of mass may not be distinct, meaning that a single center of mass may be shared among multiple surfaces. This sharing of center of masses is typical and in some cases required (\myworries{reference center of mass section that describes how for planar surfaces we need to share COM to get a COM out of plane}). This leads to a new definition of the center of mass where it is the mean of all the boundary points associated with it.
+
+In defining the shape matching fitting problem, we will form a system similar to equation \ref{eqn:fitting_one}. In this case where we have $n$ shape elements our set of unknown coefficients is $\hat{\mathbf{c}} = \left[\mathbf{c}_1^T \dots \mathbf{c}_i^T \dots \mathbf{c}_n^T \right]^T \in \mathbb{R}^{3kn}$ where $\mathbf{c}_i$ corresponds to the unknown polynomial coefficients for the $i$-th shape element. The set of boundary positions is similarly written as $\hat{\mathbf{b}}=\left[\mathbf{b}_1^T \dots \mathbf{b}_i^T \dots \mathbf{b}_n^T \right]^T \in \mathbb{R}^{3N}$ where $N$ is the total number of boundary points across all elements. If we have $m$ centers of mass we write the set of polynomial constant terms as $\hat{\mathbf{t}} = \left[\mathbf{t}_1^T \dots \mathbf{t}_i^T \dots \mathbf{t}_m^T \right]^T \in \mathbb{R}^{3m}$. With these terms, we write the polynomial fitting system for the entire model as
+\begin{equation}
+\begin{pmatrix}
+ \mathbf{A}_1 &      &			  &			&				&\mathbf{S}_1\\  
+ &            \ddots &            &  		&				&\vdots\\ 
+ &            &      \mathbf{A}_i &   		&				&\mathbf{S}_i\\
+ &            &      &            \ddots	&				&\vdots\\
+ &            &      &            &			\mathbf{A}_n	&\mathbf{S}_n
+\end{pmatrix}
+\begin{bmatrix}
+ \hat{\mathbf{c}}  \\ 
+ \hat{\mathbf{t}}   
+\end{bmatrix}
+=
+\hat{\mathbf{b}}
+\text{,}
+\end{equation}
+where $\mathbf{A}_i$ is the monomial basis matrix for the $i$-th shape element, and $\mathbf{S}_i$ is a selection matrix that extracts the $j$-th center of mass which is associated with the $i$-th shape. We simplify this as
+\begin{equation}
+\begin{pmatrix}
+\hat{\mathbf{A}} & \hat{\mathbf{S}}
+\end{pmatrix}
+\begin{bmatrix}
+ \hat{\mathbf{c}}  \\ 
+ \hat{\mathbf{t}}   
+\end{bmatrix}
+=
+\hat{\mathbf{b}}
+\text{.}
+\end{equation}
+Like in the single element case, we set the $\hat{\mathbf{t}}$ to be equal to the mean of a set of boundary positions, but in this case each $\mathbf{t}_j$ is equal to the mean of only the boundary positions associated with the $j$-th center of mass. The definition of the values of $\hat{\mathbf{t}}$ is similar to \ref{eqn:t_solution}:
+\begin{equation}
+\hat{\mathbf{t}} =
+\underbrace{
+\begin{bmatrix}
+\mathbf{T}_1 \\ 
+\vdots       \\
+\mathbf{T_m}
+\end{bmatrix}}_{\hat{\mathbf{T}}}
+\text{,}
+\end{equation}
+
+where the entries each $\mathbf{T}_i \in \mathbb{R}^{3N}$ take a similar form, but are only nonzero for columns corresponding to associated boundary vertices.
+
+Finally, to solve for the full set of non-constant term coefficients, $\hat{\mathbf{c}}$, we solve in the same manner as equation \ref{eqn:c_one_element} where we have
+\begin{equation}
+\label{eqn:c_multiple_elements}
+\begin{split}
+\hat{\mathbf{c}} & = (\hat{\mathbf{A}}^T\hat{\mathbf{A}})^{-1}\hat{\mathbf{A}}^T(\mathbf{I-\hat{S}\hat{T})\hat{\mathbf{b}}} \\
+           & = \mathbf{L}\hat{\mathbf{b}}
+\end{split}
+\text{.}
+\end{equation}
+
+
 \subsection{Hierarchical fitting}
-A problem may emerge in the shape matching process where the shape matching system may be rank deficient.
+A problem may emerge in the shape matching process where the system may be underdetermined. To account for this we solve for the coefficients in a hierarchical manner where we initially solve for the linear terms and at each step solve the coefficients for the next higher order of deformation. The produces a set of smaller systems which are guaranteed to be determined \myworries{probably need to justify this more}. The intuition behind this can be described by the \textit{hierarchical ordering principle}, which argues that the behavior of a system is typically dominated by lower order effects \myworries{cite something here.}. To describe our fitting strategy, we begin with the following shape matching system for a single element
+\begin{equation}
+\label{eqn:fitting_one}
+\left[
+\mathbf{A} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b}
+\text{.}
+\end{equation}
+We will show the hierarchical fitting on a polynomial with a set of coefficients for the linear terms, $\mathbf{c}_{\text{lin}}$, and the coefficients for the quadratic terms $\mathbf{c}_{\text{quad}}$. Similarly, we also have $\mathbf{A}_{\text{lin}}$ and $\mathbf{A}_{\text{quad}}$ which are the blocks of $\mathbf{A}$ corresponding to the columns for the linear and quadratic monomial terms, respectively. First we construct a system for the linear terms:
+\begin{equation}
+\label{eqn:fitting_linear}
+\left[
+\mathbf{A}_{\text{lin}} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c}_{\text{lin}} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b}
+\text{,}
+\end{equation}
+which leads to the following expression for the linear coefficients
+\begin{equation}
+\label{eqn:c_linear}
+\begin{split}
+\mathbf{c}_{\text{lin}} & = (\mathbf{A}_{\text{lin}}^T\mathbf{A}_{\text{lin}})^{-1}\mathbf{A}_{\text{lin}}^T(\mathbf{I-ST})\mathbf{b} \\
+           & = \mathbf{L}_{\text{lin}}\mathbf{b}
+\end{split}
+\text{.}
+\end{equation}
+where $\mathbf{T}$ is defined in equation \ref{eqn:t_solution}. For the quadratic system, we subtract linear term estimate of the solution and solve for the coefficients that fit this residual:
+\begin{equation}
+\label{eqn:fitting_quadratic}
+\left[
+\mathbf{A}_{\text{quad}} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c}_{\text{quad}} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}}
+\text{.}
+\end{equation}
+Using the solution for the linear coefficients in \ref{eqn:c_linear}, we arrive at the solution for the quadratic coefficients:
+\begin{equation}
+\label{eqn:c_quad}
+\begin{split}
+\mathbf{c}_{\text{quad}} & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T((\mathbf{I-ST})\mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}}) \\
+		   & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T(\mathbf{I-ST} - \mathbf{A}_{\text{lin}}\mathbf{L}_{\text{lin}})\mathbf{b} \\
+           & = \mathbf{L}_{\text{quad}}\mathbf{b}
+\end{split}
+\text{.}
+%\mathbf{c}_{\text{quad}} & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T((\mathbf{I-ST})\mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}})
+\end{equation}.
+The final form for the full $\mathbf{L}$ matrix is thus given by
+\begin{equation}
+\mathbf{L} =
+\begin{bmatrix}
+\mathbf{L}_{\text{lin}} \\
+\mathbf{L}_{\text{quad}} \\
+\mathbf{T}
+\end{bmatrix}
+\end{equation}
+
+The recursive nature of this process permits a more general description for arbitrary orders, which we write in algorithm \myworries{TODO}.
+
+
 
 \section{Blending Polynomials}
 \section{Raycasting Quadrature}
