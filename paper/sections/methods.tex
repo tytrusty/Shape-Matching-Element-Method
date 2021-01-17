@@ -21,7 +21,69 @@ To evaluate the volumetric integrals in solid mechanics models, we require mater
 
 In the following sections, we will first review the simplified D-NURBS model used to form our generalized coordinates. We then present our shape matching algorithm for fitting polynomials to surfaces .... In section ... we next describe how to blend these surface polynomials to construct a general deformation map for material points. Section ... describes our strategy for selecting integration points in the volume through a raycasting approach. Finally, we formulate our equations of motions from a Lagrangian formulation.
 
-\section{D-NURB Model}
+\section{D-NURBS Model}
+We provide a brief overview of the D-NURBS formulation presented in \cite{10.1145/176579.176580}. Our models in our method are composed of a collection of NURBS surfaces. 
+
+\subsection{D-NURBS Formulation}
+A point on a NURBS surface is typically expressed in the following form
+\begin{equation}
+\label{eqn:nurbs_srf}
+    \mathbf{x}(u,v) = \frac{\sum_{i=1}^{n}\sum_{j=1}^{m}  \mathbf{p}_{i,j} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    {\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    \text{,}
+\end{equation}
+where where have a total of $nm$ control points $\mathbf{p}$ and weights $w$. Using the B-spline basis functions and the weighted control points, this formula gives a map from our parametric coordinates $u,v$ to their corresponding position on the surface in $\mathbb{R}^{3m}$. $B_{i,k}(u)$ is the B-spline basis function for the $i-th$ control point with degree $k-1$.
+
+We would like our generalized coordinates to be the control points of the model so that the dynamics operates directly on the original representation. Therefore, we would like to rewrite equation \ref{eqn:nurbs_srf} in the form
+\begin{equation}
+    \mathbf{x}(u,v) = \mathbf{J}(u,v)\mathbf{q}
+    \text{,}
+\end{equation}
+where $\mathbf{q} = \left[ \mathbf{p}_{1,1}^T, \dots, \mathbf{p}_{i,j}^T, \dots, \mathbf{p}_{n,m}^T \right]^T \in \mathbb{R}^{3nm}$ is the set of $nm$ control points \myworries{in the overview I just write $n$ control points, but here i'm writing $nm$} for a single NURBS surface arranged as a column vector. $\mathbf{J} \in  \mathbb{R}^{3 x 3nm}$ is the NURBS jacobian that maps $(u,v)$ coordinates to world positions in $\mathbb{R}^{3}$.
+
+The NURBS jacobian, $\mathbf{J}$, is a matrix composed of horizontally concatenated $3x3$ blocks where the $(i,j)$-th block is $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ for the $(i,j)$-th control point. $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ is a diagonal $3x3$ matrix where each diagonal entry $N_{i,j}(\mathbf{u})$ takes the form
+
+\begin{equation}
+\label{eqn:jacobian_diagonal}
+    N_{i,j}(u,v)
+    = \frac{w_{i,j} B_{i,k}(u)B_{j,l}(v)}{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    \text{.}
+\end{equation}
+Thus the NURBS jacobian for a single $(u,v)$ pair is written as
+\begin{equation}
+\label{eqn:uv_jacobian}
+    \mathbf{J}(u,v)
+    \left[ \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{1,1}} \dots
+           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}} \dots 
+           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{n,m}}
+    \right]
+    \text{.}
+\end{equation}
+
+This formulation is a simplification of the full D-NURBS described in \cite{10.1145/176579.176580} the weights of the NURBS are fixed throughout the simulation. Permitting the dynamics to modify weights would likely improve the expressiveness of the kinematics, but we find fixing the weights affords sufficiently expressive results and improves performance. The performance improvement is a result of having fixed $N_{i,j}(u,v)$ entries over the course of the simulation. The full D-NURBS model requires rebuilding the jacobian and consequently the mass matrices at each time step. 
+
+\subsection{Generalized Coordinates for a NURBS model}
+The above formulation describes developing the map from a single $(u,v)$ coordinate to its corresponding position on the surface. In our simulation we represent the entire boundary of the NURBS model, so we require samples along each surface. We emphasize that we only require an initial selection of $(u,v)$ coordinates across each surface and the dynamics of the simulation modifies the set of control points $\mathbf{q}$ to modify the world space maps $\mathbf{x}(u,v)=\mathbf{J}(u,v)\mathbf{q}$.
+
+Let's say for a NURBS surface on the model the DOF column vector is $\mathbf{q}_i$, which is the subset of control points in the generalized coordinates for the $i$-th surface. For a given surface with $m$ pairs of $\mathbf{u}=(u,v)$ coordinates sampled in parametric space, we write the jacobian for the $i$-th surface as \myworries{(should I use something like $\hat{\mathbf{J}}$ instead?)}
+\begin{equation}
+\label{eqn:surface_jacobian}
+    \mathbf{J}_i =
+    \left[ \mathbf{J}(\mathbf{u})_1^T \dots \mathbf{J}(\mathbf{u})_m^T \right]^T
+    \text{.}
+\end{equation}
+Then if $\mathbf{x}_i$ is the set of $m$ world space positions for the $i$-th surface, we may write $\mathbf{x}_i = \mathbf{J}_i \mathbf{q}_i$. Finally, given the full set of generalized coordinates $\mathbf{q} = \left[ \mathbf{q}_i^T, \dots, \mathbf{q}_n^T \right]^T$ with $n$ surfaces, we may write jacobian $\mathbf{J}$ for the entire model as a block diagonal matrix:
+\begin{equation}
+\mathbf{J} = \left( \begin{array}{ccccc}
+\mathbf{J}_1 &  &  &  &  \\
+ & \ddots &  &  &  \\
+ &  & \mathbf{J}_i & &  \\
+ &  &  & \ddots &  \\
+ &  &  &  & \mathbf{J}_n \\
+\end{array} \right)
+\end{equation}
+With this equation, the full set of world positions of the NURBS model may be written as $\mathbf{x} = \mathbf{J}\mathbf{q} \in \mathbb{R}^{3N}$ where $N$ is the total number of $(u,v)$ coordinates.
+
 \section{Shape Matching}
 \section{Blending Polynomials}
 \section{Raycasting Quadrature}
@@ -29,16 +91,14 @@ In the following sections, we will first review the simplified D-NURBS model use
 \subsection{Generalized Inertia}
 \subsection{Generalized Forces}
 \subsection{Equations of Motion}
-This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface.
+%This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface.
 
 %
+
+% \textbf{x}(\textbf{X}) = \hat{A}M(\textbf{X}) + \bar{\textbf{x}}$ \\
+% $\hat{A} = \sum_i^{|S|}w_i(\textbf{X})A_i$
 %
-%% \textbf{x}(\textbf{X}) = \hat{A}M(\textbf{X}) + \bar{\textbf{x}}$ \\
-%% $\hat{A} = \sum_i^{|S|}w_i(\textbf{X})A_i$
 %
-%We have $\mathbf{x} = (x_0, x_1)$ and $\mathbf{X} = (X_0, X_1) $ as deformed and undeformed positions, respectively. \\
-%
-%\textbf{<insert Exposition about FEM >} \\
 %In our case, the function we are trying to evaluate is deformation with respect to the center of mass. In VEM, instead of reconstructing values of our function using nodal values, we seek to find a a set of polynomial coefficients that map some arbitrary undeformed position to a polynomial approximation of its deformed position. This set of polynomial coefficients is referred to as the projection operator, $\mathbf{\Pi}$. The key point here is that $\mathbf{\Pi}$ is constructed strictly using positions defined on the boundary, avoiding the need for explicit representation of the interior. \\
 %
 %\subsection{Shape Matching: }
@@ -81,28 +141,6 @@ This is most notable in cases where the degree of the polynomial on a NURBS is h
 %    \mathbf{x(X)} = \mathbf{J_{\hat{\Pi}}(X)q}
 %\end{equation}
 %
-%\subsection{Simulation on NURBs models}
-%
-%\begin{figure}[h]
-%  \centering
-%  \includegraphics[width=\linewidth]{figures/nurbs_surface}
-%  \caption{The NURBs model uses control points, shown in grey, as the original degrees of freedom.}
-%  \Description{A simple NURBS surface in $R^3$.}
-%\end{figure}
-%
-%We used the D-NURBS model (ref) for simulating on NURBs surfaces, giving an approach to simulating directly on the degrees of freedom of parametric NURBs models. The equation for a NURBs curve takes the form:
-%\begin{equation}
-%    \mathbf{x}(u) = \frac{\sum_{i=1}^{n} \mathbf{p}_i w_i B_{i,k}(u)}{ w_i B_{i,k}(u)}
-%\end{equation}
-%where $u$ is the parametric coordinate, $\mathbf{p}_i$ is the $i$-th control point with $n$ total control points. $B_{i,k}(u)$ is the B-spline basis function for the $i-th$ control point with degree $k-1$. NURBs curves represent a generalization of B-splines with the addition of the weight $w_i$ for each control point. In our case, we primarily work with NURBs surfaces, which are a generalization of the tensor-product of two B-splines:
-%\begin{equation}
-%    \mathbf{x}(u,v) = \frac{\sum_{i=1}^{n}\sum_{j=1}^{m}  \mathbf{p}_{i,j} w_{i,j} B_{i,k}(u)B_{j,l}(v)}{ w_{i,j} B_{i,k}(u)B_{j,l}(v)}
-%\end{equation}
-%where we now have two parameters $u,v$, and $m\cdot n$ control points. In D-NURBs, we see that $\mathbf{x}(u,v)$ is linear in the control points, $\mathbf{p}$, so we can rewrite the above equation as
-%\begin{equation}
-%    \mathbf{x}(u,v,\mathbf{p}) = \mathbf{J}(u,v)\mathbf{p}.
-%\end{equation}
-%Here $\mathbf{J}$ is the Jacobian matrix that maps the control points to some world space position on the surface for some $u,v$ pair. <elaborate on the form of J>. Now with these generalized coordinates, we may perform dynamics directly on the degrees of freedom of our NURBs models. 
 %
 %\subsection{Generalized Coordinates}
 %With D-NURBs simulation layered on the VEM simulation, we have two Jacobians: $\mathbf{J}(u,v)$ mapping controls points, $\mathbf{p}$ onto surface positions, and then $\mathbf{J_{\hat{\Pi}}(X)}$ which maps surface positions $\mathbf{q}$ to their deformed positions. The Jacobian $\mathbf{J}(u,v)$  may be precomputed, and each point sampled on a surface of a NURBs has an associated $\mathbf{J}(u,v)$. With these two Jacobians we may express a single $u,v$ pair's deformed position as
