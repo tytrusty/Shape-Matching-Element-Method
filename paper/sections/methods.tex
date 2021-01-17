@@ -295,8 +295,7 @@ Using the solution for the linear coefficients in \ref{eqn:c_linear}, we arrive 
            & = \mathbf{L}_{\text{quad}}\mathbf{b}
 \end{split}
 \text{.}
-%\mathbf{c}_{\text{quad}} & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T((\mathbf{I-ST})\mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}})
-\end{equation}.
+\end{equation}
 The final form for the full $\mathbf{L}$ matrix is thus given by
 \begin{equation}
 \mathbf{L} =
@@ -309,9 +308,41 @@ The final form for the full $\mathbf{L}$ matrix is thus given by
 
 The recursive nature of this process permits a more general description for arbitrary orders, which we write in algorithm \myworries{TODO}.
 
+\section{The Deformation Map}
+At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
+\begin{equation}
+	\mathbf{x}(\mathbf{X}) = \sum_i^n w_i(\mathbf{X}) \left[ \mathbf{M}(\mathbf{X-\bar{X}}_j)\mathbf{c}_i + \mathbf{t}_j \right]
+	\text{,}
+\end{equation}
+where we have $n$ surfaces, and $w_i$ and $\mathbf{c}_i$ are the weights and the coefficients for the $i$-th surface, respectively. The terms $\mathbf{\bar{X}}_j$ and $\mathbf{t}_j$ the undeformed and deformed centers of mass, respectively, that are associated with the $i$-th surface.
 
+\subsection{Computing the Blending Weights}
+All that remains for the deformation map is to compute blending weights. Our choice of the weighting function is guided by the simple idea that that for a given material point its weight should be highest to whichever surfaces it is closest. This idea lends itself to a simple distance-based weighting method. The first step in this process is to compute \textit{distance weights}. For a given point $\mathbf{X}$ and a set of $n$ we wish to compute a set of distance weights to each surface $\mathbf{\theta}(\mathbf{X}) = \left(\theta_1, \dots, \theta_i, \dots, \theta_n \right)$.
 
-\section{Blending Polynomials}
+For the $i$-th surface, we first find the distance, $d_{\text{primary}}$, from the point $\mathbf{X}$ to the closest point, $\mathbf{p}$, on the surface. Next we wish to satisfy the condition that the distance weight is highest on the surface and it decays towards zero as it approaches other surfaces. To achieve this, we shoot a ray from $\mathbf{p}$ towards $\mathbf{X}$ and check for intersections between this ray and the other $n-1$ surfaces. If this ray hits another surface, we let $d_{\text{total}}$ be the distance from $\mathbf{p}$ to the closest ray hit $\mathbf{q}$. These two distances enable us to write a simple linear function to compute the \textit{distance weight}:
+\begin{equation}
+\theta_i = \max (1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, D)}, 0.0)
+\text{,}
+\end{equation}
+where $D$ is a fixed cutoff distance parameter. We see that this distance weight is the result of interpolating along this ray from $\mathbf{p}$ to $\mathbf{q}$ (or a fixed point that depends on $D$). Importantly, this gives a result where the distance weight to surface $i$ is equal to $1$ if it lies on $i$ and $0$ if it lies on another surface. More elaborate schemes may be developed for computing distances, such as using the Boundary Element Method, but we find this simple linear function to perform well for our purposes.
+
+Now that we have a set of distances weights $\mathbf{theta}$, we seek to form a final set of \textit{blending weights} $\mathbf{w}(\mathbf{X}) =  \left( w_1, \dots, w_i, \dots, w_n \right)$ to blend the polynomials of the $n$ shape elements. In constructing these blending weights, we require that they adhere to a set of conditions. We require that (1) each weight is non-negative, (2) the sum of the weights is equal to 1 (\textit{partition of unity}), (3) and that if a point lies on a surface $i$, it will have a weight of 1 to $i$ and consequently zero to the others. To produce these blending weights we form a quadratic program that satisfies these constraints:
+\begin{equation}
+\begin{aligned}
+\mathbf{w}(\mathbf{X}) = \min_{\mathbf{w}} \quad & \mathbf{w}^T \Theta(\mathbf{X}) \mathbf{w}    \\
+\textrm{s.t.} \quad & 0 \leq w_i \leq 1                     \\
+                    &   \sum_i^n w_i = 1                      \\
+\end{aligned}
+\end{equation}
+
+where
+\begin{equation}
+     \Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_n}\right)
+\end{equation}
+We see that through the use of linear constraints we satisfy conditions (1) and (2). Satisfying the third condition (3) is achieved through using the distance weights. Intuitively, we see that for some small $\theta_i$, $\frac{1}{\theta_i}$ will be very large, encouraging the quadratic program to assign a small weight for $w_i$. Conversely, we see the opposite effect for large values of $\theta_i$.
+
+\section{Selecting Centers of Mass}
+\myworries{TODO. waiting to implement this before I start writing how we do it}
 \section{Raycasting Quadrature}
 \section{Dynamic Simulation}
 \subsection{Generalized Inertia}
@@ -319,65 +350,10 @@ The recursive nature of this process permits a more general description for arbi
 \subsection{Equations of Motion}
 %This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface.
 
-%
+
 
 % \textbf{x}(\textbf{X}) = \hat{A}M(\textbf{X}) + \bar{\textbf{x}}$ \\
 % $\hat{A} = \sum_i^{|S|}w_i(\textbf{X})A_i$
-%
-%
-%In our case, the function we are trying to evaluate is deformation with respect to the center of mass. In VEM, instead of reconstructing values of our function using nodal values, we seek to find a a set of polynomial coefficients that map some arbitrary undeformed position to a polynomial approximation of its deformed position. This set of polynomial coefficients is referred to as the projection operator, $\mathbf{\Pi}$. The key point here is that $\mathbf{\Pi}$ is constructed strictly using positions defined on the boundary, avoiding the need for explicit representation of the interior. \\
-%
-%\subsection{Shape Matching: }
-%In shape matching, authors seek a polynomial transformation, $\mathbf{\Pi}$ that minimizes $\sum_i ||\mathbf{\Pi}\mathbf{M(X)} - \mathbf{p_i}||^2$ where $\mathbf{M(X)}$ is the monomial basis of the $i$-th boundary vertex and $\mathbf{p_i}$ is current displacement from the center of mass for the $i$-th point. We argue this paper can be interpreted as a sort of virtual element method. \\
-%
-%\subsection{Reconstructing deformed positions}
-%A general form for the monomial basis takes the following form <insert here>. For example, in 2D with quadratic deformation we have:
-%\begin{equation}
-%    \mathbf{M(X)} =\begin{bmatrix}
-%    X_0 - \bar{X}_0  \\ 
-%    X_1 - \bar{X}_1  \\ 
-%    (X_0 - \bar{X}_0)^2  \\ 
-%    (X_1 - \bar{X}_1)^2  \\ 
-%    (X_0 - \bar{X}_0)(X_1 - \bar{X}_1) 
-%    \end{bmatrix} 
-%\end{equation}
-%
-%    
-%We write the estimated deformed position $\mathbf{x}$ of some arbitrary undeformed position $\mathbf{X}$ as
-%\begin{equation}
-%     \mathbf{x}(\mathbf{X}) = \hat{\mathbf{\Pi}}\mathbf{M}(\mathbf{X}) + \bar{\mathbf{x}} 
-%\end{equation}
-%where $\mathbf{\hat{\Pi}}$ is the blended projection operator for this particular point:
-%\begin{equation}
-%    \hat{\mathbf{\Pi}}\mathbf{(X)} = \sum_i^{|S|}w_i(\mathbf{X})\mathbf{\Pi}_i 
-%\end{equation}
-%The bar symbol indicates the center of mass. For example, $\bar{\mathbf{x}}$ is the deformed object's center of mass, which we compute as the mean of the boundary values 
-%\begin{equation}
-%    \bar{\mathbf{x}} = \frac{1}{n}\sum_i^n x_i 
-%\end{equation}
-%Here $w_i$ is some weighting function for the $i$-th shape. There are many possible forms for this weighting function. Right now we compute these weights by forming the following optimization: \\
-%<insert here>
-%In order to form the equations of motion, we need to re-express the above equation in terms of the nodal values, $\mathbf{q}$. To arrive it these we note that each $\mathbf{\Pi}_i$ is a function of $\mathbf{q}$. 
-%\begin{equation}
-%    \mathbf{\Pi}_i(\mathbf{q}) = \mathbf{P(E_i q)M(E_i q_0)^{\dagger}}
-%\end{equation}
-%\myworries{I'm not a fan of what I wrote here. The MLS-MPM paper presents a similar idea when talking about EFG, and I like their notation a bit better}
-%This is the shape matching problem's least squares solution where $M(q_0)^{\dagger}$ is the Moore-Penrose pseudo-inverse of the monomial vectors stacked row-wise (add example equation). The matrix $\mathbf{E}_i$ selects the degrees of freedom from $\mathbf{q}$ associated with the $i$-th shape. The function $\mathbf{P(q)}$ evaluates the displacement of these values from the current center of mass. We observe that the above equation is linear in $\mathbf{q}$ so we may rewrite the equation for $\mathbf{x}$ as 
-%\begin{equation}
-%    \mathbf{x(X)} = \mathbf{J_{\hat{\Pi}}(X)q}
-%\end{equation}
-%
-%
-%\subsection{Generalized Coordinates}
-%With D-NURBs simulation layered on the VEM simulation, we have two Jacobians: $\mathbf{J}(u,v)$ mapping controls points, $\mathbf{p}$ onto surface positions, and then $\mathbf{J_{\hat{\Pi}}(X)}$ which maps surface positions $\mathbf{q}$ to their deformed positions. The Jacobian $\mathbf{J}(u,v)$  may be precomputed, and each point sampled on a surface of a NURBs has an associated $\mathbf{J}(u,v)$. With these two Jacobians we may express a single $u,v$ pair's deformed position as
-%\begin{equation}
-%    \mathbf{x}(u,v,\mathbf{p}) = \mathbf{J_{\hat{\Pi}}(X)}\mathbf{J}(u,v)\mathbf{p}
-%\end{equation}
-%and the undeformed position
-%\begin{equation}
-%    \mathbf{X}(u,v) = \mathbf{J}(u,v)\mathbf{p_0}
-%\end{equation}
-%where $\mathbf{p_0}$ is the initial values for the control points.
 %
 %\subsection{Deformation Gradient}
 %\begin{equation}
@@ -455,25 +431,6 @@ The recursive nature of this process permits a more general description for arbi
 %  \caption{A 2D example showing how $\theta$ is computed for $\Pi_B$. $d_1$ shows the distance to the closest point on $\Pi_B$ to $\mathbf{x}$ and $d_2$ shows the distance to the surface hit by the ray in the opposite direction.}
 %  \Description{Showing a 2D NURBS curve with a quadrature point in the center. A ray is cast to the nearest point on a shape, showing the distance between the quadrature point and the nearest point as well as the distance to the "back surface".}
 %\end{figure}
-%
-%\begin{equation}
-%\begin{aligned}
-%\mathbf{w}(\mathbf{X}) = \min_{\mathbf{w}} \quad & \mathbf{w}^T \Theta(\mathbf{X}) \mathbf{w}    \\
-%\textrm{s.t.} \quad & 0 \leq w_i \leq 1                     \\
-%                    &   \sum_i^n w_i = 1                      \\
-%\end{aligned}
-%\end{equation}
-%
-%where
-%\begin{equation}
-%     \Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_N}\right)
-%\end{equation}
-%In computing the theta values, we require that they a approach 1 at the target surface and fall off to zero as a point becomes closer to other surfaces. To compute this for some surface, we shoot a ray from the point to the nearest point on the surface.  Then in the opposite direction we find the nearest intersection to any other surfaces. We compute the theta with the following linear function 
-%
-%\begin{equation}
-%theta = \max (1.0 - \frac{d_1}{\min (d_2, D)}, 0.0)
-%\end{equation}
-%where $D$ is a fixed cut-off distance.
 %
 %
 %\subsection{Integrating the volume}
