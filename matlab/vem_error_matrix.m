@@ -1,17 +1,12 @@
-function ME = vem_error_matrix(Y, W, W_S, L)
-    m = size(Y,1);
-    ME = zeros(size(L,2), size(L,2));
-    d = size(Y,2);
-
+function ME = vem_error_matrix(Y, Y_S, L, d)
+    m = size(Y,1);    
+    M1 = zeros(size(L,1),size(L,1));
+    M2 = zeros(size(L,1),size(L,2));
+    M3 = eye(size(L,2));
+    tic
     for i=1:m
-    	Yi = squeeze(Y(i,:,:))*W{i} * W_S{i}; % weighed monomial basis
-        Yi(:, end-d+1:end) = eye(d);
-        
-        I = zeros(d,size(L,2));
-        I(:, d*(i-1)+1: d*i) = eye(d);
-        
-        J = I - Yi*L;
-        
-        ME = ME + J'*J;
-    end     
+        M1 = M1 + Y_S{i}'*(Y{i}'*Y{i})*Y_S{i};
+        M2(:,d*(i-1)+1:d*i) = Y_S{i}'*Y{i}';
+    end
+    ME = L'*M1*L - L'*M2 - M2'*L + M3;
 end

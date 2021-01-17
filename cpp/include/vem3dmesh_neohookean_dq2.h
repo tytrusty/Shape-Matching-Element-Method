@@ -10,17 +10,14 @@
 
 namespace sim {
 
-template<typename DerivedRet, typename DerivedC, typename DerivedDM, typename DerivedVol, typename DerivedParam>
+template<typename DerivedRet, typename DerivedC, typename DerivedVol, typename DerivedParam>
 void vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 	const Eigen::VectorXx<DerivedC> &c,
-	const Eigen::MatrixXx<DerivedDM> &dM_dX,
 	const Eigen::VectorXx<DerivedVol> &volume,
 	const Eigen::MatrixXx<DerivedParam> &params,
 	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & dF_dc,
-	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & W,
-	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & W_S,
 	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & W_I,
-	int k, int n);
+	int k, int n, int m);
 }
 
 #ifndef SIM_STATIC_LIBRARY

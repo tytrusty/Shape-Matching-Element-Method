@@ -5,7 +5,7 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
     % Compute number of monomials
     k = basis_size(d, order);
     
-    dM_dX = zeros(m, d*d, d*k);
+    dM_dX = zeros(m, k, d);
     Q = x - x_com;
     
     % TODO -- make this general
@@ -26,14 +26,15 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
                 dMi_dX(9,:) = [Q(3,ii) 0 Q(1,ii)];
             end
         end
-        
-        for i = 1:d
-            for j = 1:d
-                row = d*(i-1)+j;
-                cols = k*(j-1)+1:k*j;
-                dM_dX(ii, row, cols) = dMi_dX(:,i)';
-            end
-        end
+        dM_dX(ii,:,:) = dMi_dX;
+
+%         for i = 1:d
+%             for j = 1:d
+%                 row = d*(i-1)+j;
+%                 cols = k*(j-1)+1:k*j;
+%                 dM_dX(ii, row, cols) = dMi_dX(:,i)';
+%             end
+%         end
             
     end
 end

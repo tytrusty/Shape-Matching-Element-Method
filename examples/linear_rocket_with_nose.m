@@ -5,20 +5,18 @@ function pinned_ids = pin_function(x)
 end
 
 iges_file = 'rocket_with_nose.iges';
+part = nurbs_from_iges(iges_file);
 
-resolution = repelem(8, 14);
-
-% The first NURBS is the rocket hull, which should receive more samples.
-resolution(1) = 13;
-resolution(2) = 11;
-part = nurbs_from_iges(iges_file, resolution, 1);
+YM = 3e1; %in Pascals
+pr =  0.15;
+[lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.gravity = -1;
-options.rho = .1;
+options.gravity = -25.95;
+options.rho = 1e-4;
 options.pin_function = @pin_function;
-options.lambda = 170;
-options.mu = 1500;
+options.lambda = lambda;
+options.mu = mu;
 
 vem_simulate_nurbs(part, options);
 

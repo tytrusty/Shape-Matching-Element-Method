@@ -2,20 +2,29 @@ function test_nurbs_quadrature
 fig=figure(1);
 
 parts=nurbs_from_iges('rounded_cube.iges',8,0);
-parts=plot_nurbs(parts);
+parts=nurbs_plot(parts);
 
 X = raycast_quadrature(parts, [8 8], 5);
 
 
-
+% Triangulate nurbs patch
 faces=[];
 verts=[];
 for ii=1:numel(parts)
-    fvc = surf2patch(parts{ii}.plt,'triangles');
-    fvc.faces = fvc.faces + size(verts,1);
-    faces=[faces; fvc.faces];
-    verts=[verts; fvc.vertices];   
+    if isfield(parts{ii}, 'hires_T')
+        F = parts{ii}.hires_T;
+        V = parts{ii}.hires_x0';
+    else
+        F = parts{ii}.T;
+        V = parts{ii}.x0';
+    end
+    F = F + size(verts,1);
+    faces=[faces; F];
+    verts=[verts; V];
 end
+
+
+
 clf;
 
 % Create spatial structure
@@ -35,11 +44,34 @@ xrange = [OT.BinBoundaries(1,1) OT.BinBoundaries(1,4)];
 yrange = [OT.BinBoundaries(1,2) OT.BinBoundaries(1,5)];
 zrange = [OT.BinBoundaries(1,3) OT.BinBoundaries(1,6)];
 
-subd = [8 8];
+subd = [38 38];
 samples = 5;
 [U, V] = meshgrid(linspace(yrange(1), yrange(2), subd(1)), ...
                   linspace(zrange(1), zrange(2), subd(2)));
 UV = [U(:) V(:)];
+
+%     or = [xrange(2) coord];
+%     
+%     D = [xrange(1) coord] - or;
+%     D = D ./ norm(D);
+%     
+%   
+%[flag, t, lambda] = ray_mesh_intersect(ray(:,1:3), ray(:,4:6), fv.vertices, fv.faces);
+ray_origins = [repelem(xrange(2), size(UV,1), 1) UV];
+ray_dirs = repmat([-1 0 0], size(UV,1), 1);
+
+% TODO this wont suffice since we need all intersections :/
+tic
+[fid, t, nhits] = ray_mesh_intersections(ray_origins, ray_dirs, verts, faces);
+toc 
+
+tic
+for i = 1:size(UV,1)
+    % Intersect along x-axis
+    [dist, face_intersect] = ray_intersect(xrange, UV(i,:), verts, face_bins, OT);
+end
+toc
+
 for i = 1:size(UV,1)
     % Intersect along x-axis
     [dist, face_intersect] = ray_intersect(xrange, UV(i,:), verts, face_bins, OT);
