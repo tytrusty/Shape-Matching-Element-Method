@@ -250,7 +250,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         fprintf("f_collision = %.4e\n", sum(f_collision.^2)); 
         f_total = J' * (f_internal + f_gravity + f_error) + f_collision;
         fprintf("f_total = %.4e\n", sum(f_total.^2)); 
-        
+
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
@@ -267,32 +267,6 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
           end
           qdot = reshape(qdot', [], 1); 
         end
-
-% %         % hires_J * qdot = verts
-%         if size(collide_plane_vid,1) > 0
-%           P_sel = sparse([1:size(collide_plane_vid,1)], collide_plane_vid,  ...
-%                         ones(size(collide_plane_vid,1), 1), ...
-%                         size(collide_plane_vid,1), size(verts,1));
-%           P_sel = kron(P_sel, [1 0 0; 0 1 0]);
-% %           P_sel * hires_J * qdot = 0
-%           A = P_sel * hires_J;
-% %           qdot = 
-%         end
-
-%       % add infinite friction
-%       if config.collision_with_plane && size(collide_plane_vid, 1) > 0 
-%         [~, cp_idx] = find(hires_J(collide_plane_vid, :) > 0);
-%         qdot = reshape(qdot, 3, [])';
-%         qdot(cp_idx, [1 2]) = zeros(size(cp_idx,1), 2);
-%         qdot = reshape(qdot', [], 1); 
-%       end
-        
-%         % add infinite friction
-%         if config.collision_with_plane && size(collide_plane_vid, 1) > 0 
-%           qdot = reshape(hires_J * qdot, 3, [])';
-%           qdot(collide_plane_vid, [1 2]) = zeros(size(collide_plane_vid, 1), 2);
-%           qdot = hires_J' * reshape(qdot', [], 1); 
-%         end
         
         % Update position
         q = q + config.dt*qdot;

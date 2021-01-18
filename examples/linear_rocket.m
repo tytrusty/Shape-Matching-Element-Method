@@ -20,6 +20,6 @@ options.lambda = lambda;
 options.mu = mu;
 options.distance_cutoff = 10;
 
-vem_simulate_nurbs(part, options);
+vem_simulate_nurbs_implicit(part, options);
 
 end

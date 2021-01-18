@@ -29,6 +29,6 @@ options.collision_with_other = false;
 options.self_collision = false;
 options.collision_with_plane = true;
 options.collision_plane_z = -20.0;
-vem_simulate_nurbs_with_collision(part, options);
 
+vem_simulate_nurbs_with_collision(part, options);
 end
