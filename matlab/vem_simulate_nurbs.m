@@ -10,6 +10,7 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'rho', 1);                 	% per point density (currently constant)
     addParameter(p, 'save_output', 0);        	% (0 or 1) whether to output images of simulation
     addParameter(p, 'save_obj', 0);          	% (0 or 1) whether to output obj files
+    addParameter(p, 'save_iges', 0);          	% (0 or 1) whether to output iges files
     addParameter(p, 'save_resultion', 20);    	% the amount of subdivision for the output obj
     addParameter(p, 'pin_function', @(x) 1);
     addParameter(p, 'sample_interior', 1);
@@ -201,6 +202,11 @@ function vem_simulate_nurbs(parts, varargin)
             nurbs_write_obj(q,parts,obj_fn,ii);
         end
         
+        if config.save_iges
+            obj_fn = "output/obj/part_" + int2str(ii) + ".iges";
+            nurbs_write_iges(q,parts,obj_fn);
+        end
+
         if config.save_output
             fn=sprintf('output/img/simulate_beem_%03d.png',ii);
             saveas(fig,fn);
