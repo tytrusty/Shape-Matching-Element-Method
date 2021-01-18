@@ -1,4 +1,10 @@
 %
+\section{Results}
+
+\dave{we should show the nurbs model in rhino/fusion for every example, maybe an exploded view as well}
+
+%% Results that relate to preprocessing
+% weights are good
 \begin{figure}
   \centering
   \includegraphics[width=3.33in]{figures/distance_weight_puft.pdf}
@@ -17,4 +23,72 @@
   \label{fig:plot_distance_weight}
   \vspace{-5pt}
 \end{figure} 
-%
+
+%kinematic model is expressive
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{Take an intesting geometry (maybe that geometry processing cacture), deform it, do our shape matching and then reconstruct the deformed pose. Do this for a bunch of poses (show's kinematic model is good).}
+  \label{fig:deform}
+\end{figure}
+
+
+%% Results that relate to simulation output
+%correctness
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{2D examples (left) rigidly transform boundary and show that solving the static problem gives us rigid motion on the interior (right) isotropically scale boundary and show solving static problem gives us constant strain on the interior}
+  \label{fig:patchtest}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{(left) high res FEM cantileavered bar (right) several simulations using more and more surface patches plus center of mass. Need to show beam is just  unattached patches}
+  \label{fig:convergence}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{X shape and show arms of X move independently}
+  \label{fig:independence}
+\end{figure}
+
+% relaxed modeling  constraints
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{Coffee mug with overlapping handle (top) row of models with increasing overlap (middle) single weight image showing behaviour in the overlapping region, (bottom) simulation result for each one}
+  \label{fig:badmodels}
+\end{figure}
+
+%different material parameters / material models 
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{Big image simulating the rocket with all different combinations of things}
+  \label{fig:materials}
+\end{figure}
+
+%different material parameters / material models 
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{Big image simulating the rocket with all different combinations of things}
+  \label{fig:materials}
+\end{figure}
+
+%multiple materials
+\begin{figure}
+  \includegraphics[width=\textwidth]{example-image-a}
+  \caption{Avocado to show heterogenous materials}
+  \label{fig:avocado}
+\end{figure}
+
+%show stoppers
+\begin{figure*}[htp]
+  \includegraphics[width=\textwidth,height=3in]{example-image-a}
+  \caption{sequence of frames from staypuft simulation}
+  \label{fig:staypuft}
+\end{figure*}
+
+\begin{figure*}[htp]
+  \includegraphics[width=\textwidth,height=3in]{example-image-a}
+  \caption{sequence of frames from F1 car simulation}
+  \label{fig:f1}
+\end{figure*}

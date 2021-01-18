@@ -12,8 +12,8 @@
 %	\item \textbf{Handling trimmed NURBS}: For this case we update the original control points, but we must only sample points within the boundary. To compute these points we use an approach similar to the raycasting quadrature but in 2D. In the paremtric domain for a T-NURBS we sample uniforly in the V direction and shoot rays along the U axis. At each region of intersection, we sample more values along the ray. The final result is a set of UV coordinates that respect the boundary defined by NURBS curves.
 %\end{itemize}
 
-
 \section{Methods}
+\dave{We should probably put some pseudo code for the preprocessing and the runtime algorithms right up fron, along with a quick textual walk through of the method.}
 Given a volumetric model composed of one or more NURBS surfaces, the surface of each surface is reconstructed using a set of control points $\textbf{p}$ and their associated weights $w$. Following D-NURBS \cite{10.1145/176579.176580}, we take our degrees of freedom (DOF) to be control points of the surfaces and produce displacements directly on these control points at each simulation step. We note that we used a simplified version of D-NURBS in which the weights are held constant throughout the simulation and find this not to be limiting \myworries{(feel like we'll need better justification than saying just this?)}. We represent the degrees of freedom for the $i$-th NURBS surface with $m$ control points as $\mathbf{q}_i = \left[ \mathbf{p}_1^T, \dots, \mathbf{p}_m^T \right]^T \in \mathbb{R}^{3m}$. From this definition, we write the DOF for the entire model as $\mathbf{q} = \left[ \mathbf{q}_i^T, \dots, \mathbf{q}_n^T \right]^T$ where $n$ is the number of NURBS surfaces for the model. 
 
 To evaluate the volumetric integrals in solid mechanics models, we require material points $\mathbf{X} \in \mathbb{R}^{3m}$ in the undeformed space that serve as integration points. Our shape matching element method enables us to evaluate the deformed positions of the material points strictly using positions defined on the boundary. Like in VEM, we fit a polynomial to each boundary primitive (NURBS in this case) describing its deformation. The fitting of these polynomials closely follows that of the Shape Matching \cite{10.1145/1073204.1073216} approach where we perform a least squares polynomial fit to the deformed boundary points. These boundary points are represented by sampled positions on each NURBS surface. Since each surface is associated with a single polynomial, we can construct a unique polynomial for some arbitrary point by blending these polynomials. Thus given some material point $\mathbf{X}_i$ we find it's corresponding deformed position $\mathbf{x}_i$ via a weighted combination of the polynomials. This permits us to build a general deformation map which we use to construct our equations of motion.
@@ -92,6 +92,13 @@ The key feature of our method is its unique deformation map $\phi(\mathbf{X}) = 
 In typical FEM in graphics, we make use of tetrahedral or triangular elements with a piecewise-linear function space. In such a case our functions may be evaluated as a weighted combination of the nodal values of an element: $f(\mathbf x)=\sum_{i=0}^n f_i \phi_i(\mathbf{x})$ where $n$ is the number of nodal values and $\phi_i$ is the i-th barycentric coordinates. Thus in this case we have the simple deformation map $\mathbf{x(X)} = \sum_{i=0}^n \mathbf{x}_i \phi_i(\mathbf{X})$. However, our method contrasts this typical approach in that our elements are more general and take the form of any arbitrary boundary primitive, such as NURBS, and also that the function space in non-linear. 
 
 In our algorithm, a single shape matching element is represented by a NURBS surface, a center of mass, and polynomial describing its current deformation. We construct these polynomials via a shape matching strategy. With the addition of the center of mass, we describe the shapes deformation about this point and thus the monomial basis in the case of a linear polynomial is $\left[ \mathbf 1^T (\mathbf{X - \bar{X}})^T \right]$ where $\mathbf 1^T$ is a constant $1$ column vector and $\mathbf{\bar{X}}$ is the center of mass for the element. To simplify the following formulas, we collect the non-constant terms of the monomial basis into a single vector $\mathbf{m}(\mathbf{X}-\mathbf{\bar{X}})$. For example if $\mathbf{X} = (X,Y,Z)$, $\mathbf{\bar{X}} = (\bar X, \bar Y, \bar Z)$, and $\mathbf{q}=\mathbf{X}-\mathbf{\bar{X}}$ with a quadratic polynomial we would have
+
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing shape matching to NURBS}
+    \label{fig:shapematching}
+\end{figure}
+
 \begin{equation}
 m(\mathbf{q)} = (
 					q_1, q_2, q_3,
@@ -327,6 +334,12 @@ For the $i$-th surface, we first find the distance, $d_{\text{primary}}$, from t
 \end{equation}
 where $D$ is a fixed cutoff distance parameter. We see that this distance weight is the result of interpolating along this ray from $\mathbf{p}$ to $\mathbf{q}$ (or a fixed point that depends on $D$). Importantly, this gives a result where the distance weight to surface $i$ is equal to $1$ if it lies on $i$ and $0$ if it lies on another surface. More elaborate schemes may be developed for computing distances, such as using the Boundary Element Method, but we find this simple linear function to perform well for our purposes.
 
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing how weight calculation works (left) ray casting plus result (right) after correcting for partition of unity}
+    \label{fig:weightcompute}
+\end{figure}
+
 Now that we have a set of distances weights $\mathbf{theta}$, we seek to form a final set of \textit{blending weights} $\mathbf{w}(\mathbf{X}) =  \left( w_1, \dots, w_i, \dots, w_n \right)$ to blend the polynomials of the $n$ shape elements. In constructing these blending weights, we require that they adhere to a set of conditions. We require that (1) each weight is non-negative, (2) the sum of the weights is equal to 1 (\textit{partition of unity}), (3) and that if a point lies on a surface $i$, it will have a weight of 1 to $i$ and consequently zero to the others. To produce these blending weights we form a quadratic program that satisfies these constraints:
 \begin{equation}
 \begin{aligned}
@@ -350,6 +363,12 @@ The last step before we may discuss the dynamic simulation is to describe our st
 This paper addresses the integration of volume integrals of the form $\mathbf{I} = \int_\Omega f(\mathbf{x}) d\Omega$ where $\mathbf{x} = (x_1,x_2,x_3)$. The authors show that through application of the Green-Gauss theorem, this integral may be rewritten as 2D integral over a $yz$ plane where at each position along the plane we evaluate a line integral along the $x$-axis. To evaluate these line integrals, a raycasting procedure is performed to find a set of intersection along the line. These intersection define integration domains in which we sample 3D integration points. As a result of integrating over the 2D plane and raycasting at each 2D point, we produce an integration rule over the entire domain that can converge to the true integral value.
 
 In our approach we modify the raycasting procedure by allowing integration over intersecting NURBS surfaces. It is common in NURBS modeling to produce models in which many surfaces overlap. To account for this we augment the raycasting intersection step to use an approach common in Constructive Solid Geometry (CSG). For the set of intersection intervals, we instead take the union over all intervals to yield a new set of intervals handling intersecting solids. We find that this extension serves as a simple and practical approach to support inexact models (\myworries{not sure what to right here}). We note that this solution is not perfect and making this intersection step more robust serves as future work.
+
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing how raycasting quadrature works (top), convergence plot for volume integration (bottom}
+    \label{fig:raycasting}
+\end{figure}
 
 \section{Dynamic Simulation}
 With our definition of the deformation map as well as a strategy for integrating the volume, we now have the necessary ingredient to perform dynamic simulation. We follow the Variational Mechanics approach that defines a pair of kinetic and potential energies, and we apply the Euler-Lagrange equation to develop our equations of motion.
