@@ -68,7 +68,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     if config.sample_interior
         [V, vol] = raycast_quadrature(parts, [9 9], 5);
     else
-    	V=x0;
+        V=x0;
         vol=ones(size(V,2),1);
     end
     m = size(V,2);  % number of quadrature points
@@ -82,7 +82,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
+  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
     
     % Undeformed Center of mass
@@ -152,8 +152,11 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
                 'ZData', config.collision_plane_z * [1 1 1 1], ...
                 'FaceColor',[0.5 0.5 0.5], 'FaceAlpha', 0.5, 'FaceLighting', 'gouraud');
       axis equal
+      h = plot3([], [], []);
       hold off
     end
+    
+    collide_plane_vid = [];
 
     ii=1;
     for t=0:config.dt:30
@@ -205,6 +208,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         
         % Force for collision.
         f_collision = zeros(size(verts,1)*3,1);
+        f_friction = zeros(size(verts,1)*3,1);
         % detect the collision with another mesh
         if config.collision_with_other
           [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
@@ -230,30 +234,66 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         % collision with the plane
         if config.collision_with_plane
           [collide_plane_vid, ~] = find(verts(:,3) < config.collision_plane_z);
-          f_collision_plane = zeros(size(verts,1), 3);
-          f_collision_plane(collide_plane_vid, 3) = 10 * collision_ratio * ...
+          f_collision_plane_tmp = zeros(size(verts,1), 3);
+          f_collision_plane_tmp(collide_plane_vid, 3) = 10 * collision_ratio * ...
                                                     (config.collision_plane_z*ones(size(collide_plane_vid,1), 1) - verts(collide_plane_vid,3));
-          f_collision_plane = reshape(f_collision_plane', [], 1);                           
+          f_collision_plane = reshape(f_collision_plane_tmp', [], 1);                           
           f_collision = f_collision + f_collision_plane;
+
         end
-%         B = barycenter(verts, faces);
-%         for i = 1:size(IF,1)
-%           fid = IF(i, 1); % colliding face id of the origin mesh
-%           c_fid = IF(i, 2); % colliding face id of the colliding mesh
-%            if size(intersect(faces(fid,:), faces(c_fid,:)), 2) == 0 
-%              continue;
-%            end
-%           hold on
-%           plot3(B([fid;c_fid],1),B([fid;c_fid],2),B([fid;c_fid],3));
-%         end
-%         hold off
+
         f_collision = hires_J' * f_collision;
+        
+        fprintf("f_internal = %.4e\n", sum((J'*f_internal).^2));
+        fprintf("f_gravity = %.4e\n", sum((J'*f_gravity).^2));
+        fprintf("f_error = %.4e\n", sum((J'*f_error).^2));
+        fprintf("f_collision = %.4e\n", sum(f_collision.^2)); 
+        f_total = J' * (f_internal + f_gravity + f_error) + f_collision;
+        fprintf("f_total = %.4e\n", sum(f_total.^2)); 
         
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
+        
+        size(collide_plane_vid, 1)
+        
+        if config.collision_with_plane && size(collide_plane_vid, 1) > 30
+          qdot = reshape(qdot, 3, [])';
+          if size(collide_plane_vid, 1) > 40
+            qdot(:, [1 2]) = 0.999 * qdot(:, [1 2]);
+          else
+            qdot(:, [1 2]) = 0.9999 * qdot(:, [1 2]);
+          end
+          qdot = reshape(qdot', [], 1); 
+        end
 
+% %         % hires_J * qdot = verts
+%         if size(collide_plane_vid,1) > 0
+%           P_sel = sparse([1:size(collide_plane_vid,1)], collide_plane_vid,  ...
+%                         ones(size(collide_plane_vid,1), 1), ...
+%                         size(collide_plane_vid,1), size(verts,1));
+%           P_sel = kron(P_sel, [1 0 0; 0 1 0]);
+% %           P_sel * hires_J * qdot = 0
+%           A = P_sel * hires_J;
+% %           qdot = 
+%         end
+
+%       % add infinite friction
+%       if config.collision_with_plane && size(collide_plane_vid, 1) > 0 
+%         [~, cp_idx] = find(hires_J(collide_plane_vid, :) > 0);
+%         qdot = reshape(qdot, 3, [])';
+%         qdot(cp_idx, [1 2]) = zeros(size(cp_idx,1), 2);
+%         qdot = reshape(qdot', [], 1); 
+%       end
+        
+%         % add infinite friction
+%         if config.collision_with_plane && size(collide_plane_vid, 1) > 0 
+%           qdot = reshape(hires_J * qdot, 3, [])';
+%           qdot(collide_plane_vid, [1 2]) = zeros(size(collide_plane_vid, 1), 2);
+%           qdot = hires_J' * reshape(qdot', [], 1); 
+%         end
+        
         % Update position
         q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;

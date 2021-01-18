@@ -1,4 +1,4 @@
-function vem_simulate_nurbs(parts, varargin)
+mpfunction vem_simulate_nurbs_implicit(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
