@@ -243,7 +243,10 @@ function [e, g, H] = energy(qdot_new)
     end
     b = b(:);
     % Solve for polynomial coefficients (projection operators).
-    c = L * b;
+    c_matlab = L * b;
+    
+    c = vem3dmesh_polynomial_coefficients(x_new, L, E);
+    assert(sum((c-c_matlab).^2)  < 1e-6);
     
     neohookean_e =  vem3dmesh_neohookean_q(c, vol, params, dF_dc, dF_dc_S, d);
 %     neohookean_e_matlab = vem3dmesh_neohookean_q_matlab(c, vol, params, dF_dc, dF_dc_S, d, m);

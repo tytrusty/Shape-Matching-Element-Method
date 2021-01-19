@@ -14,8 +14,8 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 	const Eigen::MatrixXx<DerivedParam> &params,
 	const std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > & dF_dc,
 	const std::vector<Eigen::SparseMatrix<double>, Eigen::aligned_allocator<Eigen::SparseMatrix<double>> > & dF_dc_S,
-	const Eigen::MatrixXd ME,
-	const Eigen::MatrixXd L,
+	const Eigen::MatrixXd &ME,
+	const Eigen::MatrixXd &L,
 	int k, int n, int d, int x0_coms_size, double k_stability) {
 
 	// std::cout << "hello "<< std::endl;

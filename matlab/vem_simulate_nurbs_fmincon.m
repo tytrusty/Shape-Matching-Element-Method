@@ -131,17 +131,11 @@ function vem_simulate_nurbs_fmincon(parts, varargin)
     ii=1;
     for t=0:config.dt:30
         tic
-% 
-        % Preparing input for stiffness matrix mex function.
-        b = [];
-        for i=1:numel(E)
-            b = [b (x(:,E{i}))];
-        end
-        b = b(:);
 
         % Solve for polynomial coefficients (projection operators).
-        c = L * b;
-
+        c = vem3dmesh_polynomial_coefficients(x, L, E);
+        
+        % solve for the velocity of the next time step
         qdot = fmincon(@energy, 0*qdot, [], [], [],[], [],[], [], options);
         
         % Update position
@@ -192,14 +186,8 @@ function [e, g, H] = energy(qdot_new)
     x_new = reshape(P'*J*q_new,3,[]) + x_fixed;
     dt = config.dt;
     
-    % Preparing input for stiffness matrix mex function.
-    b = [];
-    for i=1:numel(E)
-        b = [b (x_new(:,E{i}))];
-    end
-    b = b(:);
     % Solve for polynomial coefficients (projection operators).
-    c = L * b;
+    c = vem3dmesh_polynomial_coefficients(x_new, L, E);
     
     neohookean_e =  vem3dmesh_neohookean_q(c, vol, params, dF_dc, dF_dc_S, d);
      

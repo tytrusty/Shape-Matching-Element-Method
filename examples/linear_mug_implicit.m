@@ -21,7 +21,7 @@ options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0; % only sample on boundary
 options.distance_cutoff = 1;
-vem_simulate_nurbs_implicit(part, options);  %%%%% verify hierarchical works!!!!!
+vem_simulate_nurbs_fmincon(part, options);  %%%%% verify hierarchical works!!!!!
                                                         
  
 end
