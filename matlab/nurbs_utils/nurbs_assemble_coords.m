@@ -46,8 +46,6 @@ function [J,hires_J,q,E,x] = nurbs_assemble_coords(parts)
     hires_J = sparse(hires_J);
     E=cell(numel(parts),1);
     
-    E_size = 0;
-    
     for i=1:numel(parts)
         idx1=size(x,2)+1;
         x = [x parts{i}.x0];

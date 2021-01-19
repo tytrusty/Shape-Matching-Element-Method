@@ -19,9 +19,9 @@ options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;
 options.distance_cutoff = 10;
-options.k_stability = YM*1e5;
+options.k_stability = YM*1e6;
 
-vem_simulate_nurbs_implicit(part, options);
-% vem_simulate_nurbs(part, options);
+% vem_simulate_nurbs_implicit(part, options);
+vem_simulate_nurbs(part, options);
 
 end

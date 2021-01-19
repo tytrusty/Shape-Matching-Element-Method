@@ -21,6 +21,6 @@ options.lambda = lambda;
 options.mu = mu;
 options.pin_function = @pin_function;
 
-vem_simulate_nurbs(part, options);
+vem_simulate_nurbs_newtons(part, options);
   
 end

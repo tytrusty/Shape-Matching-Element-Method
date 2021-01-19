@@ -20,7 +20,7 @@ options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;
 
-vem_simulate_nurbs_fmincon_param(part, options);
-% vem_simulate_nurbs_implicit(part, options);
+vem_simulate_nurbs_newtons(part, options);
+% vem_simulate_nurbs(part, options);
 
 end
