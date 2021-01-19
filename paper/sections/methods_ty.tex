@@ -1,0 +1,481 @@
+%A pointform description of the general idea
+%\begin{itemize}
+%	\item A D-NURBS approach to simulation. Use a Jacobian to map from UV positions in a NURBS parametric space to world space positions on the surface. 
+%	\item \textbf{Shape Matching}: From the sample world space positions on a single NURBS surface, we solve a least squares problem to fit a \textit{projection operator} to the surface. This projection operator maps monomials in the undeformed space, to the least squares estimate of the deformed positions for the given monomials.
+%	\item With DNURBS and Shape Matching VEM we have two mappings: a UV to undeformed world space with our NURBS Jacobian, then an undeformed to deformed mapping with the projection operators. This lets us form a set of generalized coordinates in terms of our control points of the NURBS surface (section 1.4).
+%	\item For an arbitrary position in space (not necessarily on the surface), we can build a projection operator unique to this point via a weighted sum of the projection operators of the projection operators for each NURBS (eq 5). From this we can reconstruct an estimate of the deformed position from the monomial basis defined using its undeformed position.
+%	\item For any point in space, we need to compute a set of weights to the projection operators defined on the surfaces with the following criteria: the weights sum to 1, are nonzero, and depend on the distances to the surfaces (See section 1.8).
+%	\item With this mapping for undeformed to deformed positions, this yields a simple definition for the deformation gradient (eq 12).
+%	\item Armed with our deformation gradient, we next define the Lagrangian, but this basic form isn't sufficient. We augment our kinetic and potential energies with a stability term (ref VEM). This accounts for cases in which the position of the nodal values don't match their estimated positions defined by the projection operator mapping.
+%	\item \textbf{Raycasting Quadrature}: To compute the volume integrals we make use of raycasting quadrature approach (ref) where we uniform sample a YZ grid and shoot rays in the X direction. We then use the points of intersection to define integrations bounds for 1D integrals along these rays, which we integrate numerically.
+%	\item With our augmented lagrangian, we use the Euler-Lagrange equation to arrive at equations of motion. Our generalized coordinates give us direct updates on the control points of the NURBS. Currently we are using linearly-implicit Euler for time integration.
+%	\item \textbf{Handling trimmed NURBS}: For this case we update the original control points, but we must only sample points within the boundary. To compute these points we use an approach similar to the raycasting quadrature but in 2D. In the paremtric domain for a T-NURBS we sample uniforly in the V direction and shoot rays along the U axis. At each region of intersection, we sample more values along the ray. The final result is a set of UV coordinates that respect the boundary defined by NURBS curves.
+%\end{itemize}
+
+\section{Methods}
+\dave{We should probably put some pseudo code for the preprocessing and the runtime algorithms right up fron, along with a quick textual walk through of the method.}
+Given a volumetric model composed of one or more NURBS surfaces, the surface of each surface is reconstructed using a set of control points $\textbf{p}$ and their associated weights $w$. Following D-NURBS \cite{10.1145/176579.176580}, we take our degrees of freedom (DOF) to be control points of the surfaces and produce displacements directly on these control points at each simulation step. We note that we used a simplified version of D-NURBS in which the weights are held constant throughout the simulation and find this not to be limiting \myworries{(feel like we'll need better justification than saying just this?)}. We represent the degrees of freedom for the $i$-th NURBS surface with $m$ control points as $\mathbf{q}_i = \left[ \mathbf{p}_1^T, \dots, \mathbf{p}_m^T \right]^T \in \mathbb{R}^{3m}$. From this definition, we write the DOF for the entire model as $\mathbf{q} = \left[ \mathbf{q}_i^T, \dots, \mathbf{q}_n^T \right]^T$ where $n$ is the number of NURBS surfaces for the model. 
+
+To evaluate the volumetric integrals in solid mechanics models, we require material points $\mathbf{X} \in \mathbb{R}^{3m}$ in the undeformed space that serve as integration points. Our shape matching element method enables us to evaluate the deformed positions of the material points strictly using positions defined on the boundary. Like in VEM, we fit a polynomial to each boundary primitive (NURBS in this case) describing its deformation. The fitting of these polynomials closely follows that of the Shape Matching \cite{10.1145/1073204.1073216} approach where we perform a least squares polynomial fit to the deformed boundary points. These boundary points are represented by sampled positions on each NURBS surface. Since each surface is associated with a single polynomial, we can construct a unique polynomial for some arbitrary point by blending these polynomials. Thus given some material point $\mathbf{X}_i$ we find it's corresponding deformed position $\mathbf{x}_i$ via a weighted combination of the polynomials. This permits us to build a general deformation map which we use to construct our equations of motion.
+
+In the following sections, we will first review the simplified D-NURBS model used to form our generalized coordinates. We then present our shape matching algorithm for fitting polynomials to surfaces .... In section ... we next describe how to blend these surface polynomials to construct a general deformation map for material points. Section ... describes our strategy for selecting integration points in the volume through a raycasting approach. Finally, we formulate our equations of motions from a Lagrangian formulation.
+
+\section{D-NURBS Model}
+\myworries{TODO: Most of these matrices should be paranthesis matrices}
+We provide a brief overview of the D-NURBS formulation presented in \cite{10.1145/176579.176580}. Our models in our method are composed of a collection of NURBS surfaces. 
+
+\subsection{D-NURBS Formulation}
+A point on a NURBS surface is typically expressed in the following form
+\begin{equation}
+\label{eqn:nurbs_srf}
+    \mathbf{x}(u,v) = \frac{\sum_{i=1}^{n}\sum_{j=1}^{m}  \mathbf{p}_{i,j} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    {\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    \text{,}
+\end{equation}
+where where have a total of $nm$ control points $\mathbf{p}$ and weights $w$. Using the B-spline basis functions and the weighted control points, this formula gives a map from our parametric coordinates $u,v$ to their corresponding position on the surface in $\mathbb{R}^{3m}$. $B_{i,k}(u)$ is the B-spline basis function for the $i-th$ control point with degree $k-1$.
+
+We would like our generalized coordinates to be the control points of the model so that the dynamics operates directly on the original representation. Therefore, we would like to rewrite equation \ref{eqn:nurbs_srf} in the form
+\begin{equation}
+    \mathbf{x}(u,v) = \mathbf{J}(u,v)\mathbf{q}
+    \text{,}
+\end{equation}
+where $\mathbf{q} = \left[ \mathbf{p}_{1,1}^T, \dots, \mathbf{p}_{i,j}^T, \dots, \mathbf{p}_{n,m}^T \right]^T \in \mathbb{R}^{3nm}$ is the set of $nm$ control points \myworries{in the overview I just write $n$ control points, but here i'm writing $nm$} for a single NURBS surface arranged as a column vector. $\mathbf{J} \in  \mathbb{R}^{3 x 3nm}$ is the NURBS jacobian that maps $(u,v)$ coordinates to world positions in $\mathbb{R}^{3}$.
+
+The NURBS jacobian, $\mathbf{J}$, is a matrix composed of horizontally concatenated $3x3$ blocks where the $(i,j)$-th block is $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ for the $(i,j)$-th control point. $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ is a diagonal $3x3$ matrix where each diagonal entry $N_{i,j}(\mathbf{u})$ takes the form
+
+\begin{equation}
+\label{eqn:jacobian_diagonal}
+    N_{i,j}(u,v)
+    = \frac{w_{i,j} B_{i,k}(u)B_{j,l}(v)}{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    \text{.}
+\end{equation}
+Thus the NURBS jacobian for a single $(u,v)$ pair is written as
+\begin{equation}
+\label{eqn:uv_jacobian}
+    \mathbf{J}(u,v) =
+    \left[ \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{1,1}} \dots
+           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}} \dots 
+           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{n,m}}
+    \right]
+    \text{.}
+\end{equation}
+
+This formulation is a simplification of the full D-NURBS described in \cite{10.1145/176579.176580} the weights of the NURBS are fixed throughout the simulation. Permitting the dynamics to modify weights would likely improve the expressiveness of the kinematics, but we find fixing the weights affords sufficiently expressive results and improves performance. The performance improvement is a result of having fixed $N_{i,j}(u,v)$ entries over the course of the simulation. The full D-NURBS model requires rebuilding the jacobian and consequently the mass matrices at each time step. 
+
+\subsection{Generalized Coordinates for a NURBS model}
+The above formulation describes developing the map from a single $(u,v)$ coordinate to its corresponding position on the surface. In our simulation we represent the entire boundary of the NURBS model, so we require samples along each surface. We emphasize that we only require an initial selection of $(u,v)$ coordinates across each surface and the dynamics of the simulation modifies the set of control points $\mathbf{q}$ to modify the world space maps $\mathbf{x}(u,v)=\mathbf{J}(u,v)\mathbf{q}$.
+
+Let's say for a NURBS surface on the model the DOF column vector is $\mathbf{q}_i$, which is the subset of control points in the generalized coordinates for the $i$-th surface. For a given surface with $m$ pairs of $\mathbf{u}=(u,v)$ coordinates sampled in parametric space, we write the jacobian for the $i$-th surface as \myworries{(should I use something like $\hat{\mathbf{J}}$ instead?)}
+\begin{equation}
+\label{eqn:surface_jacobian}
+    \mathbf{J}_i =
+    \left[ \mathbf{J}(\mathbf{u})_1^T \dots \mathbf{J}(\mathbf{u})_m^T \right]^T
+    \text{.}
+\end{equation}
+Then if $\mathbf{x}_i$ is the set of $m$ world space positions for the $i$-th surface, we may write $\mathbf{x}_i = \mathbf{J}_i \mathbf{q}_i$. Finally, given the full set of generalized coordinates $\mathbf{q} = \left[ \mathbf{q}_i^T, \dots, \mathbf{q}_n^T \right]^T$ with $n$ surfaces, we may write jacobian $\mathbf{J}$ for the entire model as a block diagonal matrix:
+\begin{equation}
+\mathbf{J} = \left[ \begin{array}{ccccc}
+\mathbf{J}_1 &  &  &  &  \\
+ & \ddots &  &  &  \\
+ &  & \mathbf{J}_i & &  \\
+ &  &  & \ddots &  \\
+ &  &  &  & \mathbf{J}_n \\
+\end{array} \right]
+\text{.}
+\end{equation}
+With this equation, the full set of world positions of the NURBS model may be written as $\mathbf{x} = \mathbf{J}\mathbf{q} \in \mathbb{R}^{3N}$ where $N$ is the total number of $(u,v)$ coordinates.
+
+\section{Shape Matching}
+The key feature of our method is its unique deformation map $\phi(\mathbf{X}) = \mathbf{x}$ mapping some arbitrary undeformed material point $\mathbf{X}$ to its corresponding deformed position in space $\mathbf{x}$. We develop this similarly to the VEM approach in that we say the function we intend to reproduce may be some highly nonlinear one, but it may be approximated accurately by a polynomial. Thus we seek some $\phi$ function where  $\phi^* \approx \phi$ where $\phi^*$ is the true solution. In $1$-D this means we wish to find a function of the form $\phi(X) = c_1 + c_2X + c_3X^2 + \dots + c_nX^{n-1}$ where each $c_i$ is an unknown polynomial coefficient and the $X^i$ terms are elements of the polynomial basis.
+
+\subsection{The Shape Matching Element}
+In typical FEM in graphics, we make use of tetrahedral or triangular elements with a piecewise-linear function space. In such a case our functions may be evaluated as a weighted combination of the nodal values of an element: $f(\mathbf x)=\sum_{i=0}^n f_i \phi_i(\mathbf{x})$ where $n$ is the number of nodal values and $\phi_i$ is the i-th barycentric coordinates. Thus in this case we have the simple deformation map $\mathbf{x(X)} = \sum_{i=0}^n \mathbf{x}_i \phi_i(\mathbf{X})$. However, our method contrasts this typical approach in that our elements are more general and take the form of any arbitrary boundary primitive, such as NURBS, and also that the function space in non-linear. 
+
+In our algorithm, a single shape matching element is represented by a NURBS surface, a center of mass, and polynomial describing its current deformation. We construct these polynomials via a shape matching strategy. With the addition of the center of mass, we describe the shapes deformation about this point and thus the monomial basis in the case of a linear polynomial is $\left[ \mathbf 1^T (\mathbf{X - \bar{X}})^T \right]$ where $\mathbf 1^T$ is a constant $1$ column vector and $\mathbf{\bar{X}}$ is the center of mass for the element. To simplify the following formulas, we collect the non-constant terms of the monomial basis into a single vector $\mathbf{m}(\mathbf{X}-\mathbf{\bar{X}})$. For example if $\mathbf{X} = (X,Y,Z)$, $\mathbf{\bar{X}} = (\bar X, \bar Y, \bar Z)$, and $\mathbf{q}=\mathbf{X}-\mathbf{\bar{X}}$ with a quadratic polynomial we would have
+
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing shape matching to NURBS}
+    \label{fig:shapematching}
+\end{figure}
+
+\begin{equation}
+m(\mathbf{q)} = (
+					q_1, q_2, q_3,
+                   	q_1^2, q_2^2, q_3^3,
+                   	q_1 q_2, q_2 q_3
+                ) \in \mathbb{R}^k
+                \text{,}
+\end{equation}
+where $k$ is the size of the monomial basis. Next we arrange this basis into a matrix of the form
+\begin{equation}
+\mathbf{M}(\mathbf{q}) = \left[ \begin{array}{ccc}
+\mathbf{m}(\mathbf{q}) &  &  \\
+ & \mathbf{m}(\mathbf{q})  &  \\
+ &  & \mathbf{m}(\mathbf{q})  \\
+\end{array} \right] \in \mathbb{R}^{3x3k}
+\text{.}
+\end{equation}
+With this definition of the monomial basis, we may reconstruct the deformed position $\mathbf{x}$ for some material point $\mathbf{X}$ with
+\begin{equation}
+\mathbf{x}(\mathbf{X}) = \left[\mathbf{M}(\mathbf{X-\bar{X}}) \quad \mathbf{I} \right]
+\left[ \begin{array}{c}
+\mathbf{c} \\
+\mathbf{t} \\
+\end{array} \right]
+\text{,}
+\end{equation}
+where $\mathbf{c} \in \mathbb{R}^{3k}$ is the set of polynomial coefficients for the non-constant terms, $\mathbf{t} \in \mathbb{R}^3$ is the constant term coefficients, and $\mathbf{I} \in \mathbb{R}^{3x3}$ is an identity matrix. The reason for separating out the constant term becomes more evident when we examine case where we have multiple elements.
+
+The remaining step in defining a single element is to describe how to solve for the polynomial coefficients. For a single element, we have $n$ material points $(\mathbf{X}_1 \dots \mathbf{X}_n)$ and their corresponding deformed positions $(\mathbf{x}^*_1 \dots \mathbf{x}^*_n)$. As these elements are defined on a boundary, these are both known throughout the simulation. Therefore we may form a fitting problem to solve for the polynomial coefficients that minimize the error $\sum_i^n ||\mathbf{x}_i^* - \mathbf{X}_i ||^2$.  We minimize this error in a least squares sense where we first form the system
+\begin{equation}
+\left[\begin{array}{c}
+\mathbf{M}(\mathbf{X_1-\bar{X}}) \quad \mathbf{I} \\
+\vdots \\
+\mathbf{M}(\mathbf{X_i-\bar{X}}) \quad \mathbf{I} \\
+\vdots \\
+\mathbf{M}(\mathbf{X_n-\bar{X}}) \quad \mathbf{I} \\
+\end{array} \right]
+\left[ \begin{array}{c}
+\mathbf{c} \\
+\mathbf{t} \\
+\end{array} \right] = 
+\left[ \begin{array}{c}
+\mathbf{x}_1^* \\
+\vdots \\
+\mathbf{x}_i^* \\
+\vdots \\
+\mathbf{x}_n^*
+\end{array} \right]
+\text{,}
+\end{equation}
+and then in the more compact form
+\begin{equation}
+\label{eqn:fitting_one}
+\left[
+\mathbf{A} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b}
+\text{,}
+\end{equation}
+where $\mathbf{A}$ is the block containing the monomial matrices of the system, and $\mathbf{S}$ is the block of identity matrices. Next, to reduce the degrees of freedom of this system we let the deformed center of mass (the constant term coefficients), $t$, be equal to the mean of the deformed positions influenced by this center of mass. In the case of one element we have $t = \frac{1}{n}\sum_i^n x_i^*$. We describe the details on center of mass selection in section \myworries{insert here}. In matrix form we have
+\begin{equation}
+\label{eqn:t_solution}
+t = 
+\underbrace{
+\left[\begin{array}{ccccccc}
+\frac{1}{n} & & \cdots \frac{1}{n} & & \\
+& \frac{1}{n} & \cdots & \frac{1}{n} & \\
+& & \frac{1}{n} \cdots & & \frac{1}{n} \\
+\end{array} \right]}_{T} 
+\mathbf{b}
+\text{.}
+\end{equation} (\myworries{spacing on this looks bad....}). Finally, this leaves us with the system
+\begin{equation}
+\mathbf{A}\mathbf{c}=(\mathbf{I}-\mathbf{ST})\mathbf{b}
+\text{.}
+\end{equation}
+Like in the original Shape Matching \cite{10.1145/1073204.1073216}, we solve for the coefficients by minimizing the error in a least squares sense, resulting in
+\begin{equation}
+\label{eqn:c_one_element}
+\begin{split}
+\mathbf{c} & = (\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T(\mathbf{I-ST})\mathbf{b} \\
+           & = \mathbf{L}\mathbf{b}
+\end{split}
+\text{.}
+\end{equation}
+This $\mathbf{L}$ matrix thus gives us our file ingredient in the element, coefficients defining the polynomial. We emphasize that $\mathbf{L}$ is constant throughout the simulation, therefore as $\mathbf{b}$ varies in the simulation, $\mathbf{Lb}$ gives us a new set of polynomial coefficients as $\mathbf{b}$ changes. 
+
+\subsection{Shape Matching with Multiple Elements}
+In a typical simulation we will have multiple shape matching elements where the boundary of each element is defined by a different NURBS surface. Therefore for the entire model each shape has a boundary, a polynomial describing its deformation, as well as an associated center of mass. These centers of mass may not be distinct, meaning that a single center of mass may be shared among multiple surfaces. This sharing of center of masses is typical and in some cases required (\myworries{reference center of mass section that describes how for planar surfaces we need to share COM to get a COM out of plane}). This leads to a new definition of the center of mass where it is the mean of all the boundary points associated with it.
+
+In defining the shape matching fitting problem, we will form a system similar to equation \ref{eqn:fitting_one}. In this case where we have $n$ shape elements our set of unknown coefficients is $\hat{\mathbf{c}} = \left[\mathbf{c}_1^T \dots \mathbf{c}_i^T \dots \mathbf{c}_n^T \right]^T \in \mathbb{R}^{3kn}$ where $\mathbf{c}_i$ corresponds to the unknown polynomial coefficients for the $i$-th shape element. The set of boundary positions is similarly written as $\hat{\mathbf{b}}=\left[\mathbf{b}_1^T \dots \mathbf{b}_i^T \dots \mathbf{b}_n^T \right]^T \in \mathbb{R}^{3N}$ where $N$ is the total number of boundary points across all elements. If we have $m$ centers of mass we write the set of polynomial constant terms as $\hat{\mathbf{t}} = \left[\mathbf{t}_1^T \dots \mathbf{t}_i^T \dots \mathbf{t}_m^T \right]^T \in \mathbb{R}^{3m}$. With these terms, we write the polynomial fitting system for the entire model as
+\begin{equation}
+\begin{pmatrix}
+ \mathbf{A}_1 &      &			  &			&				&\mathbf{S}_1\\  
+ &            \ddots &            &  		&				&\vdots\\ 
+ &            &      \mathbf{A}_i &   		&				&\mathbf{S}_i\\
+ &            &      &            \ddots	&				&\vdots\\
+ &            &      &            &			\mathbf{A}_n	&\mathbf{S}_n
+\end{pmatrix}
+\begin{bmatrix}
+ \hat{\mathbf{c}}  \\ 
+ \hat{\mathbf{t}}   
+\end{bmatrix}
+=
+\hat{\mathbf{b}}
+\text{,}
+\end{equation}
+where $\mathbf{A}_i$ is the monomial basis matrix for the $i$-th shape element, and $\mathbf{S}_i$ is a selection matrix that extracts the $j$-th center of mass which is associated with the $i$-th shape. We simplify this as
+\begin{equation}
+\begin{pmatrix}
+\hat{\mathbf{A}} & \hat{\mathbf{S}}
+\end{pmatrix}
+\begin{bmatrix}
+ \hat{\mathbf{c}}  \\ 
+ \hat{\mathbf{t}}   
+\end{bmatrix}
+=
+\hat{\mathbf{b}}
+\text{.}
+\end{equation}
+Like in the single element case, we set the $\hat{\mathbf{t}}$ to be equal to the mean of a set of boundary positions, but in this case each $\mathbf{t}_j$ is equal to the mean of only the boundary positions associated with the $j$-th center of mass. The definition of the values of $\hat{\mathbf{t}}$ is similar to \ref{eqn:t_solution}:
+\begin{equation}
+\hat{\mathbf{t}} =
+\underbrace{
+\begin{bmatrix}
+\mathbf{T}_1 \\ 
+\vdots       \\
+\mathbf{T_m}
+\end{bmatrix}}_{\hat{\mathbf{T}}}
+\text{,}
+\end{equation}
+
+where the entries each $\mathbf{T}_i \in \mathbb{R}^{3N}$ take a similar form, but are only nonzero for columns corresponding to associated boundary vertices.
+
+Finally, to solve for the full set of non-constant term coefficients, $\hat{\mathbf{c}}$, we solve in the same manner as equation \ref{eqn:c_one_element} where we have
+\begin{equation}
+\label{eqn:c_multiple_elements}
+\begin{split}
+\hat{\mathbf{c}} & = (\hat{\mathbf{A}}^T\hat{\mathbf{A}})^{-1}\hat{\mathbf{A}}^T(\mathbf{I-\hat{S}\hat{T})\hat{\mathbf{b}}} \\
+           & = \mathbf{L}\hat{\mathbf{b}}
+\end{split}
+\text{.}
+\end{equation}
+
+
+\subsection{Hierarchical fitting}
+A problem may emerge in the shape matching process where the system may be underdetermined. To account for this we solve for the coefficients in a hierarchical manner where we initially solve for the linear terms and at each step solve the coefficients for the next higher order of deformation. The produces a set of smaller systems which are guaranteed to be determined \myworries{probably need to justify this more}. The intuition behind this can be described by the \textit{hierarchical ordering principle}, which argues that the behavior of a system is typically dominated by lower order effects \myworries{cite something here.}. To describe our fitting strategy, we begin with the following shape matching system for a single element
+\begin{equation}
+\label{eqn:fitting_one_copy}
+\left[
+\mathbf{A} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b}
+\text{.}
+\end{equation}
+We will show the hierarchical fitting on a polynomial with a set of coefficients for the linear terms, $\mathbf{c}_{\text{lin}}$, and the coefficients for the quadratic terms $\mathbf{c}_{\text{quad}}$. Similarly, we also have $\mathbf{A}_{\text{lin}}$ and $\mathbf{A}_{\text{quad}}$ which are the blocks of $\mathbf{A}$ corresponding to the columns for the linear and quadratic monomial terms, respectively. First we construct a system for the linear terms:
+\begin{equation}
+\label{eqn:fitting_linear}
+\left[
+\mathbf{A}_{\text{lin}} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c}_{\text{lin}} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b}
+\text{,}
+\end{equation}
+which leads to the following expression for the linear coefficients
+\begin{equation}
+\label{eqn:c_linear}
+\begin{split}
+\mathbf{c}_{\text{lin}} & = (\mathbf{A}_{\text{lin}}^T\mathbf{A}_{\text{lin}})^{-1}\mathbf{A}_{\text{lin}}^T(\mathbf{I-ST})\mathbf{b} \\
+           & = \mathbf{L}_{\text{lin}}\mathbf{b}
+\end{split}
+\text{.}
+\end{equation}
+where $\mathbf{T}$ is defined in equation \ref{eqn:t_solution}. For the quadratic system, we subtract linear term estimate of the solution and solve for the coefficients that fit this residual:
+\begin{equation}
+\label{eqn:fitting_quadratic}
+\left[
+\mathbf{A}_{\text{quad}} \quad \mathbf{S}
+\right]
+\left[ \begin{array}{c}
+\mathbf{c}_{\text{quad}} \\
+\mathbf{t} \\
+\end{array} \right] = \mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}}
+\text{.}
+\end{equation}
+Using the solution for the linear coefficients in \ref{eqn:c_linear}, we arrive at the solution for the quadratic coefficients:
+\begin{equation}
+\label{eqn:c_quad}
+\begin{split}
+\mathbf{c}_{\text{quad}} & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T((\mathbf{I-ST})\mathbf{b} - \mathbf{A}_{\text{lin}}\mathbf{c}_{\text{lin}}) \\
+		   & = (\mathbf{A}_{\text{quad}}^T\mathbf{A}_{\text{quad}})^{-1}\mathbf{A}_{\text{quad}}^T(\mathbf{I-ST} - \mathbf{A}_{\text{lin}}\mathbf{L}_{\text{lin}})\mathbf{b} \\
+           & = \mathbf{L}_{\text{quad}}\mathbf{b}
+\end{split}
+\text{.}
+\end{equation}
+The final form for the full $\mathbf{L}$ matrix is thus given by
+\begin{equation}
+\mathbf{L} =
+\begin{bmatrix}
+\mathbf{L}_{\text{lin}} \\
+\mathbf{L}_{\text{quad}} \\
+\mathbf{T}
+\end{bmatrix}
+\end{equation}
+
+The recursive nature of this process permits a more general description for arbitrary orders, which we write in algorithm \myworries{TODO}.
+
+\section{The Deformation Map}
+At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
+\begin{equation}
+\label{eqn:deformation_map}
+	\mathbf{x}(\mathbf{X}) = \sum_i^n w_i(\mathbf{X}) \left[ \mathbf{M}(\mathbf{X-\bar{X}}_j)\mathbf{c}_i + \mathbf{t}_j \right]
+	\text{,}
+\end{equation}
+where we have $n$ surfaces, and $w_i$ and $\mathbf{c}_i$ are the weights and the coefficients for the $i$-th surface, respectively. The terms $\mathbf{\bar{X}}_j$ and $\mathbf{t}_j$ the undeformed and deformed centers of mass, respectively, that are associated with the $i$-th surface.
+
+\subsection{Computing the Blending Weights}
+All that remains for the deformation map is to compute blending weights. Our choice of the weighting function is guided by the simple idea that that for a given material point its weight should be highest to whichever surfaces it is closest. This idea lends itself to a simple distance-based weighting method. The first step in this process is to compute \textit{distance weights}. For a given point $\mathbf{X}$ and a set of $n$ we wish to compute a set of distance weights to each surface $\mathbf{\theta}(\mathbf{X}) = \left(\theta_1, \dots, \theta_i, \dots, \theta_n \right)$.
+
+For the $i$-th surface, we first find the distance, $d_{\text{primary}}$, from the point $\mathbf{X}$ to the closest point, $\mathbf{p}$, on the surface. Next we wish to satisfy the condition that the distance weight is highest on the surface and it decays towards zero as it approaches other surfaces. To achieve this, we shoot a ray from $\mathbf{p}$ towards $\mathbf{X}$ and check for intersections between this ray and the other $n-1$ surfaces. If this ray hits another surface, we let $d_{\text{total}}$ be the distance from $\mathbf{p}$ to the closest ray hit $\mathbf{q}$. These two distances enable us to write a simple linear function to compute the \textit{distance weight}:
+\begin{equation}
+\theta_i = \max (1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, D)}, 0.0)
+\text{,}
+\end{equation}
+where $D$ is a fixed cutoff distance parameter. We see that this distance weight is the result of interpolating along this ray from $\mathbf{p}$ to $\mathbf{q}$ (or a fixed point that depends on $D$). Importantly, this gives a result where the distance weight to surface $i$ is equal to $1$ if it lies on $i$ and $0$ if it lies on another surface. More elaborate schemes may be developed for computing distances, such as using the Boundary Element Method, but we find this simple linear function to perform well for our purposes.
+
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing how weight calculation works (left) ray casting plus result (right) after correcting for partition of unity}
+    \label{fig:weightcompute}
+\end{figure}
+
+Now that we have a set of distances weights $\mathbf{theta}$, we seek to form a final set of \textit{blending weights} $\mathbf{w}(\mathbf{X}) =  \left( w_1, \dots, w_i, \dots, w_n \right)$ to blend the polynomials of the $n$ shape elements. In constructing these blending weights, we require that they adhere to a set of conditions. We require that (1) each weight is non-negative, (2) the sum of the weights is equal to 1 (\textit{partition of unity}), (3) and that if a point lies on a surface $i$, it will have a weight of 1 to $i$ and consequently zero to the others. To produce these blending weights we form a quadratic program that satisfies these constraints:
+\begin{equation}
+\begin{aligned}
+\mathbf{w}(\mathbf{X}) = \min_{\mathbf{w}} \quad & \mathbf{w}^T \Theta(\mathbf{X}) \mathbf{w}    \\
+\textrm{s.t.} \quad & 0 \leq w_i \leq 1                     \\
+                    &   \sum_i^n w_i = 1                      \\
+\end{aligned}
+\end{equation}
+
+where
+\begin{equation}
+     \Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_n}\right)
+\end{equation}
+We see that through the use of linear constraints we satisfy conditions (1) and (2). Satisfying the third condition (3) is achieved through using the distance weights. Intuitively, we see that for some small $\theta_i$, $\frac{1}{\theta_i}$ will be very large, encouraging the quadratic program to assign a small weight for $w_i$. Conversely, we see the opposite effect for large values of $\theta_i$.
+
+\section{Selecting Centers of Mass}
+\myworries{TODO. waiting to implement this before I start writing how we do it}
+\section{Raycasting Quadrature}
+The last step before we may discuss the dynamic simulation is to describe our strategy for generating material points $\mathbf{X}$ in the undeformed model. Our volume integration strategy is based on \cite{KHOSRAVIFARD201030} which we briefly describe in the following section
+\subsection{Review of the Meshless Method for Domain Integral Evaluation in \cite{KHOSRAVIFARD201030}}
+This paper addresses the integration of volume integrals of the form $\mathbf{I} = \int_\Omega f(\mathbf{x}) d\Omega$ where $\mathbf{x} = (x_1,x_2,x_3)$. The authors show that through application of the Green-Gauss theorem, this integral may be rewritten as 2D integral over a $yz$ plane where at each position along the plane we evaluate a line integral along the $x$-axis. To evaluate these line integrals, a raycasting procedure is performed to find a set of intersection along the line. These intersection define integration domains in which we sample 3D integration points. As a result of integrating over the 2D plane and raycasting at each 2D point, we produce an integration rule over the entire domain that can converge to the true integral value.
+
+In our approach we modify the raycasting procedure by allowing integration over intersecting NURBS surfaces. It is common in NURBS modeling to produce models in which many surfaces overlap. To account for this we augment the raycasting intersection step to use an approach common in Constructive Solid Geometry (CSG). For the set of intersection intervals, we instead take the union over all intervals to yield a new set of intervals handling intersecting solids. We find that this extension serves as a simple and practical approach to support inexact models (\myworries{not sure what to right here}). We note that this solution is not perfect and making this intersection step more robust serves as future work.
+
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing how raycasting quadrature works (top), convergence plot for volume integration (bottom}
+    \label{fig:raycasting}
+\end{figure}
+
+\section{Dynamic Simulation}
+With our definition of the deformation map as well as a strategy for integrating the volume, we now have the necessary ingredient to perform dynamic simulation. We follow the Variational Mechanics approach that defines a pair of kinetic and potential energies, and we apply the Euler-Lagrange equation to develop our equations of motion.
+
+Before we define these energies we first would like to simplify the form of the deformation map presented in equation \ref{eqn:deformation_map}. We may write $\mathbf{x}(\mathbf{X})$ in matrix form as
+\begin{equation}
+\mathbf{x}(\mathbf{X}) = \underbrace{\left[w_1\mathbf{M}(\mathbf{X - \bar{X}}_j) \dots w_n\mathbf{M}(\mathbf{X - \bar{X}}_j) \middle| \sum_i^{n_1}w_1^i\mathbf{I} \dots \sum_i^{n_m}w_m^i\mathbf{I} \right]}_{\mathbf{Y}(\mathbf{X})}
+\begin{bmatrix}
+\mathbf{\hat{c}} \\
+\mathbf{\hat{t}}
+\end{bmatrix}
+\text{,}
+\end{equation}
+\myworries{I'm not sure how to write this matrix form for x(X), especially on finding the best notation for the center of mass indexing. So this above equation is temporary.}
+where we have $n$ shape elements, $m$ centers of mass. We simplify the above equation and use the following form
+\begin{equation}
+\label{eqn:x_simple_form}
+\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{L}\hat{\mathbf{b}}
+\text{,}
+\end{equation}
+where we make use of equation \ref{eqn:c_multiple_elements} to rewrite this in terms of the boundary points $\mathbf{\hat{b}}$. As one final step, we rewrite this again in terms of the control points of our NURBS surfaces:
+\begin{equation}
+\label{eqn:compact_x_map}
+\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{LJq}
+\text{,}
+\end{equation}
+where we use the fact that $\mathbf{\hat{b}} = \mathbf{Jq}$. \myworries{not a fan of this, perhaps we change $\hat{b}$ to something else...} This gives us an expression for the deformed position in terms of our generalized coordinates, $\mathbf{q}$.
+
+\subsection{Generalized Inertia}
+The kinetic energy for a model may be expressed as
+\begin{equation}
+T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
+\text{,}
+\end{equation}
+where $\Omega$ is the 3D integration domain, $\rho$ is the density, and $\dot{\mathbf{x}}$ is the velocity for some point in the domain. Using the deformation map defined in \ref{eqn:compact_x_map}, we may rewrite this kinetic energy as
+\begin{equation}
+\begin{split}
+T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)}^T\mathbf{Y(X)}\ d\Omega \\
+  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{J}^T \left[ \int_{ \Omega} \rho \mathbf{Y(X)}^T\mathbf{Y(X)} d\Omega \right] \mathbf{J}\dot{\mathbf{q}} \\
+  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{M} \dot{\mathbf{q}}
+\end{split}
+\text{.}
+\end{equation}
+The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
+\subsection{Error Energy}
+Over the course of the simulation we may see the true boundary values deviate from their positions estimated by the polynomial. This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface. To address this we augment our kinetic energy with a term to account for this error. The error for a boundary point $\mathbf{x}_i^*$ that is known to lie on the limit surface of the NURBS can be written as
+\begin{equation}
+\begin{split}
+\epsilon_i & = ||\mathbf{x}(\mathbf{X}_i) - \mathbf{x}_i^*|| \\
+		   & = ||(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{\hat{b}}||
+\end{split}
+\text{,}
+\end{equation}
+where $\mathbf{S_i}$ extracts $\mathbf{x}_i^*$ from $\mathbf{\hat{b}}$. We modify this error further to be expressed in terms of the control points. We note that $\mathbf{x}^*(u,v)$ yields the position on the NURBS surface whereas $\mathbf{x(X)}$ is the deformed value estimated by the polynomial fitting. Furthermore $\mathbf{X}$ may be written as a function of the parametric coordinates $\mathbf{X}(u,v)$ as its position on the surface is produced using the initial set of control points representing the undeformed model. This leads to an energy potential over the NURBS surface in parametric space
+\begin{equation}
+T_E = \iint (\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v))^T(\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v)) du dv
+\text{.}
+\end{equation}
+The discrete form of this written in terms of the control points may be written as
+\begin{equation}
+\begin{split}
+T_E & = \sum_i^N  \dot{\mathbf{q}}^T\mathbf{J}^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{J}\dot{\mathbf{q}} \\
+  & = \dot{\mathbf{q}}^T\mathbf{J}^T \left[ \sum_i^N  (\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i}) \right] \mathbf{J}\dot{\mathbf{q}} \\
+  & = \dot{\mathbf{q}}^T \mathbf{M}_E \dot{\mathbf{q}}
+\end{split}
+\text{,}
+\end{equation}
+where $N$ is the total number of boundary points and $\mathbf{M}_E$ is our \textit{error mass matrix}.
+\subsection{Generalized Forces}
+We write our potential energy as 
+\begin{equation}
+    V = \int_\Omega \psi(\mathbf{F(X)}) d\Omega
+\text{.}
+\end{equation}
+To evaluate this energy (as well as its derivatives), we require a definition for the deformation gradient, $\mathbf{F(X)}$:
+\begin{equation}
+        \mathbf{F(X)} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
+               = \frac{\partial \mathbf{Y(X)}}{\partial \mathbf{X}}\mathbf{L}\hat{\mathbf{b}}
+\text{.}
+\end{equation}
+In the expression for the deformed position $\mathbf{x(X)}$ we see that the dependence on $\mathbf{X}$ only exists in $\mathbf{Y(X)}$, making $\mathbf{L}$ and $\hat{\mathbf{b}}$ constant terms when compute $\mathbf{F}$. Full details on how to compute $\mathbf{F}$ and its derivative $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ may be found in the appendix. (\myworries{I just wrote this because I'm too tired to right the d etails right now :p}. Now that we have an expression for the deformation gradient, we discretize our potential energy as follows
+\begin{equation}
+    V =  \sum_i^m \psi(\mathbf{F(X}_i) A_i
+\text{,}
+\end{equation}
+where $m$ is the number of integration points and $A_i$ is the volume for the $i$-th integration point.
+
+Like in the case of the kinetic energy, we also introduce an error force potential, which takes the simple form
+\begin{equation}
+V_E = \mathbf{q}^T \mathbf{M}_E \mathbf{q}
+\end{equation}
+
+
+\subsection{Time Integration}
+We have now provided all the necessary ingredient to produce equations of motion for deformable bodies, which we derive via Euler-Lagrange equation. We begin with the Lagrangian
+\begin{equation}
+    L=(T+T_E)-(V + V_E)
+\end{equation}
+Then from the Euler-Lagrange equation we have:
+\begin{equation}
+    \frac{d}{dt} \frac{\partial L}{\partial \dot{\mathbf{p}}} + \frac{\partial L}{\partial {\mathbf{p}}} = 0
+\end{equation}
+\myworries{todo: not totally sure what to write here since we're experimenting with both linearly implicit backward euler as well as Newton's method soon}
+
+
+
+%\begin{equation}
+%    \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
+%\end{equation}
+%\
