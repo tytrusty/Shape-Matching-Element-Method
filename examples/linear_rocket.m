@@ -13,13 +13,15 @@ pr =  0.15;
 [lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.gravity = -25.95;
-options.rho = 1e-4;
+options.gravity = -25.95e1;
+options.rho = 1e-1;
 options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;
 options.distance_cutoff = 10;
+options.k_stability = YM*1e5;
 
 vem_simulate_nurbs_implicit(part, options);
+% vem_simulate_nurbs(part, options);
 
 end
