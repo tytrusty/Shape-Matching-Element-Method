@@ -78,7 +78,7 @@ function vem_simulate_nurbs_implicit(parts, varargin)
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
+  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
 
     % Shape Matrices
@@ -131,7 +131,7 @@ function vem_simulate_nurbs_implicit(parts, varargin)
     ii=1;
     for t=0:config.dt:30
         tic
-
+% 
         % Preparing input for stiffness matrix mex function.
         b = [];
         for i=1:numel(E)
@@ -141,50 +141,50 @@ function vem_simulate_nurbs_implicit(parts, varargin)
 
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
-
-        % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
-                                      size(x0_coms,2));
-        K = L' * K * L;
-
-        % Force vector
-        dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-
-        % Computing force dV/dq for each point.
-        % TODO: move this to C++ :)
-        for i = 1:m
-            % Deformation Gradient
-            F = dF_dc{i} * dF_dc_S{i} * c;
-            F = reshape(F,d,d);
-            
-            V(:,i) = Y{i} * Y_S{i} * c;
-            
-            % Force vector
-            dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
-            dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
-        end
-        dV_dq = L' * dV_dq;
-        
-        % Error correction force
-        f_error = - 2 * ME * x(:);
-        f_error = config.k_stability*(config.dt * P * f_error(:));
-       
-        % Force from potential energy.
-        f_internal = -config.dt*P*dV_dq;
-        
-        f_tmp = f_internal + f_error;
-        
-        [f] = P * config.dt * vem3dmesh_neohookean_dq(x, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
-                                       k, n, d, m, size(x0_coms,2), config.k_stability);
-                                     
-        assert(sum((f_tmp-f).^2) < 1e-9);
-        
-        % Computing linearly-implicit velocity update
-        % Note: I believe i'm forgetting the error matrix stiffness matrix
-        %       but I don't wanna break things so I haven't added it yet.
-        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
-        qdot = lhs \ rhs;
+% 
+%         % Stiffness matrix (mex function)
+%         K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
+%                                       size(x0_coms,2));
+%         K = L' * K * L;
+% 
+%         % Force vector
+%         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
+% 
+%         % Computing force dV/dq for each point.
+%         % TODO: move this to C++ :)
+%         for i = 1:m
+%             % Deformation Gradient
+%             F = dF_dc{i} * dF_dc_S{i} * c;
+%             F = reshape(F,d,d);
+%             
+%             V(:,i) = Y{i} * Y_S{i} * c;
+%             
+%             % Force vector
+%             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
+%             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
+%         end
+%         dV_dq = L' * dV_dq;
+%         
+%         % Error correction force
+%         f_error = - 2 * ME * x(:);
+%         f_error = config.k_stability*(config.dt * P * f_error(:));
+%        
+%         % Force from potential energy.
+%         f_internal = -config.dt*P*dV_dq;
+%         
+%         f_tmp = f_internal + f_error;
+%         
+%         [f] = P * config.dt * (-vem3dmesh_neohookean_dq(x, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
+%                                        k, n, d, size(x0_coms,2), config.k_stability));
+%                                      
+% %         assert(sum((f_tmp-f).^2) < 1e-1);
+%         
+%         % Computing linearly-implicit velocity update
+%         % Note: I believe i'm forgetting the error matrix stiffness matrix
+%         %       but I don't wanna break things so I haven't added it yet.
+%         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+%         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
+%         qdot = lhs \ rhs;
 
         qdot = fmincon(@energy, 0*qdot, [], [], [],[], [],[], [], options);
         
@@ -243,31 +243,32 @@ function [e, g, H] = energy(qdot_new)
     end
     b = b(:);
     % Solve for polynomial coefficients (projection operators).
-    c = L * b;
+    c_matlab = L * b;
     
-    neohookean_e = 0;
-    for i = 1:m
-      % Deformation Gradient
-      F = dF_dc{i} * dF_dc_S{i} * c;
-      F = reshape(F,d,d);
-      
-      JF=det(F);
-      I3=trace(F'*F)/JF^(2/3);
-
-      % neohookean
-      psi=params(i,1)*(I3-3)+params(i,2)*(JF-1)^2;
-      neohookean_e = neohookean_e + psi;
-    end      
+    c = vem3dmesh_polynomial_coefficients(x_new, L, E);
+    assert(sum((c-c_matlab).^2)  < 1e-6);
+    
+    neohookean_e =  vem3dmesh_neohookean_q(c, vol, params, dF_dc, dF_dc_S, d);
+%     neohookean_e_matlab = vem3dmesh_neohookean_q_matlab(c, vol, params, dF_dc, dF_dc_S, d, m);
        
     e = 0.5*qdot_new'*J'*PMP*J*qdot_new - qdot_new'*J'*PMP*J*qdot + ...
         config.k_stability * x_new(:)' * ME * x_new(:) + ...
-        neohookean_e - ...
-        dt*qdot_new'*J'*f_gravity; 
+        0.5 * neohookean_e - ...
+        qdot_new'*J'*f_gravity; 
 
     if nargout > 1
+%         g_neohookean_matlab = -vem3dmesh_neohookean_dq_matlab(x_new, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
+%                                        k, n, d, m, size(x0_coms,2), config.k_stability);
+        g_neohookean = vem3dmesh_neohookean_dq(x_new, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
+                                       k, n, d, size(x0_coms,2), config.k_stability);
+        
+%         disp('error g');
+%         g_neohookean(1:9)
+%         g_neohookean_matlab(1:9)
+%         sum((g_neohookean + g_neohookean_matlab).^2)
+%         assert(sum((g_neohookean + g_neohookean_matlab).^2) < 1e-3);                         
         g = J' * (PMP*J*(qdot_new - qdot) + ...
-            dt*P*vem3dmesh_neohookean_dq(x_new, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
-                                       k, n, d, m, size(x0_coms,2), config.k_stability) + ...
+            + dt*P*g_neohookean + ...
             - f_gravity);
 
         if nargout > 2  
@@ -280,5 +281,24 @@ function [e, g, H] = energy(qdot_new)
     end
 end
 
+end
+
+function neohookean_e = vem3dmesh_neohookean_q_matlab(c, vol, params, dF_dc, dF_dc_S, d, m)
+  % compute neohookean energy
+  neohookean_e = 0;
+  for i = 1:m
+    % Deformation Gradient
+    F = dF_dc{i} * dF_dc_S{i} * c;
+%     disp('dF_dc_S');
+%     dF_dc_S{i}
+    F = reshape(F,d,d);
+
+    JF=det(F);
+    I3=trace(F'*F)/JF^(2/3);
+
+    % neohookean
+    psi=params(i,1)*(I3-3)+params(i,2)*(JF-1)^2;
+    neohookean_e = neohookean_e + psi * vol(i);
+  end    
 end
 

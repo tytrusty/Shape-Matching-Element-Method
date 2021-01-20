@@ -18,7 +18,7 @@ function [x_coms, com_cluster, com_map] = generate_com(parts, x0, E, distance_cu
     adjacent = cell(n,1);
     for i=1:n
        	adj_idx = find(adj(i,:));
-        x_idx = horzcat(E{adj_idx});
+        x_idx = vertcat(E{adj_idx});
         adjacent{i} = x_idx(:);
         x_coms(:,i) = mean(x0(:,adjacent{i}),2);
     end

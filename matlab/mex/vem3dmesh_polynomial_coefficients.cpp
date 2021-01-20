@@ -12,8 +12,9 @@
 #include <igl/matlab/validate_arg.h>
 #include <igl/list_to_matrix.h>
 
+
 //bartels
-#include <vem3dmesh_neohookean_dq2.h>
+#include <vem3dmesh_polynomial_coefficients.h>
 
 template <typename T>
 using EigenMatrixList = std::vector<Eigen::MatrixXx<T>, Eigen::aligned_allocator<Eigen::MatrixXx<T>>>;
@@ -21,10 +22,13 @@ using EigenMatrixList = std::vector<Eigen::MatrixXx<T>, Eigen::aligned_allocator
 template <typename T>
 using EigenVectorList = std::vector<Eigen::VectorXx<T>, Eigen::aligned_allocator<Eigen::VectorXx<T>>>;
 
+template <typename T>
+using EigenSparseMatrixList = std::vector<Eigen::SparseMatrix<T>, Eigen::aligned_allocator<Eigen::SparseMatrix<T>>>;
+
 
 template <typename DerivedV>
 void parse_cell(const mxArray *prhs[], int index, EigenMatrixList<DerivedV>& V) {
-		const mxArray *cell = prhs[index];
+	const mxArray *cell = prhs[index];
 	const mwSize *dims = mxGetDimensions(prhs[index]);
 	const mxArray *cellElement;
 	mwIndex jcell;
@@ -51,29 +55,43 @@ void parse_cell_index(const mxArray *prhs[], int index, EigenVectorList<DerivedV
 	}
 }
 
+template <typename DerivedV>
+void parse_cell_sparse(const mxArray *prhs[], int index, EigenSparseMatrixList<DerivedV>& V) {
+	const mxArray *cell = prhs[index];
+	const mwSize *dims = mxGetDimensions(prhs[index]);
+	const mxArray *cellElement;
+	mwIndex jcell;
+	for (jcell = 0; jcell < dims[0]; jcell++) {
+		cellElement = mxGetCell(cell, jcell);
+		Eigen::SparseMatrix<DerivedV> element;
+		igl::matlab::parse_rhs(&cellElement, element);
+		V.emplace_back(element);
+	}
+}
+
 /* The gateway function */
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
     /* variable declarations here */
-    Eigen::MatrixXd g;
+    Eigen::VectorXd c;
+    Eigen::MatrixXd x;
+		Eigen::SparseMatrix<double> L;
 
-    Eigen::MatrixXd params;
-    Eigen::VectorXd c, volumes; 
+  	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > E;
+		
+		// std::cout << "1 mex polynomial_coefficients" << std::endl;
 
-	std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > dF_dc;
-	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > W_I;
+		igl::matlab::parse_rhs_double(prhs+0, x);
+		// std::cout << "2 mex polynomial_coefficients" << std::endl;
+    igl::matlab::parse_rhs(prhs+1, L);
+		// std::cout << "3 mex polynomial_coefficients" << std::endl;
+		parse_cell_index(prhs, 2, E);
+		// std::cout << "4 mex polynomial_coefficients" << std::endl;
 
-    igl::matlab::parse_rhs_double(prhs+0, c);
-    igl::matlab::parse_rhs_double(prhs+1, volumes);
-    igl::matlab::parse_rhs_double(prhs+2, params);
-	parse_cell(prhs, 3, dF_dc);
-	parse_cell_index(prhs, 4, W_I);
+		sim::vem3dmesh_polynomial_coefficients(c, x, L, E);
 
-	int k = (int)*mxGetPr(prhs[5]);
-	int n = (int)*mxGetPr(prhs[6]);
-	int m = (int)*mxGetPr(prhs[7]);
+		// std::cout << "5 mex polynomial_coefficients" << std::endl;
 
-	sim::vem3dmesh_neohookean_dq2(g, c, volumes, params, dF_dc, W_I, k, n, m);
-
-  igl::matlab::prepare_lhs_double(g, plhs);
+		igl::matlab::prepare_lhs_double(c, plhs);
+		// std::cout << "6 mex polynomial_coefficients" << std::endl;
 }

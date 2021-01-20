@@ -179,5 +179,8 @@ function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mod
             L(col_range,:) = Li;
         end
     end
+    
+    % make L sparse to fit mex files' input
+    L = sparse(L);
 end
 

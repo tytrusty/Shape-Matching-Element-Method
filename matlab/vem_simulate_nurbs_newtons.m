@@ -1,4 +1,4 @@
-function vem_simulate_nurbs(parts, varargin)
+function vem_simulate_nurbs_newtons(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -10,7 +10,6 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'rho', 1);                 	% per point density (currently constant)
     addParameter(p, 'save_output', 0);        	% (0 or 1) whether to output images of simulation
     addParameter(p, 'save_obj', 0);          	% (0 or 1) whether to output obj files
-    addParameter(p, 'save_iges', 0);          	% (0 or 1) whether to output iges files
     addParameter(p, 'save_resultion', 20);    	% the amount of subdivision for the output obj
     addParameter(p, 'pin_function', @(x) 1);
     addParameter(p, 'sample_interior', 1);
@@ -65,7 +64,7 @@ function vem_simulate_nurbs(parts, varargin)
     if config.sample_interior
         [V, vol] = raycast_quadrature(parts, [3 3], 10);
     else
-    	V=x0;
+        V=x0;
         vol=ones(size(V,2),1);
     end
     m = size(V,2);  % number of quadrature points
@@ -79,7 +78,7 @@ function vem_simulate_nurbs(parts, varargin)
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 config.rho * config.gravity], size(x0,2),1)';
+  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
 
     % Shape Matrices
@@ -118,58 +117,37 @@ function vem_simulate_nurbs(parts, varargin)
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-   
+    
+    PMP = P*M*P';
+    
+    options = optimoptions('fmincon');
+    options.Algorithm = 'trust-region-reflective';
+    options.Display = 'none';
+    options.SpecifyObjectiveGradient = true;
+    options.MaxIterations = 10;
+    options.HessianFcn = 'objective';
+    %options.CheckGradients = true;
+       
     ii=1;
     for t=0:config.dt:30
         tic
 
-        % Preparing input for stiffness matrix mex function.
-        b = [];
-        for i=1:numel(E)
-            b = [b (x(:,E{i}))];
-        end
-        b = b(:);
-
         % Solve for polynomial coefficients (projection operators).
-        c = L * b;
-
-        % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
-                                      size(x0_coms,2));
-        K = L' * K * L;
-
-        % Force vector
-        dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-
-        % Computing force dV/dq for each point.
-        % TODO: move this to C++ :)
-        for i = 1:m
-            % Deformation Gradient
-            F = dF_dc{i} * dF_dc_S{i} * c;
-            F = reshape(F,d,d);
-            
-            V(:,i) = Y{i} * Y_S{i} * c;
-            
-            % Force vector
-            dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
-            dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
-        end
-        dV_dq = L' * dV_dq;
+        c = vem3dmesh_polynomial_coefficients(x, L, E);
         
-        % Error correction force
-        f_error = - 2 * ME * x(:);
-        f_error = config.k_stability*(config.dt * P * f_error(:));
-       
-        % Force from potential energy.
-        f_internal = -config.dt*P*dV_dq;
-        
-        % Computing linearly-implicit velocity update
-        % Note: I believe i'm forgetting the error matrix stiffness matrix
-        %       but I don't wanna break things so I haven't added it yet.
-        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
-        qdot = lhs \ rhs;
+%         energy = @(qdot_new) vem3dmesh_energy_matlab(qdot_new, q, qdot, f_gravity, x_fixed, ...
+%                                               vol, params, dF_dc, dF_dc_S, w_I, E, ...
+%                                               M, ME, L, P, J, ...
+%                                               k, n, d, size(x0_coms,2), config.k_stability, config.dt);
+%     
+%         % solve for the velocity of the next time step
+%         qdot = fmincon(energy, 0*qdot, [], [], [],[], [],[], [], options);
 
+        qdot = vem3dmesh_simulate_one_step(q, qdot, f_gravity, x_fixed, ...
+                                              vol, params, dF_dc, dF_dc_S, w_I, E, ...
+                                              M, ME, L, P, J, ...
+                                              k, n, d, size(x0_coms,2), config.k_stability, config.dt);
+        
         % Update position
         q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
@@ -202,17 +180,12 @@ function vem_simulate_nurbs(parts, varargin)
             nurbs_write_obj(q,parts,obj_fn,ii);
         end
         
-        if config.save_iges
-            obj_fn = "output/obj/part_" + int2str(ii) + ".iges";
-            nurbs_write_iges(q,parts,obj_fn);
-        end
-
         if config.save_output
             fn=sprintf('output/img/simulate_beem_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
         toc
-    end
+    end  
 end
 

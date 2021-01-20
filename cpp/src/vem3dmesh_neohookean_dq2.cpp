@@ -1,5 +1,5 @@
 #ifdef SIM_STATIC_LIBRARY
-# include<../include/vem3dmesh_neohookean_dq2.h>
+# include<../include/vem3dmesh_neohookean_dq.h>
 #endif
 
 #ifdef VEM_USE_OPENMP
