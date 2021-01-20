@@ -22,6 +22,7 @@ options.enable_secondary_rays = true;
 options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0;
-vem_simulate_nurbs(part, options);
+options.fitting_mode = 'hierarchical';
+vem_simulate_nurbs_newtons(part, options);
   
 end

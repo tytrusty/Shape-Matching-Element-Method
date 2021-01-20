@@ -1,4 +1,4 @@
-function vem_simulate_nurbs(parts, varargin)
+function vem_simulate_nurbs_newtons(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -16,10 +16,15 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
     addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'plot_points', false);
+    addParameter(p, 'plot_com', true);
+    addParameter(p, 'com_threshold', 100);
+
     parse(p,varargin{:});
     config = p.Results;
     
-    d = 3;  % dimension (2 or 3)
+    d = 3;              % dimension (2 or 3)
+    n = numel(parts);	% number of shapes
     
     % The number of elements in the monomial basis.
     k = basis_size(d, config.order);
@@ -27,13 +32,22 @@ function vem_simulate_nurbs(parts, varargin)
     % Read in NURBs 
     fig=figure(1);
     clf;
-    
-    % resolution = repelem(8,9); resolution(1)=11; % resolution(17)=11;
     parts=nurbs_plot(parts);
-    
+
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
 
+    % Generating centers of mass. Temporary method!
+    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
+        config.com_threshold, n);
+    
+    if config.plot_com
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
     % Initial deformed positions and velocities
     x = x0;
     qdot=zeros(size(q));
@@ -48,41 +62,39 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [9 9], 5);
+        [V, vol] = raycast_quadrature(parts, [3 3], 10);
     else
-    	V=x0;
+        V=x0;
         vol=ones(size(V,2),1);
     end
+    m = size(V,2);  % number of quadrature points
     
-    % TODO: add option to visualization quadrature points
-    % plot3(V(1,:),V(2,:),V(3,:),'.','Color','r','MarkerSize',20);
+    if config.plot_points
+        V_plot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+    end
     
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
+  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
-    
-    % Undeformed Center of mass
-    x0_com = mean(x0,2);
-        
+
     % Shape Matrices
-    L = compute_shape_matrices(x0, x0_com, E, config.order, config.fitting_mode);
-    
-    % Build Monomial bases for all quadrature points
-    Y = monomial_basis_matrix(V, x0_com, config.order, k);
-    Y0 = monomial_basis_matrix(x0, x0_com, config.order, k);
-    
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, config.order, config.fitting_mode);
+
     % Compute Shape weights
-    w = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
-                               config.enable_secondary_rays);
-    w_x = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
-                                 config.enable_secondary_rays);
-    [W, W_I, W_S] = build_weight_matrix(w, d, k, 'Truncate', true);
-    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
-    
+    [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
+        'Enable_Secondary_Rays', config.enable_secondary_rays);
+    [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
+        'Enable_Secondary_Rays', config.enable_secondary_rays);
+                             
+    % Build Monomial bases for all quadrature points
+    [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
+    [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
+
     % Fixed x values.
     x_fixed = zeros(size(x0));
     for i = 1:numel(pin_I)
@@ -90,89 +102,49 @@ function vem_simulate_nurbs(parts, varargin)
     end
     
     % Applying fixed point constraints to NURBS jacobian.
-    J = P * J;
-
-    m = size(V,2);  % number of quadrature points
-    n = numel(E);	% number of shapes
-    
-    % Forming gradient of monomial basis w.r.t X
-    dM_dX = monomial_basis_grad(V, x0_com, config.order);
+    J = P * J;    
     
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(dM_dX, W);
+    [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, W0, W0_S, L);
-    M = vem_mass_matrix(Y, W, W_S, L, config.rho .* vol);
+    ME = vem_error_matrix(Y0, Y0_S, L, d);
+    M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
     M = (M + config.k_stability*ME); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-
+    
+    PMP = P*M*P';
+    
+    options = optimoptions('fmincon');
+    options.Algorithm = 'trust-region-reflective';
+    options.Display = 'none';
+    options.SpecifyObjectiveGradient = true;
+    options.MaxIterations = 10;
+    options.HessianFcn = 'objective';
+    %options.CheckGradients = true;
+       
     ii=1;
     for t=0:config.dt:30
         tic
-        
-        % Preparing input for stiffness matrix mex function.
-        % TODO: don't form this vector this way :)
-        b = [];
-        for i=1:numel(E)
-            b = [b x(:,E{i}) - x0_com];
-        end
-        b = b(:);
 
         % Solve for polynomial coefficients (projection operators).
-        c = L * b;
-        p = c(end-d+1:end);
-        x_com = x0_com + p;   
+        c = vem3dmesh_polynomial_coefficients(x, L, E);
         
-        % Stiffness matrix (mex function)
-        K = -vem3dmesh_neohookean_dq2(c, dM_dX(:,:), vol, params, ...
-                                      dF_dc, W, W_S, W_I, k, n);
-        K = L' * K * L;
+        % simulate one timestep using newton's method
+        qdot = vem3dmesh_simulate_one_step(q, qdot, f_gravity, x_fixed, ...
+                                              vol, params, dF_dc, dF_dc_S, w_I, E, ...
+                                              M, ME, L, P, J, ...
+                                              k, n, d, size(x0_coms,2), config.k_stability, config.dt);
         
-        % Force vector
-        dV_dq = zeros(d*(k*numel(E) + 1),1);
-
-        % Computing force dV/dq for each point.
-        % TODO: move this to C++ :)
-        for i = 1:m
-            dMi_dX = squeeze(dM_dX(i,:,:));
-            
-            % Deformation Gradient
-            F = dMi_dX * W{i} * W_S{i} * c;
-            F = reshape(F,d,d);
-
-            % Force vector
-            dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF * vol(i);
-        end
-        dV_dq = L' * dV_dq;
-        
-        % Error correction force
-        x_centered = x(:);
-        x_centered(1:d:end) = x_centered(1:d:end) - x_com(1);
-        x_centered(2:d:end) = x_centered(2:d:end) - x_com(2);
-        x_centered(3:d:end) = x_centered(3:d:end) - x_com(3);
-        f_error = - 2 * ME * x_centered;
-        
-        f_error = config.k_stability*(config.dt * P * f_error(:));
-       
-        % Force from potential energy.
-        f_internal = -config.dt*P*dV_dq;
-        
-        % Computing linearly-implicit velocity update
-        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
-        qdot = lhs \ rhs;
-
         % Update position
         q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
-        
+
         % Update NURBs plots
         x_idx=0;
         for i=1:numel(parts)
@@ -180,6 +152,19 @@ function vem_simulate_nurbs(parts, varargin)
             xi = x(:,x_idx+1:x_idx+x_sz);
             parts{i}.plt.Vertices =xi';
             x_idx = x_idx+x_sz;
+        end
+        
+        if config.plot_com
+            x_coms = c(d*k*n + 1:end); % extract centers of mass
+            com_plt.XData = x_coms(1:d:end);
+            com_plt.YData = x_coms(2:d:end);
+            com_plt.ZData = x_coms(3:d:end);
+        end
+        
+        if config.plot_points
+            V_plot.XData = V(1,:);
+            V_plot.YData = V(2,:);
+            V_plot.ZData = V(3,:);
         end
         drawnow
         
@@ -189,11 +174,11 @@ function vem_simulate_nurbs(parts, varargin)
         end
         
         if config.save_output
-            fn=sprintf('output/img/simulate_%03d.png',ii);
+            fn=sprintf('output/img/simulate_beem_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
         toc
-    end
+    end  
 end
 

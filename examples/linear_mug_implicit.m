@@ -1,4 +1,4 @@
-function linear_mug
+function linear_mug_implicit
 
 function pinned_ids = pin_function(x)
     pinned_ids = find(x(1,:) > 6 & x(3,:) > 6 & x(3,:) < 7);
@@ -21,8 +21,8 @@ options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0; % only sample on boundary
 options.distance_cutoff = 1;
-options.fitting_mode = 'hierarchical';
-vem_simulate_nurbs(part, options);  %%%%% verify hierarchical works!!!!!
+% options.fitting_mode = 'hierarchical';
+vem_simulate_nurbs_newtons(part, options);  %%%%% verify hierarchical works!!!!!
                                                         
  
 end

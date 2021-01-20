@@ -208,7 +208,6 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         
         % Force for collision.
         f_collision = zeros(size(verts,1)*3,1);
-        f_friction = zeros(size(verts,1)*3,1);
         % detect the collision with another mesh
         if config.collision_with_other
           [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
@@ -239,9 +238,31 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
                                                     (config.collision_plane_z*ones(size(collide_plane_vid,1), 1) - verts(collide_plane_vid,3));
           f_collision_plane = reshape(f_collision_plane_tmp', [], 1);                           
           f_collision = f_collision + f_collision_plane;
-
         end
+        
+%         startv = verts(collide_plane_vid, :);
+%         endv = verts(collide_plane_vid, :) + 100 * f_collision_plane_tmp(collide_plane_vid, :);
+%         hold on
+%         h = plot3([startv(:,1)';endv(:,1)'],...
+%                [startv(:,2)';endv(:,2)'],...
+%                [startv(:,3)';endv(:,3)']);
+%         hold off;
+%         set(h, 'X', [startv(:,1)';endv(:,1)'],...
+%                'Y', [startv(:,2)';endv(:,2)'],...
+%                'Z', [startv(:,3)';endv(:,3)']);
 
+        
+%         B = barycenter(verts, faces);
+%         for i = 1:size(IF,1)
+%           fid = IF(i, 1); % colliding face id of the origin mesh
+%           c_fid = IF(i, 2); % colliding face id of the colliding mesh
+%            if size(intersect(faces(fid,:), faces(c_fid,:)), 2) == 0 
+%              continue;
+%            end
+%           hold on
+%           plot3(B([fid;c_fid],1),B([fid;c_fid],2),B([fid;c_fid],3));
+%         end
+%         hold off
         f_collision = hires_J' * f_collision;
         
         fprintf("f_internal = %.4e\n", sum((J'*f_internal).^2));
@@ -250,23 +271,22 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         fprintf("f_collision = %.4e\n", sum(f_collision.^2)); 
         f_total = J' * (f_internal + f_gravity + f_error) + f_collision;
         fprintf("f_total = %.4e\n", sum(f_total.^2)); 
-
+        max(verts) - min(verts)
+        
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
+
+        % hires_J * qdot = 
+        qdot = hires_J * qdot - ;
         
-        size(collide_plane_vid, 1)
-        
-        if config.collision_with_plane && size(collide_plane_vid, 1) > 30
-          qdot = reshape(qdot, 3, [])';
-          if size(collide_plane_vid, 1) > 40
-            qdot(:, [1 2]) = 0.999 * qdot(:, [1 2]);
-          else
-            qdot(:, [1 2]) = 0.9999 * qdot(:, [1 2]);
-          end
-          qdot = reshape(qdot', [], 1); 
-        end
+%         % add infinite friction
+%         if config.collision_with_plane
+%           qdot = reshape(hires_J * qdot, 3, [])';
+%           qdot(collide_plane_vid, [1 2]) = zeros(size(collide_plane_vid, 1), 2);
+%           qdot = hires_J' * reshape(qdot', [], 1); 
+%         end
         
         % Update position
         q = q + config.dt*qdot;

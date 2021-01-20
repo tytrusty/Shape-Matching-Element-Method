@@ -15,11 +15,12 @@ pr =  0.02;
 
 options.order = 1;
 options.rho = 1e-5;
-options.gravity = -100;
+options.gravity = -10e6;
 options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;
 
-vem_simulate_nurbs(part, options);
+vem_simulate_nurbs_newtons(part, options);
+% vem_simulate_nurbs(part, options);
 
 end

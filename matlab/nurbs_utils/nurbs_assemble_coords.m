@@ -52,7 +52,7 @@ function [J,hires_J,q,E,x] = nurbs_assemble_coords(parts)
         idx2=size(x,2);
         
         % indices into global configuration vector
-        E{i}=idx1:idx2;
+        E{i}=[idx1:idx2]';
     end
 
 end
