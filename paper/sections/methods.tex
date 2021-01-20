@@ -11,7 +11,7 @@
 %	\item With our augmented lagrangian, we use the Euler-Lagrange equation to arrive at equations of motion. Our generalized coordinates give us direct updates on the control points of the NURBS. Currently we are using linearly-implicit Euler for time integration.
 %	\item \textbf{Handling trimmed NURBS}: For this case we update the original control points, but we must only sample points within the boundary. To compute these points we use an approach similar to the raycasting quadrature but in 2D. In the paremtric domain for a T-NURBS we sample uniforly in the V direction and shoot rays along the U axis. At each region of intersection, we sample more values along the ray. The final result is a set of UV coordinates that respect the boundary defined by NURBS curves.
 %\end{itemize}
-
+\dave{cite jacobson stretchable twistable bones for constant term}
 \section{Overview}
 The input to the Shape Matching Element Method (SEM)  is a NURBS \emph{boundary representation} of a volumetric object, along with a set of physical parameters 
 (density, constitutive model, model parameters etc). 
@@ -121,7 +121,7 @@ We can define a polynomial deformation from $\refX = \begin{pmatrix} X & Y & Z \
 \end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (eg $\begin{pmatrix} X & Y & X\cdot Y & X\cdot X & Y\cdot Y \end{pmatrix}$ ),
 $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are the coefficients for the 
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
-We can compute the shape matching deformation by solving
+We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1073216}
 \begin{equation}
    \Pcox^* = \arg\min_{\Pco,\tr} \int \left\lvert\left\lvert\Pmatx\Pcox - \Jnurbs\vc{q}\right\rvert\right\rvert^2_2 dudv,
 \end{equation} where we have suppressed the dependence of $\refX$ and $\Jnurbs$ on $u$ and $v$ for the sake of brevity.
@@ -129,147 +129,26 @@ We can compute the shape matching deformation by solving
 We discretize the shape matching energy and minimize by solving
 \begin{equation}
 \samp{\Pmat}^T\wt\samp{\Pmat}\Pcox = \samp{\Pmat}^T\wt\samp{\Jnurbs}\vc{q}.
+\label{eq:shapematch}
 \end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3k$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
 $k$ is the number of  terms in the shape matching polynomial and $3nm$ is the number of NURBS control points. 
 $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmat(X\left(u, v\right))$ (resp. $\Jnurbs\left(u, v\right)$) at each
 quadrature point.
 $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
 
+\paragraph*{Relationship to the Virtual Element Method}
+For a non-planar NURBS part, and given a sufficient number of quadrature points, ~\refeq{shapematch} will be well-posed allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
+\begin{equation*}
+    \Pi = \left(\samp{\Pmat}^T\wt\samp{\Pmat}\right)^{-1}\samp{\Pmat}^T\wt\samp{\Jnurbs},
+\end{equation*} is a projection from the space of control points onto the space of polynomials. 
+This projection serves an identical purpose (and is mathematically equivalent up to choice of metric) to the projection operator used in VEM~\cite{10.1142/S021820251440003X}.
+VEM uses a single polynomial projection per polyhedral element to solve differential equations on complex volumetric meshes.
+We interpret shape matching as converting our NURBS part into a single Virtual Element suitable for elastodynamics simulation.
+Unfortunately a single polynomial deformation space will not be suitably expressive for even moderately complex models. 
+Previous work~\cite{10.1145/1073204.1073216,10.1145/1275808.1276480} used additional lattices or partitions of the reference space to 
+increase the number of polynomials in the shape matching. Next we outline our meshless Shape Element Method which works directly on the NURBS
+geometry itself.
 
-
-
-\dave{Ty how do we pick u,vs and weights for this formula?}
-
-
-
-%%%%% OLD STUFF BELOW HERE %%%%%%%
-\dave{Shape Matching to a single NURBS part}
-In typical FEM in graphics, we make use of tetrahedral or triangular elements with a piecewise-linear function space. In such a case our functions may be evaluated as a weighted combination of the nodal values of an element: $f(\mathbf x)=\sum_{i=0}^n f_i \phi_i(\mathbf{x})$ where $n$ is the number of nodal values and $\phi_i$ is the i-th barycentric coordinates. Thus in this case we have the simple deformation map $\mathbf{x(X)} = \sum_{i=0}^n \mathbf{x}_i \phi_i(\mathbf{X})$. However, our method contrasts this typical approach in that our elements are more general and take the form of any arbitrary boundary primitive, such as NURBS, and also that the function space in non-linear. 
-
-In our algorithm, a single shape matching element is represented by a NURBS surface, a center of mass, and polynomial describing its current deformation. We construct these polynomials via a shape matching strategy. With the addition of the center of mass, we describe the shapes deformation about this point and thus the monomial basis in the case of a linear polynomial is $\left[ \mathbf 1^T (\mathbf{X - \bar{X}})^T \right]$ where $\mathbf 1^T$ is a constant $1$ column vector and $\mathbf{\bar{X}}$ is the center of mass for the element. To simplify the following formulas, we collect the non-constant terms of the monomial basis into a single vector $\mathbf{m}(\mathbf{X}-\mathbf{\bar{X}})$. For example if $\mathbf{X} = (X,Y,Z)$, $\mathbf{\bar{X}} = (\bar X, \bar Y, \bar Z)$, and $\mathbf{q}=\mathbf{X}-\mathbf{\bar{X}}$ with a quadratic polynomial we would have
-
-\begin{figure}
-    \includegraphics[width=\columnwidth]{example-image-a}
-    \caption{Figure showing shape matching to NURBS}
-    \label{fig:shapematching}
-\end{figure}
-
-\begin{equation}
-m(\mathbf{q)} = (
-					q_1, q_2, q_3,
-                   	q_1^2, q_2^2, q_3^3,
-                   	q_1 q_2, q_2 q_3
-                ) \in \mathbb{R}^k
-                \text{,}
-\end{equation}
-where $k$ is the size of the monomial basis. Next we arrange this basis into a matrix of the form
-\begin{equation}
-\mathbf{M}(\mathbf{q}) = \left[ \begin{array}{ccc}
-\mathbf{m}(\mathbf{q}) &  &  \\
- & \mathbf{m}(\mathbf{q})  &  \\
- &  & \mathbf{m}(\mathbf{q})  \\
-\end{array} \right] \in \mathbb{R}^{3x3k}
-\text{.}
-\end{equation}
-With this definition of the monomial basis, we may reconstruct the deformed position $\mathbf{x}$ for some material point $\mathbf{X}$ with
-\begin{equation}
-\mathbf{x}(\mathbf{X}) = \left[\mathbf{M}(\mathbf{X-\bar{X}}) \quad \mathbf{I} \right]
-\left[ \begin{array}{c}
-\mathbf{c} \\
-\mathbf{t} \\
-\end{array} \right]
-\text{,}
-\end{equation}
-where $\mathbf{c} \in \mathbb{R}^{3k}$ is the set of polynomial coefficients for the non-constant terms, $\mathbf{t} \in \mathbb{R}^3$ is the constant term coefficients, and $\mathbf{I} \in \mathbb{R}^{3x3}$ is an identity matrix. The reason for separating out the constant term becomes more evident when we examine case where we have multiple elements.
-
-\dave{here explain sampling on NURBS surface to get material points}
-The above formulation describes developing the map from a single $(u,v)$ coordinate to its corresponding position on the surface. In our simulation we represent the entire boundary of the NURBS model, so we require samples along each surface. We emphasize that we only require an initial selection of $(u,v)$ coordinates across each surface and the dynamics of the simulation modifies the set of control points $\mathbf{q}$ to modify the world space maps $\mathbf{x}(u,v)=\mathbf{J}(u,v)\mathbf{q}$.
-
-Let's say for a NURBS surface on the model the DOF column vector is $\mathbf{q}_i$, which is the subset of control points in the generalized coordinates for the $i$-th surface. For a given surface with $m$ pairs of $\mathbf{u}=(u,v)$ coordinates sampled in parametric space, we write the jacobian for the $i$-th surface as \myworries{(should I use something like $\hat{\mathbf{J}}$ instead?)}
-\begin{equation}
-\label{eqn:surface_jacobian}
-    \mathbf{J}_i =
-    \left[ \mathbf{J}(\mathbf{u})_1^T \dots \mathbf{J}(\mathbf{u})_m^T \right]^T
-    \text{.}
-\end{equation}
-Then if $\mathbf{x}_i$ is the set of $m$ world space positions for the $i$-th surface, we may write $\mathbf{x}_i = \mathbf{J}_i \mathbf{q}_i$. Finally, given the full set of generalized coordinates $\mathbf{q} = \left[ \mathbf{q}_i^T, \dots, \mathbf{q}_n^T \right]^T$ with $n$ surfaces, we may write jacobian $\mathbf{J}$ for the entire model as a block diagonal matrix:
-\begin{equation}
-\mathbf{J} = \left[ \begin{array}{ccccc}
-\mathbf{J}_1 &  &  &  &  \\
- & \ddots &  &  &  \\
- &  & \mathbf{J}_i & &  \\
- &  &  & \ddots &  \\
- &  &  &  & \mathbf{J}_n \\
-\end{array} \right]
-\text{.}
-\end{equation}
-
-\dave{weights are missing, just matching to points leaves us vulnerable to biasing towards clusters of points}
-The remaining step in defining a single element is to describe how to solve for the polynomial coefficients. For a single element, we have $n$ material points $(\mathbf{X}_1 \dots \mathbf{X}_n)$ and their corresponding deformed positions $(\mathbf{x}^*_1 \dots \mathbf{x}^*_n)$. As these elements are defined on a boundary, these are both known throughout the simulation. Therefore we may form a fitting problem to solve for the polynomial coefficients that minimize the error $\sum_i^n ||\mathbf{x}_i^* - \mathbf{X}_i ||^2$.  We minimize this error in a least squares sense where we first form the system
-\begin{equation}
-\left[\begin{array}{c}
-\mathbf{M}(\mathbf{X_1-\bar{X}}) \quad \mathbf{I} \\
-\vdots \\
-\mathbf{M}(\mathbf{X_i-\bar{X}}) \quad \mathbf{I} \\
-\vdots \\
-\mathbf{M}(\mathbf{X_n-\bar{X}}) \quad \mathbf{I} \\
-\end{array} \right]
-\left[ \begin{array}{c}
-\mathbf{c} \\
-\mathbf{t} \\
-\end{array} \right] = 
-\left[ \begin{array}{c}
-\mathbf{x}_1^* \\
-\vdots \\
-\mathbf{x}_i^* \\
-\vdots \\
-\mathbf{x}_n^*
-\end{array} \right]
-\text{,}
-\end{equation}
-and then in the more compact form
-\begin{equation}
-\label{eqn:fitting_one}
-\left[
-\mathbf{A} \quad \mathbf{S}
-\right]
-\left[ \begin{array}{c}
-\mathbf{c} \\
-\mathbf{t} \\
-\end{array} \right] = \mathbf{b}
-\text{,}
-\end{equation}
-where $\mathbf{A}$ is the block containing the monomial matrices of the system, and $\mathbf{S}$ is the block of identity matrices. Next, to reduce the degrees of freedom of this system we let the deformed center of mass (the constant term coefficients), $t$, be equal to the mean of the deformed positions influenced by this center of mass. In the case of one element we have $t = \frac{1}{n}\sum_i^n x_i^*$. We describe the details on center of mass selection in section \myworries{insert here}. In matrix form we have
-\dave{need to explain that system can be degenerate fix is to select a constant term}
-\begin{equation}
-\label{eqn:t_solution}
-t = 
-\underbrace{
-\left[\begin{array}{ccccccc}
-\frac{1}{n} & & \cdots \frac{1}{n} & & \\
-& \frac{1}{n} & \cdots & \frac{1}{n} & \\
-& & \frac{1}{n} \cdots & & \frac{1}{n} \\
-\end{array} \right]}_{T} 
-\mathbf{b}
-\text{.}
-\end{equation} (\myworries{spacing on this looks bad....}). Finally, this leaves us with the system
-\begin{equation}
-\mathbf{A}\mathbf{c}=(\mathbf{I}-\mathbf{ST})\mathbf{b}
-\text{.}
-\end{equation}
-Like in the original Shape Matching \cite{10.1145/1073204.1073216}, we solve for the coefficients by minimizing the error in a least squares sense, resulting in
-\dave{no b just use J q, here's a good place to explain sampling the surface to build big J.}
-\begin{equation}
-\label{eqn:c_one_element}
-\begin{split}
-\mathbf{c} & = (\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T(\mathbf{I-ST})\mathbf{b} \\
-           & = \mathbf{L}\mathbf{b}
-\end{split}
-\text{.}
-\end{equation}
-This $\mathbf{L}$ matrix thus gives us our file ingredient in the element, coefficients defining the polynomial. We emphasize that $\mathbf{L}$ is constant throughout the simulation, therefore as $\mathbf{b}$ varies in the simulation, $\mathbf{Lb}$ gives us a new set of polynomial coefficients as $\mathbf{b}$ changes. 
-
-\dave{Shape Matching is VEM brief explanation here. Point of departure, one polynmoial isn't going to cut it for a whole object.}
 \subsection{Shape Matching Element Method}
 \dave{Multiple Parts}
 \dave{each polynomial/NURBS tuple is a shape matching element}
