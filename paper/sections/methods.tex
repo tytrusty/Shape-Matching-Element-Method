@@ -123,13 +123,20 @@ $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are th
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
 We can compute the shape matching deformation by solving
 \begin{equation}
-    \begin{pmatrix} 
-        \Pco\\
-        \tr
-    \end{pmatrix}^* = \arg\min_{\Pco,\tr} \int_{u,v} \left\lvert\left\lvert\Pmatx\Pcox - \refX\right\rvert\right\rvert^2_2 du\cdot dv,
-\end{equation} where we have surpressed the dependence of $\refX$ on $u$ and $v$ for the sake of brevity.
+   \Pcox^* = \arg\min_{\Pco,\tr} \int \left\lvert\left\lvert\Pmatx\Pcox - \Jnurbs\vc{q}\right\rvert\right\rvert^2_2 dudv,
+\end{equation} where we have suppressed the dependence of $\refX$ and $\Jnurbs$ on $u$ and $v$ for the sake of brevity.
 
-Discretizing this integral and solving 
+We discretize the shape matching energy and minimize by solving
+\begin{equation}
+\samp{\Pmat}^T\wt\samp{\Pmat}\Pcox = \samp{\Pmat}^T\wt\samp{\Jnurbs}\vc{q}.
+\end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3k$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
+$k$ is the number of  terms in the shape matching polynomial and $3nm$ is the number of NURBS control points. 
+$\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmat(X\left(u, v\right))$ (resp. $\Jnurbs\left(u, v\right)$) at each
+quadrature point.
+$\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
+
+
+
 
 \dave{Ty how do we pick u,vs and weights for this formula?}
 
