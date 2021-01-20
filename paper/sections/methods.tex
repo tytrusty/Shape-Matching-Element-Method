@@ -276,7 +276,7 @@ Finally, to solve for the full set of non-constant term coefficients, $\hat{\mat
 \text{.}
 \end{equation}
 
-
+\dave{this is good but we shouldn't imply we solve the system above since we do Hierarchical ordering}
 \paragraph*{Hierarchical fitting}
 A problem may emerge in the shape matching process where the system may be underdetermined. To account for this we solve for the coefficients in a hierarchical manner where we initially solve for the linear terms and at each step solve the coefficients for the next higher order of deformation. The produces a set of smaller systems which are guaranteed to be determined \myworries{probably need to justify this more}. The intuition behind this can be described by the \textit{hierarchical ordering principle}, which argues that the behavior of a system is typically dominated by lower order effects \myworries{cite something here.}. To describe our fitting strategy, we begin with the following shape matching system for a single element
 \begin{equation}
