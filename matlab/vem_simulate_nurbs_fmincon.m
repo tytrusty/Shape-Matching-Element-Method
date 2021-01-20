@@ -131,7 +131,17 @@ function vem_simulate_nurbs_fmincon(parts, varargin)
     ii=1;
     for t=0:config.dt:30
         tic
+        
+        % Preparing input for stiffness matrix mex function.
+        b = [];
+        for i=1:numel(E)
+            b = [b (x(:,E{i}))];
+        end
+        b = b(:);
 
+        % Solve for polynomial coefficients (projection operators).
+        c = L * b;
+        
         % Solve for polynomial coefficients (projection operators).
         c = vem3dmesh_polynomial_coefficients(x, L, E);
         
@@ -185,21 +195,21 @@ function [e, g, H] = energy(qdot_new)
     q_new = q + config.dt*qdot_new;
     x_new = reshape(P'*J*q_new,3,[]) + x_fixed;
     dt = config.dt;
-    
+
     % Solve for polynomial coefficients (projection operators).
     c = vem3dmesh_polynomial_coefficients(x_new, L, E);
-    
+
     neohookean_e =  vem3dmesh_neohookean_q(c, vol, params, dF_dc, dF_dc_S, d);
-     
+
     e = 0.5*qdot_new'*J'*PMP*J*qdot_new - qdot_new'*J'*PMP*J*qdot + ...
         config.k_stability * x_new(:)' * ME * x_new(:) + ...
         0.5 * neohookean_e - ...
-        qdot_new'*J'*f_gravity; 
+        qdot_new'*J'*f_gravity;
 
     if nargout > 1
         g_neohookean = vem3dmesh_neohookean_dq(x_new, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
                                        k, n, d, size(x0_coms,2), config.k_stability);
-                               
+                    
         g = J' * (PMP*J*(qdot_new - qdot) + ...
             + dt*P*g_neohookean + ...
             - f_gravity);

@@ -1,4 +1,4 @@
-function vem_simulate_nurbs_fmincon_param(parts, varargin)
+function vem_simulate_nurbs_newtons(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep

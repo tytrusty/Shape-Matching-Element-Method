@@ -74,15 +74,24 @@ void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
     /* variable declarations here */
     Eigen::VectorXd c;
-    Eigen::MatrixXd x, L;
+    Eigen::MatrixXd x;
+		Eigen::SparseMatrix<double> L;
 
   	std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > E;
+		
+		// std::cout << "1 mex polynomial_coefficients" << std::endl;
 
 		igl::matlab::parse_rhs_double(prhs+0, x);
-    igl::matlab::parse_rhs_double(prhs+1, L);
+		// std::cout << "2 mex polynomial_coefficients" << std::endl;
+    igl::matlab::parse_rhs(prhs+1, L);
+		// std::cout << "3 mex polynomial_coefficients" << std::endl;
 		parse_cell_index(prhs, 2, E);
+		// std::cout << "4 mex polynomial_coefficients" << std::endl;
 
 		sim::vem3dmesh_polynomial_coefficients(c, x, L, E);
 
+		// std::cout << "5 mex polynomial_coefficients" << std::endl;
+
 		igl::matlab::prepare_lhs_double(c, plhs);
+		// std::cout << "6 mex polynomial_coefficients" << std::endl;
 }

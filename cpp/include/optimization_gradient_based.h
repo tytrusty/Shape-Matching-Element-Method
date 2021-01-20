@@ -100,12 +100,6 @@ namespace sim {
                 exit(1);
             }
 
-            // if(!search_direction_newton_sparse(tmp_d, tmp_g, tmp_H, solver))
-            // {
-            //     std::cout<<"Computing search direction failed in newtons method \n";
-            //     exit(1);
-            // }
-
             //line search 
             SolverExitStatus ls_status = linesearch_backtracking_bisection(x, tmp_d, f, tmp_g, 
                                                                            max_iterations_ls, 

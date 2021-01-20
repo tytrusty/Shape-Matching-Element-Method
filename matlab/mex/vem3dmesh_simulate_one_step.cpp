@@ -79,10 +79,10 @@ void mexFunction(int nlhs, mxArray *plhs[],
     /* variable declarations here */
     Eigen::VectorXd qdot_new;
 
-    Eigen::MatrixXd x_fixed, params, M, ME, L;
+    Eigen::MatrixXd x_fixed, params, M, ME;
     Eigen::VectorXd q, qdot, f_ext, volume, volumes; 
 
-		Eigen::SparseMatrix<double> P, J;
+		Eigen::SparseMatrix<double> P, J, L;
 
 		std::vector<Eigen::MatrixXd, Eigen::aligned_allocator<Eigen::MatrixXd> > dF_dc;
 		std::vector<Eigen::SparseMatrix<double>, Eigen::aligned_allocator<Eigen::SparseMatrix<double>>> dF_dc_S;
@@ -110,7 +110,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 		// std::cout << "3" << std::endl;
 		igl::matlab::parse_rhs_double(prhs+10, M);
 		igl::matlab::parse_rhs_double(prhs+11, ME);
-		igl::matlab::parse_rhs_double(prhs+12, L);
+		igl::matlab::parse_rhs(prhs+12, L);
 		igl::matlab::parse_rhs(prhs+13, P);
 		igl::matlab::parse_rhs(prhs+14, J);
 		// std::cout << "4" << std::endl;

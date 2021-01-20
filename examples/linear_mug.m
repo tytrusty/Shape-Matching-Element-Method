@@ -21,6 +21,7 @@ options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0; % only sample on boundary
 options.distance_cutoff = 1;
+options.fitting_mode = 'hierarchical';
 vem_simulate_nurbs(part, options);  %%%%% verify hierarchical works!!!!!
                                                         
  

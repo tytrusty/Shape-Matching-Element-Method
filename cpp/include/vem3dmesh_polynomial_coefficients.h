@@ -7,10 +7,10 @@
 
 namespace sim {
 
-template<typename DerivedRet, typename DerivedX, typename DerivedL>
+template<typename DerivedRet, typename DerivedX>
 void vem3dmesh_polynomial_coefficients(Eigen::VectorXx<DerivedRet> &c,
 	const Eigen::MatrixXx<DerivedX> &x,
-	const Eigen::MatrixXx<DerivedL> &L,
+	const Eigen::SparseMatrix<double> &L,
 	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & E);
 }
 

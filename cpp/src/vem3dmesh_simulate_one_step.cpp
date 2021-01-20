@@ -20,7 +20,7 @@ void sim::vem3dmesh_simulate_one_step(Eigen::VectorXx<DerivedRet> &qdot_new,
 	const std::vector<Eigen::VectorXi, Eigen::aligned_allocator<Eigen::VectorXi> > & E,
 	const Eigen::MatrixXd &M,
 	const Eigen::MatrixXd &ME,
-	const Eigen::MatrixXd &L,
+	const Eigen::SparseMatrix<double> &L,
 	const Eigen::SparseMatrix<double> &P,
 	const Eigen::SparseMatrix<double> &J,
 	int k, int n, int d, int x0_coms_size, double k_stability, double dt) {
@@ -115,7 +115,7 @@ void sim::vem3dmesh_simulate_one_step(Eigen::VectorXx<DerivedRet> &qdot_new,
 	Eigen::VectorXd tmp_d(qdot.rows());
 
 	qdot_new = qdot;
-	newtons_method_bisection(qdot_new, value, gradient, hessian, tmp_g, tmp_H, tmp_d, 1e-3, 5, 5);
+	newtons_method_bisection(qdot_new, value, gradient, hessian, tmp_g, tmp_H, tmp_d, 1e-3, 1, 5);
 }
 
 #include <iostream>
