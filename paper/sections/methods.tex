@@ -186,6 +186,7 @@ and then in the more compact form
 \text{,}
 \end{equation}
 where $\mathbf{A}$ is the block containing the monomial matrices of the system, and $\mathbf{S}$ is the block of identity matrices. Next, to reduce the degrees of freedom of this system we let the deformed center of mass (the constant term coefficients), $t$, be equal to the mean of the deformed positions influenced by this center of mass. In the case of one element we have $t = \frac{1}{n}\sum_i^n x_i^*$. We describe the details on center of mass selection in section \myworries{insert here}. In matrix form we have
+\dave{need to explain that system can be degenerate fix is to select a constant term}
 \begin{equation}
 \label{eqn:t_solution}
 t = 
@@ -203,6 +204,7 @@ t =
 \text{.}
 \end{equation}
 Like in the original Shape Matching \cite{10.1145/1073204.1073216}, we solve for the coefficients by minimizing the error in a least squares sense, resulting in
+\dave{no b just use J q, here's a good place to explain sampling the surface to build big J.}
 \begin{equation}
 \label{eqn:c_one_element}
 \begin{split}
