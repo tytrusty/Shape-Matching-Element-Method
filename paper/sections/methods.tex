@@ -42,44 +42,54 @@ For collisions we use penalty forces and apply them as external forces during in
 
 \section{Methods}
 
-\dave{explain NURBS but not D-NURBS because that's Terzopolous's specific algorithm just explain the NURBS parameterization}
+Our algorithm acts on objects composed of multiple NURBS surfaces~\reffig{NURBS}.
 
-A point on a NURBS surface is typically expressed in the following form
+\begin{figure}
+    \includegraphics[width=\columnwidth]{example-image-a}
+    \caption{Figure showing simple NURBS patch with variables labelled}
+    \label{fig:NURBS}
+\end{figure}
+
+The three-dimensional position, $\defX$, of any point on a NURBS surface can be written as 
 \begin{equation}
 \label{eqn:nurbs_srf}
-    \mathbf{x}(u,v) = \frac{\sum_{i=1}^{n}\sum_{j=1}^{m}  \mathbf{p}_{i,j} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
-    {\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
-    \text{,}
+\defX\left(u,v\right) = \sum_{i=1}^n\sum_{j=1}^n \phi_{ij}\left(u,v\right)\vc{q}_{ij},
+    %\mathbf{x}(u,v) = \frac{\sum_{i=1}^{n}\sum_{j=1}^{m}  \mathbf{p}_{i,j} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    %{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+    %\text{,}
 \end{equation}
-where where have a total of $nm$ control points $\mathbf{p}$ and weights $w$. Using the B-spline basis functions and the weighted control points, this formula gives a map from our parametric coordinates $u,v$ to their corresponding position on the surface in $\mathbb{R}^{3m}$. $B_{i,k}(u)$ is the B-spline basis function for the $i-th$ control point with degree $k-1$.
+where $u$ and $v$ $\in \real$ are the coordinates of the 2D parametric domain, $n$ and $m$ are the number of control points in the $u$ and $v$ directions, $\mathbf{q}_{ij}\in\real^3$ are the control points and $\phi_{ij}\left(u,v\right)\in\real$ are the NURBS
+basis functions given by 
+\begin{equation*}
+    \phi_{ij}\left(u,v\right) = \frac{w_{i,j}B_{ik}(u)B_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} w_{ij} B_{ik}(u)B_{jl}(v)},
+\end{equation*} where $B_{ik}$ (resp $B_{jl}$) is the $i^{th}$ ($j^{th}$) b-spline basis of order $k$ ($l$). 
 
-We would like our generalized coordinates to be the control points of the model so that the dynamics operates directly on the original representation. Therefore, we would like to rewrite equation \ref{eqn:nurbs_srf} in the form
+Exploiting linearity with respect to the control points  we can express this mapping as 
 \begin{equation}
-    \mathbf{x}(u,v) = \mathbf{J}(u,v)\mathbf{q}
-    \text{,}
-\end{equation}
-where $\mathbf{q} = \left[ \mathbf{p}_{1,1}^T, \dots, \mathbf{p}_{i,j}^T, \dots, \mathbf{p}_{n,m}^T \right]^T \in \mathbb{R}^{3nm}$ is the set of $nm$ control points \myworries{in the overview I just write $n$ control points, but here i'm writing $nm$} for a single NURBS surface arranged as a column vector. $\mathbf{J} \in  \mathbb{R}^{3 x 3nm}$ is the NURBS jacobian that maps $(u,v)$ coordinates to world positions in $\mathbb{R}^{3}$.
+    \defX\left(u,v\right) = \underbrace{\begin{pmatrix} \phi_{11}\left(u,v\right)\ident & \dots & \phi_{nn}\left(u,v\right)\ident \end{pmatrix}}_{\Jnurbs\left(u,v\right)}
+    \underbrace{\begin{pmatrix} \vc{q}_{11} \\ \vdots \\ \vc{q}_{nn}\end{pmatrix}}_{\vc{q}},
+\end{equation} where $\Jnurbs\left(u,v\right)$ is the NURBS Jacobian, $\ident$ is the $3\times3$ identity matrix and $\vc{q}$ is the vector of generalized coordinates~\dave{cite Lanczos}.
+The Shape Matching Element Method will follow from this kinematic description.
+% The NURBS jacobian, $\mathbf{J}$, is a matrix composed of horizontally concatenated $3x3$ blocks where the $(i,j)$-th block is $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ for the $(i,j)$-th control point. $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ is a diagonal $3x3$ matrix where each diagonal entry $N_{i,j}(\mathbf{u})$ takes the form
 
-The NURBS jacobian, $\mathbf{J}$, is a matrix composed of horizontally concatenated $3x3$ blocks where the $(i,j)$-th block is $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ for the $(i,j)$-th control point. $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ is a diagonal $3x3$ matrix where each diagonal entry $N_{i,j}(\mathbf{u})$ takes the form
+% \begin{equation}
+% \label{eqn:jacobian_diagonal}
+%     N_{i,j}(u,v)
+%     = \frac{w_{i,j} B_{i,k}(u)B_{j,l}(v)}{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
+%     \text{.}
+% \end{equation}
+% Thus the NURBS jacobian for a single $(u,v)$ pair is written as
+% \begin{equation}
+% \label{eqn:uv_jacobian}
+%     \mathbf{J}(u,v) =
+%     \left[ \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{1,1}} \dots
+%            \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}} \dots 
+%            \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{n,m}}
+%     \right]
+%     \text{.}
+% \end{equation}
 
-\begin{equation}
-\label{eqn:jacobian_diagonal}
-    N_{i,j}(u,v)
-    = \frac{w_{i,j} B_{i,k}(u)B_{j,l}(v)}{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
-    \text{.}
-\end{equation}
-Thus the NURBS jacobian for a single $(u,v)$ pair is written as
-\begin{equation}
-\label{eqn:uv_jacobian}
-    \mathbf{J}(u,v) =
-    \left[ \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{1,1}} \dots
-           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}} \dots 
-           \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{n,m}}
-    \right]
-    \text{.}
-\end{equation}
-
-With this equation, the full set of world positions of the NURBS model may be written as $\mathbf{x} = \mathbf{J}\mathbf{q} \in \mathbb{R}^{3N}$ where $N$ is the total number of $(u,v)$ coordinates.
+% With this equation, the full set of world positions of the NURBS model may be written as $\mathbf{x} = \mathbf{J}\mathbf{q} \in \mathbb{R}^{3N}$ where $N$ is the total number of $(u,v)$ coordinates.
 
 
 \begin{figure}
