@@ -150,7 +150,7 @@ Then if $\mathbf{x}_i$ is the set of $m$ world space positions for the $i$-th su
 \text{.}
 \end{equation}
 
-
+\dave{weights are missing, just matching to points leaves us vulnerable to biasing towards clusters of points}
 The remaining step in defining a single element is to describe how to solve for the polynomial coefficients. For a single element, we have $n$ material points $(\mathbf{X}_1 \dots \mathbf{X}_n)$ and their corresponding deformed positions $(\mathbf{x}^*_1 \dots \mathbf{x}^*_n)$. As these elements are defined on a boundary, these are both known throughout the simulation. Therefore we may form a fitting problem to solve for the polynomial coefficients that minimize the error $\sum_i^n ||\mathbf{x}_i^* - \mathbf{X}_i ||^2$.  We minimize this error in a least squares sense where we first form the system
 \begin{equation}
 \left[\begin{array}{c}
