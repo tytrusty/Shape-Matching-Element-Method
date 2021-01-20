@@ -24,7 +24,7 @@ function [x_coms, com_cluster, com_map] = generate_com(parts, x0, E, distance_cu
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    [C,IA,com_map] = uniquetol(x_coms(1,:));
+    [C,IA,com_map] = uniquetol(x_coms', 'ByRows', true);
     com_cluster = adjacent(IA);
     x_coms = x_coms(:,IA);
     

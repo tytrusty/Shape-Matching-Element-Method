@@ -1,4 +1,4 @@
-function vem_simulate_nurbs(parts, varargin)
+function vem_simulate_nurbs_constraint(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -163,12 +163,16 @@ function vem_simulate_nurbs(parts, varargin)
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
         
-        % Computing linearly-implicit velocity update
-        % Note: I believe i'm forgetting the error matrix stiffness matrix
-        %       but I don't wanna break things so I haven't added it yet.
-        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
-        qdot = lhs \ rhs;
+        
+%         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+%         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
+%         qdot = lhs \ rhs;
+        opts = optimoptions('quadprog','Display','off');
+        H = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+        f = J' * (P*M*P'*J*qdot + f_internal + f_gravity);
+        Aeq = J'*(P*ME*P') * J;
+        beq = zeros(size(qdot));
+        qdot = quadprog(H,-f,[],[], Aeq, beq, [],[],qdot,opts);
 
         % Update position
         q = q + config.dt*qdot;
@@ -197,18 +201,8 @@ function vem_simulate_nurbs(parts, varargin)
         end
         drawnow
         
-        if config.save_obj
-            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
-            nurbs_write_obj(q,parts,obj_fn,ii);
-        end
-        
-        if config.save_iges
-            obj_fn = "output/obj/part_" + int2str(ii) + ".iges";
-            nurbs_write_iges(q,parts,obj_fn);
-        end
-
         if config.save_output
-            fn=sprintf('output/img/simulate_beem_%03d.png',ii);
+            fn=sprintf('output/img/simulate_quadprog_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
