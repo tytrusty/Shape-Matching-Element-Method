@@ -16,7 +16,7 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'sample_interior', 1);
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
-    addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
     addParameter(p, 'com_threshold', 100);
@@ -37,17 +37,6 @@ function vem_simulate_nurbs(parts, varargin)
 
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
-
-    % Generating centers of mass. Temporary method!
-    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
-        config.com_threshold, n);
-    
-    if config.plot_com
-        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                        '.','Color','g','MarkerSize',20);
-        hold on;
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%
     
     % Initial deformed positions and velocities
     x = x0;
@@ -82,16 +71,24 @@ function vem_simulate_nurbs(parts, varargin)
   	f_gravity = repmat([0 0 config.rho * config.gravity], size(x0,2),1)';
     f_gravity = config.dt*P*f_gravity(:);
 
-    % Shape Matrices
-    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
-
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
-                             
+    
+    % Generate centers of mass.
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    if config.plot_com
+    com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                    '.','Color','g','MarkerSize',20);
+    hold on;
+    end
+    
+    % Shape Matrices
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, config.order, config.fitting_mode);
+
     % Build Monomial bases for all quadrature points
     [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
     [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
