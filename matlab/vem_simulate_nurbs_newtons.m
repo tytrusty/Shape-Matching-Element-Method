@@ -117,16 +117,6 @@ function vem_simulate_nurbs_newtons(parts, varargin)
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-    
-    PMP = P*M*P';
-    
-    options = optimoptions('fmincon');
-    options.Algorithm = 'trust-region-reflective';
-    options.Display = 'none';
-    options.SpecifyObjectiveGradient = true;
-    options.MaxIterations = 10;
-    options.HessianFcn = 'objective';
-    %options.CheckGradients = true;
        
     ii=1;
     for t=0:config.dt:30
@@ -134,7 +124,7 @@ function vem_simulate_nurbs_newtons(parts, varargin)
 
         % Solve for polynomial coefficients (projection operators).
         c = vem3dmesh_polynomial_coefficients(x, L, E);
-        
+              
         % simulate one timestep using newton's method
         qdot = vem3dmesh_simulate_one_step(q, qdot, f_gravity, x_fixed, ...
                                               vol, params, dF_dc, dF_dc_S, w_I, E, ...
@@ -179,6 +169,6 @@ function vem_simulate_nurbs_newtons(parts, varargin)
         end
         ii=ii+1
         toc
-    end  
+    end
 end
 

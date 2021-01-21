@@ -45,6 +45,17 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 
 			//std::cout << "tmp [" << tmp.rows() << ", " << tmp.cols() << std::endl;
 		}
+
+		// Project each local stiffness matrix to PSD
+		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXx<DerivedRet>> es(tmp);
+    Eigen::MatrixXd DiagEval = es.eigenvalues().real().asDiagonal();
+    Eigen::MatrixXd Evec = es.eigenvectors().real();
+    for (int i = 0; i < tmp.rows(); ++i) {
+        if (es.eigenvalues()[i]<1e-6) {
+            DiagEval(i,i) = 1e-3;
+        }
+    }
+    tmp = Evec * DiagEval * Evec.transpose();
 		
 		// Assembly
 		int kd = 3 * k;

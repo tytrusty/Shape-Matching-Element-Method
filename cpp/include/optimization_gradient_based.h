@@ -91,7 +91,7 @@ namespace sim {
              
             //compute search direction
             tmp_d = tmp_H.colPivHouseholderQr().solve(-tmp_g);
-            // std::cout << "tmp_d:  " << tmp_d.block(0, 0, 10, 1) << std::endl;
+            // std::cout << "tmp_d:  " << tmp_d.segment(0, 6) << std::endl;
             // std::cout << "after solve " << std::endl;
             double relative_error = (tmp_H*tmp_d - (-tmp_g)).norm() / (-tmp_g).norm(); // norm() is L2 norm
             // std::cout << "relative_error = " << relative_error << std::endl;
@@ -110,7 +110,7 @@ namespace sim {
 
             iteration_count++;
 
-        } while(iteration_count <= max_iterations);
+        } while(iteration_count < max_iterations);
 
         return SolverExitStatus::MAX_ITERATIONS_REACHED;
         

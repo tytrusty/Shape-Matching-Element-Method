@@ -33,19 +33,26 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 		Eigen::Matrix3d F = unflatten<3, 3>(F_flat);
 
 		dpsi_neohookean_dF(dV_dF, F, CD);
-		
-		// std::cout << "F = " << F << std::endl;
-		// std::cout << "CD = " << CD << std::endl;
-		// std::cout << "dV_dF = " << dV_dF << std::endl;
 
+		// std::cout << "dV_dF[" << i << "] = " << dV_dF.transpose() << std::endl;
+		
     dV_dq += dF_dc_S[i].transpose() * dF_dc[i].transpose() * dV_dF * volume(i);
 
-		// std::cout << "dV_dq = " << dV_dq << std::endl;
+		// if (i < 2) {
+		// 		std::cout << "i = " << i << std::endl;
+		// 		std::cout << "F = " << std::endl << F << std::endl;
+		// 		std::cout << "CD = " << std::endl << CD << std::endl;
+		// 		std::cout << "dV_dF = " << std::endl << dV_dF << std::endl;
+		// 		std::cout << "dV_dq = " << std::endl <<  dV_dq.segment(0,10) << std::endl;
+		// }
+		
 	}
+
+	// std::cout << "total dV_dq = " << dV_dq.segment(0,10) << std::endl;
 
 	dV_dq = L.transpose() * dV_dq;
 
-	// std::cout << "dV_dq with L= " << dV_dq << std::endl;
+	// std::cout << "dV_dq with L= " << dV_dq.segment(0,9) << std::endl;
 
   //  Error correction force
 	Eigen::VectorXd x_vec = Eigen::Map<const Eigen::VectorXd>(x.data(), x.size());
@@ -56,16 +63,14 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 	// std::cout << "x_vec = " << x_vec << std::endl;
 	// std::cout << "f_error_tmp = " << f_error_tmp << std::endl;
 	// std::cout << "f_error_tmp_vec = " << f_error_tmp_vec << std::endl;
-	// std::cout << "f_error = " << f_error << std::endl;
+	// std::cout << "f_error = " << f_error.segment(0,9) << std::endl;
 
   // Force from potential energy.
 	Eigen::VectorXd f_internal = dV_dq;
 
-	// std::cout << "f_internal = " << f_error << std::endl;
-
 	g = f_internal + f_error;
 
-	// std::cout << "g = " << g << std::endl;
+	// std::cout << "g = " << g.segment(0,10) << std::endl;
 }
 
 #include <iostream>

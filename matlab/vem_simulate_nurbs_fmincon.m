@@ -132,16 +132,6 @@ function vem_simulate_nurbs_fmincon(parts, varargin)
     for t=0:config.dt:30
         tic
         
-        % Preparing input for stiffness matrix mex function.
-        b = [];
-        for i=1:numel(E)
-            b = [b (x(:,E{i}))];
-        end
-        b = b(:);
-
-        % Solve for polynomial coefficients (projection operators).
-        c = L * b;
-        
         % Solve for polynomial coefficients (projection operators).
         c = vem3dmesh_polynomial_coefficients(x, L, E);
         
@@ -202,9 +192,9 @@ function [e, g, H] = energy(qdot_new)
     neohookean_e =  vem3dmesh_neohookean_q(c, vol, params, dF_dc, dF_dc_S, d);
 
     e = 0.5*qdot_new'*J'*PMP*J*qdot_new - qdot_new'*J'*PMP*J*qdot + ...
-        config.k_stability * x_new(:)' * ME * x_new(:) + ...
-        0.5 * neohookean_e - ...
-        qdot_new'*J'*f_gravity;
+        + config.k_stability * x_new(:)' * ME * x_new(:) + ...
+        + 0.5 * neohookean_e + ...
+        - qdot_new'*J'*f_gravity;
 
     if nargout > 1
         g_neohookean = vem3dmesh_neohookean_dq(x_new, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
@@ -215,7 +205,7 @@ function [e, g, H] = energy(qdot_new)
             - f_gravity);
 
         if nargout > 2  
-            K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
+            K = vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
                                       size(x0_coms,2));
             K = L' * K * L;
           
