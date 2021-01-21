@@ -24,6 +24,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     addParameter(p, 'collision_with_other', true);
     addParameter(p, 'collision_with_plane', true);
     addParameter(p, 'collision_plane_z', -10.0);
+    addParameter(p, 'initial_velocity', [0 0 0]);
     parse(p,varargin{:});
     config = p.Results;
     
@@ -54,7 +55,8 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     
     % Initial deformed positions and velocities
     x = x0;
-    qdot=zeros(size(q));
+%     qdot=zeros(size(q));
+    qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
     % Setup pinned vertices constraint matrix
     pin_I = config.pin_function(x0);
@@ -129,6 +131,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     [verts,faces] = triangulate_iges(parts);
     collision_ratio = config.collision_ratio;
     face_normal = normals(verts, faces);
+    verts_velocity = reshape(hires_J * qdot, 3, [])';
     
     if config.collision_with_other
       collide_iges_file = 'rounded_cube.iges';
@@ -206,6 +209,12 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
         
+%         f_neohookean = vem3dmesh_neohookean_dq(x, c, vol, params, dF_dc, dF_dc_S, ME, L, ...
+%                                        k, n, d, size(x0_coms,2), config.k_stability);
+%         f_internal_error = -config.dt*P*f_neohookean;
+%         
+%         assert(sum(((f_internal_tmp + f_error) + f_internal).^2) < 1e-5);
+        
         % Force for collision.
         f_collision = zeros(size(verts,1)*3,1);
         f_friction = zeros(size(verts,1)*3,1);
@@ -239,40 +248,53 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
                                                     (config.collision_plane_z*ones(size(collide_plane_vid,1), 1) - verts(collide_plane_vid,3));
           f_collision_plane = reshape(f_collision_plane_tmp', [], 1);                           
           f_collision = f_collision + f_collision_plane;
-
+          
+%           % add friction force
+%           f_friction_tmp = zeros(size(verts,1), 3);
+%           f_friction_tmp(collide_plane_vid, [1 2]) = - 0.8 * verts_velocity(collide_plane_vid, [1 2]) / config.dt;
+%           f_friction_tmp = reshape(f_friction_tmp', [], 1);                           
+%           f_friction = f_friction + f_friction_tmp;
         end
 
-        f_collision = hires_J' * f_collision;
+        f_collision = hires_J' * (f_collision + f_friction);
         
-        fprintf("f_internal = %.4e\n", sum((J'*f_internal).^2));
-        fprintf("f_gravity = %.4e\n", sum((J'*f_gravity).^2));
-        fprintf("f_error = %.4e\n", sum((J'*f_error).^2));
-        fprintf("f_collision = %.4e\n", sum(f_collision.^2)); 
-        f_total = J' * (f_internal + f_gravity + f_error) + f_collision;
-        fprintf("f_total = %.4e\n", sum(f_total.^2)); 
+%         fprintf("f_internal_and_error = %.4e\n", sum((J'*f_internal_error).^2));
+%         fprintf("f_gravity = %.4e\n", sum((J'*f_gravity).^2));
+% %         fprintf("f_error = %.4e\n", sum((J'*f_error).^2));
+%         fprintf("f_collision = %.4e\n", sum(f_collision.^2)); 
+%         f_total = J' * (f_internal_error + f_gravity) + f_collision;
+%         fprintf("f_total = %.4e\n", sum(f_total.^2)); 
 
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+%         rhs = J' * (P*M*P'*J*qdot + f_internal_error + f_gravity) + f_collision;
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
         
-        size(collide_plane_vid, 1)
-        
-        if config.collision_with_plane && size(collide_plane_vid, 1) > 30
+        if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii > 2000
           qdot = reshape(qdot, 3, [])';
-          if size(collide_plane_vid, 1) > 40
-            qdot(:, [1 2]) = 0.999 * qdot(:, [1 2]);
-          else
-            qdot(:, [1 2]) = 0.9999 * qdot(:, [1 2]);
-          end
+          qdot(:, [1 2]) = 0 * qdot(:, [1 2]);
           qdot = reshape(qdot', [], 1); 
         end
+        
+%         size(collide_plane_vid, 1)
+%         
+%         if config.collision_with_plane && size(collide_plane_vid, 1) > 30
+%           qdot = reshape(qdot, 3, [])';
+%           if size(collide_plane_vid, 1) > 40
+%             qdot(:, [1 2]) = 0.999 * qdot(:, [1 2]);
+%           else
+%             qdot(:, [1 2]) = 0.9999 * qdot(:, [1 2]);
+%           end
+%           qdot = reshape(qdot', [], 1); 
+%         end
         
         % Update position
         q = q + config.dt*qdot;
         x = reshape(P'*J*q,3,[]) + x_fixed;
         
         % Update high-resolution triangulation
+        verts_velocity = reshape(hires_J * qdot, 3, [])';
         verts = reshape(hires_J * q, 3, [])';
         face_normal = normals(verts, faces);
         

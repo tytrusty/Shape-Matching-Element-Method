@@ -23,12 +23,13 @@ options.distance_cutoff = 10;
 % options.save_obj = true;
 
 options.k_stability = 1e9;
-options.collision_ratio = 1e6;
+options.collision_ratio = 1e7;
 
 options.collision_with_other = false;
 options.self_collision = false;
 options.collision_with_plane = true;
 options.collision_plane_z = -20.0;
+options.initial_velocity = [0 0 -10];
 
 vem_simulate_nurbs_with_collision(part, options);
 end
