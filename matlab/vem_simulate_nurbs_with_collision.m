@@ -15,15 +15,17 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     addParameter(p, 'sample_interior', 1);
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
-    addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
-    addParameter(p, 'com_threshold', 100000);
     addParameter(p, 'collision_ratio', 0.1);    % parameter for the collision penalty force
     addParameter(p, 'self_collision', false);
     addParameter(p, 'collision_with_other', true);
     addParameter(p, 'collision_with_plane', true);
     addParameter(p, 'collision_plane_z', -10.0);
+    addParameter(p, 'x_samples', 5);
+    addParameter(p, 'y_samples', 9);
+    addParameter(p, 'z_samples', 9);
     parse(p,varargin{:});
     config = p.Results;
     
@@ -40,17 +42,6 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
 
     % Assembles global generalized coordinates
     [J, hires_J, q, E, x0] = nurbs_assemble_coords(parts);
-
-    % Generating centers of mass. Temporary method!
-    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
-        config.com_threshold, n);
-    
-    if config.plot_com
-        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                        '.','Color','g','MarkerSize',20);
-        hold on;
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%
     
     % Initial deformed positions and velocities
     x = x0;
@@ -66,7 +57,8 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [9 9], 5);
+        yz_samples = [config.y_samples config.z_samples];
+        [V, vol] = raycast_quadrature(parts, yz_samples, config.x_samples);
     else
         V=x0;
         vol=ones(size(V,2),1);
@@ -87,17 +79,25 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     
     % Undeformed Center of mass
     x0_com = mean(x0,2);
-        
-    % Shape Matrices
-    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
     
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
-                             
+    
+    % Generate centers of mass.
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    if config.plot_com
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
+    end
+    
+    % Shape Matrices
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, config.order, config.fitting_mode);
+    
     % Build Monomial bases for all quadrature points
     [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
     [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
@@ -172,8 +172,6 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
 
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
-        p = c(end-d+1:end);
-        x_com = x0_com + p;   
         
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...

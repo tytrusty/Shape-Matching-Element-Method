@@ -9,13 +9,13 @@ end
 iges_file = 'rounded_cube.iges';
 part = nurbs_from_iges(iges_file);
 
-YM = 1; %in Pascals
-pr =  0.02;
+YM = 1e2; %in Pascals
+pr =  0.15;
 [lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.rho = 1e-5;
-options.gravity = -10e6;
+options.rho = 1e-1;
+options.gravity = -10;
 options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;

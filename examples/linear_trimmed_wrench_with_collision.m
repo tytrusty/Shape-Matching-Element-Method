@@ -16,9 +16,8 @@ pr =  0.25;
 [lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.rho = 0.1;
+options.rho = 1;
 options.pin_function = @pin_function;
-options.enable_secondary_rays = true;
 options.lambda = lambda;
 options.mu = mu;
 options.gravity = 0;

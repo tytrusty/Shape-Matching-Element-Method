@@ -22,18 +22,22 @@ pr =  0.45;
 
 options.order = 2;
 options.pin_function = @pin_function;
-options.gravity = -50;
+options.gravity = -10;
 options.lambda = lambda;
 options.mu = mu;
 options.rho = 1;
 % options.distance_cutoff = 1.5;
-options.distance_cutoff = 0.7;
-options.com_threshold = 1.4;
+% options.distance_cutoff = 0.9;
+options.distance_cutoff = 1;
 options.k_stability = 1e5;
-options.enable_secondary_rays = 0;
+options.enable_secondary_rays = 1;
 options.fitting_mode = 'hierarchical';
 options.save_output = 0;
-
-vem_simulate_nurbs_newtons(part, options);
+% options.plot_points = 1;
+options.x_samples = 50;
+options.y_samples = 1;
+options.z_samples = 1;
+% vem_simulate_nurbs_newtons(part, options);
+vem_simulate_nurbs(part, options);
 
 end

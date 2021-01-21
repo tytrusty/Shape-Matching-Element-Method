@@ -2,7 +2,7 @@ function nurbs = nurbs_plot(nurbs)
     cm=jet(numel(nurbs));
     for ii = 1:numel(nurbs)
         plt = patch('Faces',nurbs{ii}.T,'Vertices',nurbs{ii}.x0', ...
-            'FaceAlpha',0.7,'EdgeColor','none','FaceColor',cm(ii,:));
+            'FaceAlpha',0.5,'EdgeColor','none','FaceColor',cm(ii,:));
         hold on;
         nurbs{ii}.plt=plt;
     end

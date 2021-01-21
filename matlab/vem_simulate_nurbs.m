@@ -19,7 +19,9 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
-    addParameter(p, 'com_threshold', 100);
+    addParameter(p, 'x_samples', 5);
+    addParameter(p, 'y_samples', 9);
+    addParameter(p, 'z_samples', 9);
 
     parse(p,varargin{:});
     config = p.Results;
@@ -52,7 +54,8 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [3 3], 10);
+        yz_samples = [config.y_samples config.z_samples];
+        [V, vol] = raycast_quadrature(parts, yz_samples, config.x_samples);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -80,9 +83,9 @@ function vem_simulate_nurbs(parts, varargin)
     % Generate centers of mass.
     [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
     if config.plot_com
-    com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                    '.','Color','g','MarkerSize',20);
-    hold on;
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
     end
     
     % Shape Matrices
