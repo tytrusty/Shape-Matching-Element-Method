@@ -13,6 +13,7 @@ YM = 5e2; %in Pascals
 pr =  0.15;
 [lambda, mu] = emu_to_lame(YM, pr);
 
+options.dt = 0.1; % higher timestep works great!
 options.order = 1;
 options.gravity = -10;
 options.rho = .2;
@@ -21,8 +22,7 @@ options.lambda = lambda;
 options.mu = mu;
 options.sample_interior = 0; % only sample on boundary
 options.distance_cutoff = 1;
-% options.fitting_mode = 'hierarchical';
-vem_simulate_nurbs_newtons(part, options);  %%%%% verify hierarchical works!!!!!
+vem_simulate_nurbs_newtons(part, options);
                                                         
  
 end

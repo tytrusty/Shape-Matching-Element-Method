@@ -1,9 +1,10 @@
 function test_flow
 % parts = nurbs_from_iges('mug_complex.iges');
-parts = nurbs_from_iges('gumby.iges');
+% parts = nurbs_from_iges('gumby.iges');
 % parts = nurbs_from_iges('beam2.igs');
 % parts = nurbs_from_iges('T.iges');
 % parts = nurbs_from_iges('rounded_cube.iges');
+parts = nurbs_from_iges('puft_simple.iges');
 figure(1)
 clf;
 parts=nurbs_plot(parts);
@@ -24,7 +25,7 @@ distance_cutoff = 101; % beam
 %                 '.','Color','r','MarkerSize',20);
 % hold on;
 
-[V, ~] = raycast_quadrature(parts, [11 8], 25);
+[V, ~] = raycast_quadrature(parts, [8 8], 5);
 Vplot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',10);
 
 [w, w_I] = nurbs_blending_weights(parts, V', distance_cutoff);
@@ -36,6 +37,7 @@ w_num = sum(wids,2);
 for i=1:size(w,2)
     w_vals(:,i) = accumarray(ic, w(:,i), [], @sum);
 end
+
 
 % Remove single coms
 w_vals(w_num==1,:) = [];
@@ -93,20 +95,26 @@ for i = 1:m
 end
 
 active_coms = unique(com_map);
+cluster_ids = cell(numel(active_coms), 1);
+x_coms = zeros(3,numel(active_coms));
+
 for i = 1:numel(active_coms)
-    nparts = parts(wids(active_coms(i),:));
-    x_com = zeros(3,1);
-    num = 0;
-    for j=1:numel(nparts)
-        num = num + size(nparts{j}.x0,2);
-        x_com = x_com + sum(nparts{j}.x0,2);
-    end
-    x_com = x_com ./ num;
+    % Find all parts use in computing this center of mass and construct
+    % index set of all points used to compute the mean.
+    part_idx = wids(active_coms(i),:);
+    cluster_ids{i} = vertcat(E{part_idx});
+
+    x_com = mean(x0(:,cluster_ids{i}),2);
     plot3(x_com(1,:),x_com(2,:),x_com(3,:), ...
                 '.','Color','r','MarkerSize',20);
     hold on;
+    x_coms(:,i) = x_com;
     
-    assoc_parts = find(com_map == active_coms(i))
+    % Find parts that use this center of mass as their element's
+    % center of mass.
+    assoc_parts = find(com_map == active_coms(i));
+%     com_map(assoc_parts) = i;
+    com_map(com_map == active_coms(i)) = i;
     for j=1:numel(assoc_parts)
        centroid = mean(parts{assoc_parts(j)}.x0,2);
        plot3([centroid(1); x_com(1)],[centroid(2); x_com(2)],[centroid(3); x_com(3)], ...
