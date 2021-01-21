@@ -16,7 +16,9 @@ psi=C*(I3-3)+D*(J-1)^2;
 
 g = gradient(psi,F(:));
 H = hessian(psi,F(:));
-ccode(H)
+% ccode(psi)
+ccode(g)
+% ccode(H)
 % matlabFunction(g, 'vars', {F,C,D},'File','SNH_dF','Comments','Version: 1.0')
 % matlabFunction(H, 'vars', {F,C,D},'File','SNH_dF2','Comments','Version: 1.0')
 end

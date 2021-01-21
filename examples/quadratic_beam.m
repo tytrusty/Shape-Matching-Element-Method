@@ -34,6 +34,6 @@ options.enable_secondary_rays = 0;
 options.fitting_mode = 'hierarchical';
 options.save_output = 0;
 
-vem_simulate_nurbs(part, options);
+vem_simulate_nurbs_newtons(part, options);
 
 end

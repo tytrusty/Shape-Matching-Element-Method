@@ -86,15 +86,18 @@ void sim::vem3dmesh_simulate_one_step(Eigen::VectorXx<DerivedRet> &qdot_new,
 		Eigen::MatrixXd x_new;
 		Eigen::VectorXd c;
 		get_x_new_and_c(x_new, c, qdot_new);
+		// std::cout << "pass x_new: " << x_new.block(0,0,3,3) << std::endl;								
+		// std::cout << "pass c: " << c.segment(0, 6) << std::endl;								
+
 		// compute vem neohookean gradient
 		Eigen::VectorXd g_neohookean;
 		// std::cout << "start vem3dmesh_neohookean_dq" << std::endl;	
 		vem3dmesh_neohookean_dq(g_neohookean, x_new, c, volume, params, dF_dc, dF_dc_S, ME, L, 
 														k, n, d, x0_coms_size, k_stability);
-		// std::cout << "pass vem3dmesh_neohookean_dq" << std::endl;	
+		// std::cout << "pass vem3dmesh_neohookean_dq: " << std::endl << g_neohookean.segment(0,6) << std::endl;	
 		g = JtPMPtJ * (qdot_new - qdot) + J.transpose() * (dt*P*g_neohookean - f_ext); 	
 
-		// std::cout << "pass grad" << std::endl;								
+		// std::cout << "pass grad: " << g.segment(0, 6) << std::endl;								
 	};
 	auto hessian = [&](Eigen::MatrixXd &H, Eigen::VectorXd &qdot_new) {
 		// std::cout << "start hessian" << std::endl;			
@@ -104,10 +107,11 @@ void sim::vem3dmesh_simulate_one_step(Eigen::VectorXx<DerivedRet> &qdot_new,
 
 		Eigen::MatrixXd K;
 		vem3dmesh_neohookean_dq2(K, c, volume, params, dF_dc, W_I, k, n, x0_coms_size);
-		K = L.transpose() * (-K) * L;
+		K = L.transpose() * (K) * L;
+
 		H = JtPMPtJ + J.transpose() * P * K * P.transpose() * J * dt * dt;
 
-		// std::cout << "pass hessian" << std::endl;
+		// std::cout << "pass hessian: " << H.block(0,0,6,6) << std::endl;
 	};
 
 	Eigen::VectorXd tmp_g(qdot.rows());
