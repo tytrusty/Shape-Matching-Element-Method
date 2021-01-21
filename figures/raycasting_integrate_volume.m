@@ -1,6 +1,7 @@
 function raycasting_integrate_volume
 iges_file = 'trident.iges';
-% iges_file = 'beam1.igs';
+% iges_file = 'puft_head.iges';
+% iges_file = 'sphere.iges';
 
 figure(1);
 clf;
@@ -22,25 +23,32 @@ xlabel('x');
 zlabel('z');
 view(-15,30);
 
-nsamples = 25;
+nsamples = 20;
 x_vals = 1:nsamples;
 errors = zeros(size(x_vals));
 
 true_vol = 11774.6564; % mm^3 for the trident 
+% true_vol = 1.17697114 ; % rounded cube
 % true_vol = 5; % mm^3 for the beam 
-
+% true_vol = 267.11
 for i = 1:nsamples
-   [V, vols] = raycast_quadrature(parts, [i i], i);
-   e = (sum(vols) - true_vol)^2;
+   [V, vols] = raycast_quadrature(parts, [i i], 5);
+   e = abs(sum(vols) - true_vol) / true_vol;
    errors(i) = e;
-   if i == 10
-       plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+   if i == 1
+       V_plt = plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+   else
+      V_plt.XData=V(1,:);
+      V_plt.YData=V(2,:);
+      V_plt.ZData=V(3,:);
+      
    end
 end
 
 clf;
-semilogy(x_vals,errors);
-title('Squared error as the number of samples increase in each direction');
-ylabel('Squared Error');
+% semilogy(x_vals,errors);
+plot(x_vals,errors);
+title('Error as the number of samples increase in each direction');
+ylabel('Relative Absolute Error');
 xlabel('# Samples');
 end
