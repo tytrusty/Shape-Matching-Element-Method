@@ -20,7 +20,7 @@ options.lambda = lambda;
 options.mu = mu;
 options.distance_cutoff = 10;
 
-% options.save_obj = true;
+options.save_obj = true;
 
 options.k_stability = 1e9;
 options.collision_ratio = 1e7;
