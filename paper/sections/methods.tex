@@ -151,7 +151,28 @@ be shared between multiple parts.
 Attempting to use $\Pmatxi$ in~\refeq{shapematch} on a per-part basis is problematic as it can become ill-posed, especially for planar boundary representations. 
 To alleviate this problem we invoke the \emph{hierarchical ordering principle}, which argues that the behavior of a system is typically 
 dominated by lower order effects~\cite{li2006regularities}. 
+Mechanically, this principle suggests that the amount of motion modelled by increasingly high-order polynomials is decreasing. 
+This implies that we can achieve acceptable shape matching results by performing shape matching hierarchically -- starting with the constant term and then 
+fitting the remaining deformation with progressively higher-order deformations. 
 
+For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{X}_j$.
+We next fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
+This can be repeated for polynomials of arbitrary high order, for instance here we apply this approach to quadratic shape matching:
+
+\begin{equation*}
+    \begin{split}
+        \tr_i  & = \sum_{\prt_k \in \bar{\refX}_j} \mathbbm{1}^T\wt_k \samp{\Jnurbs}_k\vc{q}_k \\
+        \vc{c}_i^1 & = \left(\samp{\Pmat^1}^T\wt_i\samp{\Pmat^1}\right)^{-1}\samp{\Pmat^1}^T\wt_i\left(\samp{\Jnurbs}_i\vc{q}_i-\mathbbm{1}\tr_i\right)\\
+        \vc{c}_i^2 & = \left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)^{-1}\samp{\Pmat^2}^T\wt_i\left(\samp{\Jnurbs}_i\vc{q}_i-\samp{\Pmat^1}\vc{c}_i^1 - \mathbbm{1}\tr_i\right)
+    \end{split},
+    \label{eq:hfit} 
+\end{equation*} where $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^1}$ is the stacked evaluation of this matrix at $n$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
+Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3n\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point.
+
+Coupling via the deformation origins ensures our method will reproduce rigid and linear deformations in regions around these points, while higher order 
+terms help compensate for more local deformations.
+
+\dave{should have done Chebyshev shape matching to ensure higher order terms are orthogonal which would gaurantee exact reconstruction}
 
 \subsection{Meshless Blending Weight Computation}
 \label{sec:weights}
