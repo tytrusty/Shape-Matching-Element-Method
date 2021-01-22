@@ -2,9 +2,13 @@
 \usepackage{colortbl}
 \usepackage[ruled,vlined]{algorithm2e}
 
+%font stuff
+\DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
+
 \newcommand{\reffig}[1] {Fig.~\ref{fig:#1}}
 \newcommand{\refalg}[1] {Alg.~\ref{alg:#1}}
 \newcommand{\refeq}[1] {Eq.~\ref{eq:#1}}
+\newcommand{\refsec}[1] {\S\ref{sec:#1}}
 
 \newcommand{\dave}[1]{{\bf\textcolor[rgb]{0.2,0.2,0.8}{Dave: #1}}}
 
@@ -18,8 +22,18 @@
 \newcommand{\Pmat}{P}
 \newcommand{\Pco}{\vc{c}}
 \newcommand{\tr}{\vc{t}}
-\newcommand{\Pmatx}  {\begin{pmatrix}\Pmat\left(\refX\right) & \ident \end{pmatrix}}
-\newcommand{\Pmatxuv} {\begin{pmatrix}\Pmat\left(\refX\left(u,v)\right)\right) & \ident \end{pmatrix}}
-\newcommand{\Pcox} {\begin{pmatrix} \Pco\\ \tr \end{pmatrix}}
+%\newcommand{\Pmatx}  {\begin{bmatrix}\Pmat\left(\refX\right) & \ident \end{bmatrix}}
+%\newcommand{\Pmatxuv} {\begin{bmatrix}\Pmat\left(\refX\left(u,v\right)\right) & \ident \end{bmatrix}}
+\newcommand{\Pmatx}{\Pmat\left(\refX\right)}
+\newcommand{\Pmatxuv}{\Pmat\left(\refX\left(u,v\right)\right)}
+\newcommand{\Pmatxi}{\Pmat_i\left(\refX \right)}
+
+\newcommand{\Pcox} {\begin{bmatrix} \Pco\\ \tr \end{bmatrix}}
 \newcommand{\samp}[1]{\hat{#1}}
-\newcommand{\wt}{W}
+\newcommand{\wt}{S}
+\newcommand{\ar}{a}
+\newcommand{\vol}{v}
+\newcommand{\bld}{w}
+\newcommand{\prt}{\mathpzc{b}}
+\newcommand{\Prts}{\mathpzc{B}}
+\newcommand{\XBs}{\bar{\mathpzc{X}}}

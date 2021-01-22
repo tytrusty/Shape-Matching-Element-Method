@@ -22,6 +22,7 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
+    addParameter(p, 'f_external', [0 0 0]);
 
     parse(p,varargin{:});
     config = p.Results;
@@ -108,6 +109,10 @@ function vem_simulate_nurbs(parts, varargin)
     % Gravity force vector.
     dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
     f_gravity = config.dt*P*(L' * dg_dc);
+    
+    % Optional external force vector
+    dext_dc = vem_ext_force(config.f_external', config.rho*vol, Y, Y_S);
+    f_external = config.dt*P*(L' * dext_dc); 
 
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
@@ -155,7 +160,7 @@ function vem_simulate_nurbs(parts, varargin)
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
         end        
         dV_dq = L' * dV_dq;
-        
+
         % Error correction force
         f_error = - 2 * ME * x(:);
         f_error = config.k_stability*(config.dt * P * f_error(:));
@@ -167,7 +172,7 @@ function vem_simulate_nurbs(parts, varargin)
         % Note: I believe i'm forgetting the error matrix stiffness matrix
         %       but I don't wanna break things so I haven't added it yet.
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_external);
         qdot = lhs \ rhs;
 
         % Update position
