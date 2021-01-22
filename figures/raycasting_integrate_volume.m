@@ -26,11 +26,19 @@ view(-15,30);
 nsamples = 20;
 x_vals = 1:nsamples;
 errors = zeros(size(x_vals));
-
 true_vol = 11774.6564; % mm^3 for the trident 
 % true_vol = 1.17697114 ; % rounded cube
 % true_vol = 5; % mm^3 for the beam 
 % true_vol = 267.11
+
+i=2;
+[V, ~] = raycast_quadrature(parts, [i i], 5);
+
+V_plt = plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
+V([2 3],:) = V([3 2],:);
+F = 1:size(V,2);
+writePLY('samples.ply', V', F', 'ascii');
+
 for i = 1:nsamples
    [V, vols] = raycast_quadrature(parts, [i i], 5);
    e = abs(sum(vols) - true_vol) / true_vol;
@@ -41,7 +49,6 @@ for i = 1:nsamples
       V_plt.XData=V(1,:);
       V_plt.YData=V(2,:);
       V_plt.ZData=V(3,:);
-      
    end
 end
 
@@ -51,4 +58,5 @@ plot(x_vals,errors);
 title('Error as the number of samples increase in each direction');
 ylabel('Relative Absolute Error');
 xlabel('# Samples');
+xlim([1 20])
 end
