@@ -1,7 +1,7 @@
 function [w,w_I] = nurbs_blending_weights(parts, X, alpha, varargin)
     p = inputParser;
     addParameter(p, 'Truncate', true);
-    addParameter(p, 'Threshold', 1e-2);
+    addParameter(p, 'Threshold', 1e-4);
     addParameter(p, 'Enable_Secondary_Rays', true);
     parse(p,varargin{:});
 

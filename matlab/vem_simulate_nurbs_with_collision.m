@@ -77,8 +77,8 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     params = repmat(params,size(V,2),1);
         
     % Gravity force vector.
-  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
-    f_gravity = config.dt*P*f_gravity(:);
+  	% f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
+    % f_gravity = config.dt*P*f_gravity(:);
     
     % Undeformed Center of mass
     x0_com = mean(x0,2);
@@ -184,7 +184,9 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-
+        
+        dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
+        
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
@@ -197,8 +199,13 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
+            
+            grav = [0 0 config.gravity];
+            dg_dc = dg_dc + (config.rho*vol(i)*grav*Y{i}*Y_S{i})';
         end
         dV_dq = L' * dV_dq;
+        
+        f_gravity = config.dt*P*(L' * dg_dc);
         
         % Error correction force
         f_error = - 2 * ME * x(:);
