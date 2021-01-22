@@ -11,7 +11,6 @@
 %	\item With our augmented lagrangian, we use the Euler-Lagrange equation to arrive at equations of motion. Our generalized coordinates give us direct updates on the control points of the NURBS. Currently we are using linearly-implicit Euler for time integration.
 %	\item \textbf{Handling trimmed NURBS}: For this case we update the original control points, but we must only sample points within the boundary. To compute these points we use an approach similar to the raycasting quadrature but in 2D. In the paremtric domain for a T-NURBS we sample uniforly in the V direction and shoot rays along the U axis. At each region of intersection, we sample more values along the ray. The final result is a set of UV coordinates that respect the boundary defined by NURBS curves.
 %\end{itemize}
-\dave{cite jacobson stretchable twistable bones for constant term}
 \section{Overview}
 The input to the Shape Matching Element Method (SEM)  is a NURBS \emph{boundary representation} of a volumetric object, along with a set of physical parameters 
 (density, constitutive model, model parameters etc). 
@@ -72,27 +71,6 @@ Exploiting linearity with respect to the control points  we can express this map
     \underbrace{\begin{pmatrix} \vc{q}_{11} \\ \vdots \\ \vc{q}_{nn}\end{pmatrix}}_{\vc{q}},
 \end{equation} where $\Jnurbs\left(u,v\right)$ is the NURBS Jacobian, $\ident$ is the $3\times3$ identity matrix and $\vc{q}$ is the vector of generalized coordinates~\dave{cite Lanczos}.
 The Shape Matching Element Method will follow from this kinematic description.
-% The NURBS jacobian, $\mathbf{J}$, is a matrix composed of horizontally concatenated $3x3$ blocks where the $(i,j)$-th block is $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ for the $(i,j)$-th control point. $\frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}}$ is a diagonal $3x3$ matrix where each diagonal entry $N_{i,j}(\mathbf{u})$ takes the form
-
-% \begin{equation}
-% \label{eqn:jacobian_diagonal}
-%     N_{i,j}(u,v)
-%     = \frac{w_{i,j} B_{i,k}(u)B_{j,l}(v)}{\sum_{i=1}^{n}\sum_{j=1}^{m} w_{i,j} B_{i,k}(u)B_{j,l}(v)}
-%     \text{.}
-% \end{equation}
-% Thus the NURBS jacobian for a single $(u,v)$ pair is written as
-% \begin{equation}
-% \label{eqn:uv_jacobian}
-%     \mathbf{J}(u,v) =
-%     \left[ \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{1,1}} \dots
-%            \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{i,j}} \dots 
-%            \frac{\partial \mathbf{x}}{\partial \mathbf{p}_{n,m}}
-%     \right]
-%     \text{.}
-% \end{equation}
-
-% With this equation, the full set of world positions of the NURBS model may be written as $\mathbf{x} = \mathbf{J}\mathbf{q} \in \mathbb{R}^{3N}$ where $N$ is the total number of $(u,v)$ coordinates.
-
 
 \begin{figure}
     \includegraphics[width=\columnwidth]{example-image-a}
@@ -101,6 +79,7 @@ The Shape Matching Element Method will follow from this kinematic description.
 \end{figure}
 
 \subsection{Shape Matching}
+\label{sec:shapematching}
 
 We begin by describing shape matching to a single NURBS part. 
 Given a two different configurations of the same part (specified by the control points), shape matching computes a polynomial deformation which best aligns them.
@@ -118,6 +97,7 @@ We can define a polynomial deformation from $\refX = \begin{pmatrix} X & Y & Z \
     \mathbf{0} & \mathbf{0} & \mathbf{p}^T(\refX-\bar{\refX}) & 0 & 0 & 1\\
     \end{pmatrix}}_{\Pmatx}
     \Pcox,
+    \label{eq:projection}
 \end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (eg $\begin{pmatrix} X & Y & X\cdot Y & X\cdot X & Y\cdot Y \end{pmatrix}$ ),
 $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are the coefficients for the 
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
@@ -133,7 +113,7 @@ We discretize the shape matching energy and minimize by solving
 \label{eq:shapematch}
 \end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3k$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
 $k$ is the number of  terms in the shape matching polynomial and $3nm$ is the number of NURBS control points. 
-$\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmat(X\left(u, v\right))$ (resp. $\Jnurbs\left(u, v\right)$) at each
+$\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmatxuv$ (resp. $\Jnurbs\left(u, v\right)$) at each
 quadrature point.
 $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
 
@@ -151,10 +131,41 @@ increase the number of polynomials in the shape matching. Next we outline our me
 geometry itself.
 
 \subsection{Shape Matching Element Method}
-\dave{Multiple Parts}
-\dave{each polynomial/NURBS tuple is a shape matching element}
-\dave{Shape Matching Element assembles global kinematics using blendeded formultion}
- In a typical simulation we will have multiple shape matching elements where the boundary of each element is defined by a different NURBS surface. Therefore for the entire model each shape has a boundary, a polynomial describing its deformation, as well as an associated center of mass. These centers of mass may not be distinct, meaning that a single center of mass may be shared among multiple surfaces. This sharing of center of masses is typical and in some cases required (\myworries{reference center of mass section that describes how for planar surfaces we need to share COM to get a COM out of plane}). This leads to a new definition of the center of mass where it is the mean of all the boundary points associated with it.
+ Each input object is composed of a set of boundary representations, $\Prts$, one for each part $\prt\in\Prts$. 
+ Our kinematic mapping is a blended construction (as is done for skinning~\cite{10.1145/2614028.2615427}) which we write as
+
+ \begin{equation}
+    \defX\left(\refX\right) = \sum_{\prt_i\in\Prts} \bld_i\Pmatxi\Pi_i\vc{q}_i, 
+ \end{equation} where $w_i$ $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
+ part respectively.  
+ 
+ \subsubsection*{Multiple Part Projection}
+As in ~\refsec{shapematching} we construct each $\Pi_i$ via shape matching. 
+It is tempting to use an identical polynomial basis matrix, $\Pmatx$ for all parts, $\prt_i$, but recall that constructing $\Pmatx$ requires the selection of a deformation
+origin $\bar{\refX}$~(\refeq{projection}). 
+Using the same origin for all polynomials limits the expressivity of the kinematic model~\cite{STBS:2011}.
+Instead we choose a number of points in $\refX$ ($|\Prts| > |\XBs| > 0$, where $\XBs$ is the set of points)  to act as deformation origins~(\refsec{origins}).
+For each part we now construct $\Pmatxi$ using the associated deformation origin $\bar{\refX}_j\in \XBs$, where each origin can
+be shared between multiple parts.
+
+Attempting to use $\Pmatx_i$ in~\refeq{shapematch} on a per-part basis is problematic as it can become ill-posed, especially for planar boundary representations. 
+To alleviate this problem we invoke the \emph{hierarchical ordering principle}, which argues that the behavior of a system is typically 
+dominated by lower order effects~\cite{li2006regularities}. 
+
+
+ \dave{heirarchical ordering to handle degenerecies}
+ 
+
+\subsection{Meshless Blending Weight Computation}
+
+\subsection{Choosing Deformation Centers}
+\label{sec:origins}
+
+
+
+
+%%%% OLD STUFF BELOW HERE  %%%%%
+In a typical simulation we will have multiple shape matching elements where the boundary of each element is defined by a different NURBS surface. Therefore for the entire model each shape has a boundary, a polynomial describing its deformation, as well as an associated center of mass. These centers of mass may not be distinct, meaning that a single center of mass may be shared among multiple surfaces. This sharing of center of masses is typical and in some cases required (\myworries{reference center of mass section that describes how for planar surfaces we need to share COM to get a COM out of plane}). This leads to a new definition of the center of mass where it is the mean of all the boundary points associated with it.
 
 In defining the shape matching fitting problem, we will form a system similar to equation \ref{eqn:fitting_one}. In this case where we have $n$ shape elements our set of unknown coefficients is $\hat{\mathbf{c}} = \left[\mathbf{c}_1^T \dots \mathbf{c}_i^T \dots \mathbf{c}_n^T \right]^T \in \mathbb{R}^{3kn}$ where $\mathbf{c}_i$ corresponds to the unknown polynomial coefficients for the $i$-th shape element. The set of boundary positions is similarly written as $\hat{\mathbf{b}}=\left[\mathbf{b}_1^T \dots \mathbf{b}_i^T \dots \mathbf{b}_n^T \right]^T \in \mathbb{R}^{3N}$ where $N$ is the total number of boundary points across all elements. If we have $m$ centers of mass we write the set of polynomial constant terms as $\hat{\mathbf{t}} = \left[\mathbf{t}_1^T \dots \mathbf{t}_i^T \dots \mathbf{t}_m^T \right]^T \in \mathbb{R}^{3m}$. With these terms, we write the polynomial fitting system for the entire model as
 \begin{equation}
