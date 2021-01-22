@@ -22,6 +22,7 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
+    addParameter(p, 'f_external', [0 0 0]);
 
     parse(p,varargin{:});
     config = p.Results;
@@ -142,6 +143,8 @@ function vem_simulate_nurbs(parts, varargin)
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
         
         dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
+        
+        df_ext_dc = zeros(d*(k*n + size(x0_coms,2)),1);
 
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
@@ -158,10 +161,14 @@ function vem_simulate_nurbs(parts, varargin)
             
             grav = [0 0 config.gravity];
             dg_dc = dg_dc + (config.rho*vol(i)*grav*Y{i}*Y_S{i})';
+            
+            df_ext_dc = df_ext_dc + (vol(i)*config.f_external*Y{i}*Y_S{i})';
         end
         dV_dq = L' * dV_dq;
         
         f_gravity = config.dt*P*(L' * dg_dc);
+        
+        f_external = config.dt*P*(L' * df_ext_dc);
         
         % Error correction force
         f_error = - 2 * ME * x(:);
@@ -174,7 +181,7 @@ function vem_simulate_nurbs(parts, varargin)
         % Note: I believe i'm forgetting the error matrix stiffness matrix
         %       but I don't wanna break things so I haven't added it yet.
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_external);
         qdot = lhs \ rhs;
 
         % Update position
