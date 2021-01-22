@@ -68,10 +68,6 @@ function vem_simulate_nurbs_fmincon(parts, varargin)
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
-        
-    % Gravity force vector.
-  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
-    f_gravity = config.dt*P*f_gravity(:);
 
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
@@ -108,6 +104,10 @@ function vem_simulate_nurbs_fmincon(parts, varargin)
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
+    f_gravity = config.dt*P*(L' * dg_dc);
+    
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
     M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);

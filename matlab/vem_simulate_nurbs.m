@@ -70,10 +70,6 @@ function vem_simulate_nurbs(parts, varargin)
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
         
-    % Gravity force vector.
-  	%f_gravity = repmat([0 0 config.rho * config.gravity], size(x0,2),1)';
-    %f_gravity = config.dt*P*f_gravity(:);
-
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
@@ -109,6 +105,10 @@ function vem_simulate_nurbs(parts, varargin)
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
+    f_gravity = config.dt*P*(L' * dg_dc);
+
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
     M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
@@ -141,8 +141,6 @@ function vem_simulate_nurbs(parts, varargin)
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
         
-        dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
-
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
@@ -155,13 +153,8 @@ function vem_simulate_nurbs(parts, varargin)
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
-            
-            grav = [0 0 config.gravity];
-            dg_dc = dg_dc + (config.rho*vol(i)*grav*Y{i}*Y_S{i})';
-        end
+        end        
         dV_dq = L' * dV_dq;
-        
-        f_gravity = config.dt*P*(L' * dg_dc);
         
         % Error correction force
         f_error = - 2 * ME * x(:);

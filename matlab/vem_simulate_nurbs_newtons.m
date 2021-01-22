@@ -59,7 +59,6 @@ function vem_simulate_nurbs_newtons(parts, varargin)
         V=x0;
         vol=ones(size(V,2),1);
     end
-    m = size(V,2);  % number of quadrature points
     
     if config.plot_points
         V_plot=plot3(V(1,:),V(2,:),V(3,:),'.','Color','m','MarkerSize',20);
@@ -68,10 +67,6 @@ function vem_simulate_nurbs_newtons(parts, varargin)
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
-        
-    % Gravity force vector.
-  	f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
-    f_gravity = config.dt*P*f_gravity(:);
 
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
@@ -107,6 +102,10 @@ function vem_simulate_nurbs_newtons(parts, varargin)
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
+
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
+    f_gravity = config.dt*P*(L' * dg_dc);
 
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
