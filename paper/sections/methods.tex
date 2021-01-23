@@ -204,9 +204,22 @@ terms help compensate for more local deformations.
 
 Our kinematic map~\refeq{kinematics} requires blending weights in order to homogenize our per-part representation. 
 Specifying weights manually would be antithetical to our goal of providing a seamless translation from surface representation to simulation.
-Automatic  weight computation is a well-studied topic (for examples ~\citet{10.1145/2766952,BBW:2011,0.1145/2010324.1964968}) but typically requires solving an optimization problem
+Automatic  weight computation is a well-studied topic (for examples ~\citet{10.1145/2766952,BBW:2011} and ~\citet{10.1145/2010324.1964968}) but typically requires solving an optimization problem
 that itself relies on a volumetric discretization. 
 This can be avoided by using stochastic methods~\cite{Sawhney:2020:MCG} but do not yet support the jump boundary conditions we require for our problem. 
+
+Ideally our shape functions would both partition unity and obey the Kronecker delta property (the $i^th$ blending function is one at $i^th$ part and zero on all other parts).
+These properties ensure that our simulation can properly represent motions up to the order of the polynomial basis and that the solution stored at each part is the actual deformed position.
+Additionally we would like our weights to be sparse both for performance reasons (leads to sparse matrices) and for expressivity (leads to locality of deformation). 
+
+While a partition of unity and sparsity are straightforward to enforce, the overlapping and intersecting parts~(\reffig{badmodels}) often encountered in non-engineering models lead
+to a contradiction -- how can the blending functions be both one and zero at the points of overlap ? 
+Our solution is to allow weights to include bounded discontinuities at these points and it is these discontinuous boundary conditions that are difficult to enforce 
+with previous methods. 
+\dave{ideally need a didactic figure showing this}
+
+
+
 
 
 
