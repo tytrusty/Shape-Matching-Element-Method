@@ -2,8 +2,12 @@
 \section{Results and Discussion}
 
 \dave{we should show the nurbs model in rhino/fusion for every example, maybe an exploded view as well}
+
 \dave{mention that not so many standard NURBS models so we modelled lots of these ourselves .. show's power of approach that we can model and sim all these examples.}
+
 \dave{use as many different meshes as possible for figures (i.e try not to have the same mesh show up in more than one figure if possible).}
+
+\dave{we should report which models we made ourselves}
 
 \begin{table*}[h]
   \caption{Performance of the Shape Matching Element Method on all Examples.}
@@ -23,24 +27,24 @@
 
 %% Results that relate to preprocessing
 % weights are good
-\begin{figure}
-  \centering
-  \includegraphics[width=3.33in]{figures/distance_weight_puft.pdf}
-  \caption{Our distance weights decay smoothly from 1.0 (yellow) to 0.0 (green) when moving away from its closest surface. Here we visualize the distribution of the distance weights (with cutoff distance 5.0) corresponding to each part.   
-  }
-  \label{fig:distance_weight_puft}
-  \vspace{-5pt}
-\end{figure} 
-%
-%
-\begin{figure}
-  \centering
-  \includegraphics[width=3.33in]{figures/plot_distance_weight.pdf}
-  \caption{We plot the distance weight with respect to the primary and total ray length. Here the cutoff distance is 50.
-  }
-  \label{fig:plot_distance_weight}
-  \vspace{-5pt}
-\end{figure} 
+% \begin{figure}
+%   \centering
+%   \includegraphics[width=3.33in]{figures/distance_weight_puft.pdf}
+%   \caption{Our distance weights decay smoothly from 1.0 (yellow) to 0.0 (green) when moving away from its closest surface. Here we visualize the distribution of the distance weights (with cutoff distance 5.0) corresponding to each part.   
+%   }
+%   \label{fig:distance_weight_puft}
+%   \vspace{-5pt}
+% \end{figure} 
+% %
+% %
+% \begin{figure}
+%   \centering
+%   \includegraphics[width=3.33in]{figures/plot_distance_weight.pdf}
+%   \caption{We plot the distance weight with respect to the primary and total ray length. Here the cutoff distance is 50.
+%   }
+%   \label{fig:plot_distance_weight}
+%   \vspace{-5pt}
+% \end{figure} 
 
 %kinematic model is expressive
 \begin{figure}
