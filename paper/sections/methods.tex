@@ -202,7 +202,16 @@ terms help compensate for more local deformations.
 \dave{maybe but weight figure here so reviewers immediately know that it looks pretty good}
 \dave{need to mention Monte Carlo Geometry processing but can't use it because our parts can overlap and that's a tricky boundary condition}
 
-All that remains for the deformation map is to compute blending weights. Our choice of the weighting function is guided by the simple idea that that for a given material point its weight should be highest to whichever surfaces it is closest. This idea lends itself to a simple distance-based weighting method. The first step in this process is to compute \textit{distance weights}. For a given point $\mathbf{X}$ and a set of $n$ we wish to compute a set of distance weights to each surface $\mathbf{\theta}(\mathbf{X}) = \left(\theta_1, \dots, \theta_i, \dots, \theta_n \right)$.
+Our kinematic map~\refeq{kinematics} requires blending weights in order to homogenize our per-part representation. 
+Specifying weights manually would be antithetical to our goal of providing a seamless translation from surface representation to simulation.
+Automatic  weight computation is a well-studied topic (for examples ~\citet{10.1145/2766952,BBW:2011,0.1145/2010324.1964968}) but typically requires solving an optimization problem
+that itself relies on a volumetric discretization. 
+This can be avoided by using stochastic methods~\cite{Sawhney:2020:MCG} but do not yet support the jump boundary conditions we require for our problem. 
+
+
+
+
+%All that remains for the deformation map is to compute blending weights. Our choice of the weighting function is guided by the simple idea that that for a given material point its weight should be highest to whichever surfaces it is closest. This idea lends itself to a simple distance-based weighting method. The first step in this process is to compute \textit{distance weights}. For a given point $\mathbf{X}$ and a set of $n$ we wish to compute a set of distance weights to each surface $\mathbf{\theta}(\mathbf{X}) = \left(\theta_1, \dots, \theta_i, \dots, \theta_n \right)$.
 
 For the $i$-th surface, we first find the distance, $d_{\text{primary}}$, from the point $\mathbf{X}$ to the closest point, $\mathbf{p}$, on the surface. Next we wish to satisfy the condition that the distance weight is highest on the surface and it decays towards zero as it approaches other surfaces. To achieve this, we shoot a ray from $\mathbf{p}$ towards $\mathbf{X}$ and check for intersections between this ray and the other $n-1$ surfaces. If this ray hits another surface, we let $d_{\text{total}}$ be the distance from $\mathbf{p}$ to the closest ray hit $\mathbf{q}$. These two distances enable us to write a simple linear function to compute the \textit{distance weight}:
 \begin{equation}
