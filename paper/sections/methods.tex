@@ -41,7 +41,8 @@ For collisions we use penalty forces and apply them as external forces during in
      \caption{Shape Matching Element Algorithm}
     \end{algorithm}
 
-\section{Methods}
+%\section{Methods}
+\section{Geometric Model}
 
 Our algorithm acts on objects composed of multiple NURBS surfaces~\reffig{NURBS}.
 
@@ -72,7 +73,7 @@ Exploiting linearity with respect to the control points  we can express this map
 \end{equation} where $\Jnurbs\left(u,v\right)$ is the NURBS Jacobian, $\ident$ is the $3\times3$ identity matrix and $\vc{q}$ is the vector of generalized coordinates~\dave{cite Lanczos}.
 The Shape Matching Element Method will follow from this kinematic description.
 
-\subsection{Shape Matching}
+\section{Shape Matching}
 \label{sec:shapematching}
 
 We begin by describing shape matching to a single NURBS part. 
@@ -124,7 +125,7 @@ Previous work~\cite{10.1145/1073204.1073216,10.1145/1275808.1276480} used additi
 increase the number of polynomials in the shape matching. Next we outline our meshless Shape Element Method which works directly on the NURBS
 geometry itself.
 
-\subsection{Shape Matching Element Method}
+\section{Shape Matching Element Method}
  Each input object is composed of a set of boundary representations, $\Prts$, one for each part $\prt\in\Prts$. 
  Our kinematic mapping is a blended construction (as is done for skinning~\cite{10.1145/2614028.2615427}) which we write as
 
@@ -134,7 +135,7 @@ geometry itself.
  \end{equation} where $w_i$ $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
  part respectively.  
  
- \subsubsection*{Multiple Part Projection}
+ \subsection*{Multiple Part Projection}
 As in ~\refsec{shapematching} we construct each $\Pi_i$ via shape matching. 
 It is tempting to use an identical polynomial basis matrix, $\Pmatx$ for all parts, $\prt_i$, but recall that constructing $\Pmatx$ requires the selection of a deformation
 origin $\bar{\refX}$~(\refeq{projection}). 
@@ -310,6 +311,9 @@ deformation origin extraction~\refsec{origins} and blending weights computation~
     \label{fig:raycasting}
 \end{figure}
 
+\section{Physics-Based Animation}
+
+
 \subsection{Mass Matrix}
 The kinetic energy for a model may be expressed as
 \begin{equation}
@@ -326,7 +330,9 @@ T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)
 \text{.}
 \end{equation}
 The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
+
 \subsection{Error Energy}
+\dave{We should cite VEM literature and point out this is a standard thing they do to make the algorithm consistent and convergent}
 Over the course of the simulation we may see the true boundary values deviate from their positions estimated by the polynomial. This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface. To address this we augment our kinetic energy with a term to account for this error. The error for a boundary point $\mathbf{x}_i^*$ that is known to lie on the limit surface of the NURBS can be written as
 \begin{equation}
 \begin{split}
@@ -374,6 +380,7 @@ where $N$ is the total number of boundary points and $\mathbf{M}_E$ is our \text
 % V_E = \mathbf{q}^T \mathbf{M}_E \mathbf{q}
 % \end{equation}
 \subsection{Deformation Gradient}
+\dave{gotta deal with this weight gradient}
 At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
 \begin{equation}
 \label{eqn:deformation_map}
@@ -384,6 +391,8 @@ where we have $n$ surfaces, and $w_i$ and $\mathbf{c}_i$ are the weights and the
 
 
 \subsection{External Forces}
+\dave{Jacobian transpose}
+
 \subsection{Time Integration}
 With our definition of the deformation map as well as a strategy for integrating the volume, we now have the necessary ingredient to perform dynamic simulation. We follow the Variational Mechanics approach that defines a pair of kinetic and potential energies, and we apply the Euler-Lagrange equation to develop our equations of motion.
 
@@ -430,7 +439,7 @@ Then from the Euler-Lagrange equation we have:
 \end{equation}
 \
 
-
+\dave{Some extra notes on how we handle collisions, add a reference, just say we do this from here.}
 %%% ------- OLD STUFF BELOW --------
 % \section{Methods}
 % \dave{We should probably put some pseudo code for the preprocessing and the runtime algorithms right up fron, along with a quick textual walk through of the method.}
