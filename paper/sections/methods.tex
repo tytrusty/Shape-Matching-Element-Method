@@ -130,6 +130,7 @@ geometry itself.
 
  \begin{equation}
     \defX\left(\refX\right) = \sum_{\prt_i\in\Prts} \bld_i\Pmatxi\Pi_i\vc{q}_i, 
+    \label{eq:kinematics}
  \end{equation} where $w_i$ $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
  part respectively.  
  
@@ -181,22 +182,26 @@ terms help compensate for more local deformations.
 
 \dave{should have done Chebyshev shape matching to ensure higher order terms are orthogonal which would gaurantee exact reconstruction}
 
-\subsection{Meshless Blending Weight Computation}
-\label{sec:weights}
-
 \subsection{Choosing Deformation Centers}
 \label{sec:origins}
+\dave{Ty: try to follow this formula when writing 
+(1) what is the purpose of this part of the method ?
+(2) what are the criteria for success
+(3) what is our assumed input 
+(4) what is the desired output
+(5) what's the algorith,
+(6) add proofs/diagrams/figures that show we satisfy (2). }
 
 
-
-
-%%%% OLD STUFF BELOW HERE  %%%%%
-\subsection{Blending Weights}
+\subsection{Meshless Blending Weight Computation}
+\label{sec:weights}
 \dave{Desireable Properties}
 \dave{Construction via post normalization}
 \dave{only need blending weights at quadrature points and surface samples so given sparse set of quadrature points compute blending weights using raycasting}
 \dave{things to explain (1) raycasting works for overlapping geometric, seperated geometry (2) weights glue objects together}
 \dave{maybe but weight figure here so reviewers immediately know that it looks pretty good}
+\dave{need to mention Monte Carlo Geometry processing but can't use it because our parts can overlap and that's a tricky boundary condition}
+
 All that remains for the deformation map is to compute blending weights. Our choice of the weighting function is guided by the simple idea that that for a given material point its weight should be highest to whichever surfaces it is closest. This idea lends itself to a simple distance-based weighting method. The first step in this process is to compute \textit{distance weights}. For a given point $\mathbf{X}$ and a set of $n$ we wish to compute a set of distance weights to each surface $\mathbf{\theta}(\mathbf{X}) = \left(\theta_1, \dots, \theta_i, \dots, \theta_n \right)$.
 
 For the $i$-th surface, we first find the distance, $d_{\text{primary}}$, from the point $\mathbf{X}$ to the closest point, $\mathbf{p}$, on the surface. Next we wish to satisfy the condition that the distance weight is highest on the surface and it decays towards zero as it approaches other surfaces. To achieve this, we shoot a ray from $\mathbf{p}$ towards $\mathbf{X}$ and check for intersections between this ray and the other $n-1$ surfaces. If this ray hits another surface, we let $d_{\text{total}}$ be the distance from $\mathbf{p}$ to the closest ray hit $\mathbf{q}$. These two distances enable us to write a simple linear function to compute the \textit{distance weight}:
@@ -227,8 +232,7 @@ where
 \end{equation}
 We see that through the use of linear constraints we satisfy conditions (1) and (2). Satisfying the third condition (3) is achieved through using the distance weights. Intuitively, we see that for some small $\theta_i$, $\frac{1}{\theta_i}$ will be very large, encouraging the quadratic program to assign a small weight for $w_i$. Conversely, we see the opposite effect for large values of $\theta_i$.
 
-\subsection{Multiple Part Projection}
-\dave{explain why you need to share constant terms (fit polynomial around a point in space), explain clustering and how to pick, forward reference to quadrature point}
+
 \subsection{Quadrature Points}
 \dave{quadrature via raycasting}
 The last step before we may discuss the dynamic simulation is to describe our strategy for generating material points $\mathbf{X}$ in the undeformed model. Our volume integration strategy is based on \cite{KHOSRAVIFARD201030} which we briefly describe in the following section
