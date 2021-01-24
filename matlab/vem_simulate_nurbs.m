@@ -19,10 +19,12 @@ function vem_simulate_nurbs(parts, varargin)
     addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
+    addParameter(p, 'initial_velocity', [0 0 0]);
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
     addParameter(p, 'f_external', [0 0 0]);
+    addParameter(p, 'f_external_time', 1000);
 
     parse(p,varargin{:});
     config = p.Results;
@@ -43,7 +45,8 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Initial deformed positions and velocities
     x = x0;
-    qdot=zeros(size(q));
+%     qdot=zeros(size(q));
+     qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
     % Setup pinned vertices constraint matrix
     pin_I = config.pin_function(x0);
@@ -168,7 +171,11 @@ function vem_simulate_nurbs(parts, varargin)
         
         f_gravity = config.dt*P*(L' * dg_dc);
         
-        f_external = config.dt*P*(L' * df_ext_dc);
+        if t >= config.f_external_time
+          f_external = zeros(size(f_gravity,1), 1);
+        else
+          f_external = config.dt*P*(L' * df_ext_dc);
+        end
         
         % Error correction force
         f_error = - 2 * ME * x(:);

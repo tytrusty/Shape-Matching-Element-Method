@@ -27,6 +27,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
+    addParameter(p, 'save_obj_path', 'output/obj/');
 
     parse(p,varargin{:});
     config = p.Results;
@@ -161,9 +162,13 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
     end
     
     collide_plane_vid = [];
+    
+    if config.save_obj
+      mkdir(config.save_obj_path);
+    end
 
     ii=1;
-    for t=0:config.dt:30
+    for t=0:config.dt:40
         tic
         
         % Preparing input for stiffness matrix mex function.
@@ -256,7 +261,7 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
         
-        if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii > 1200
+        if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii >= 2500
           qdot = reshape(qdot, 3, [])';
           qdot(:, [1 2]) = 0 * qdot(:, [1 2]);
           qdot = reshape(qdot', [], 1); 
@@ -292,9 +297,9 @@ function vem_simulate_nurbs_with_collision(parts, varargin)
             V_plot.ZData = V(3,:);
         end
         drawnow
-        
-        if config.save_obj
-            obj_fn = "output/obj/part_" + int2str(ii) + ".obj";
+         
+        if config.save_obj && ii >= 1200
+            obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".obj";
             nurbs_write_obj(q,parts,obj_fn,ii);
         end
         
