@@ -14,7 +14,7 @@
 \section{Overview}
 The input to the Shape Matching Element Method (SEM)  is a NURBS \emph{boundary representation} of a volumetric object, along with a set of physical parameters 
 (density, constitutive model, model parameters etc). 
-The boundary representation is composed of one or more (not necessarily explicit;y connected) NURBS surface primitives that we will call \emph{parts}.
+The boundary representation is composed of one or more (not necessarily explicitly connected) NURBS surface primitives that we will call \emph{parts}.
 The output is an elastodynamic simulation. 
 SEM consists of preprocessing and runtime simulation phases~\refalg{sem} and at no point do we need to generate a volumetric mesh of the input. 
 In the \emph{preprocessing} stage we use raycasting to find quadrature points and weights for volumetric integration, as well as to compute part blending parameters. 
@@ -26,20 +26,65 @@ For collisions we use penalty forces and apply them as external forces during in
 
 \begin{algorithm}[h]
     \label{alg:sem}
-    \SetAlgoLined
-    \KwResult{Write here the result }
-     initialization\;
-     \While{While condition}{
-      instructions\;
-      \eIf{condition}{
-       instructions1\;
-       instructions2\;
-       }{
-       instructions3\;
-      }
-     }
-     \caption{Shape Matching Element Algorithm}
-    \end{algorithm}
+	\caption{Shape Matching Element Algorithm}\label{sem_algorithm}
+	\begin{algorithmic}[1]
+		\Procedure{Preprocess}{$model$}
+		\State{// Get initial DOF and sample boundary}
+		\State $\mathbf{q^0} \gets \text{GetControlPoints}(model)$ \Comment{Section 4}
+		\State $\mathbf{J}, \mathbf{W} \gets \text{SampleNURBS}(model)$ \Comment{Section 4}
+		\State $\mathbf{x^0} \gets \mathbf{Jq^0}$
+		\State{$\mathbf{q} \gets \mathbf{q^0}$}
+      \Statex
+      
+    	\State{// Generate material points inside the model}
+		\State $\mathbf{X} \gets \text{RaycastQuadrature}(model)$ \Comment{Section 4.5}
+		\Statex   
+		 
+      \State{// Weights for quadrature and boundary points}
+     	\State $\mathbf{w} \gets \text{BlendingWeights}(model, \mathbf{X}, d_{\text{max}})$    \Comment{Section 4.3}
+      	\State $\mathbf{w^*} \gets \text{BlendingWeights}(model, \mathbf{x^0}, d_{\text{max}})$   
+		\Statex
+		
+		\State{// Generate centers of mass}
+		\State $\bar{\mathbf{X}} \gets \text{GenerateCOM}(\mathbf{X}, \mathbf{w})$  \Comment{Section 4.}
+		\Statex
+		
+		\State{// Create projection operator}
+		\State $\Pi \gets \text{ShapeMatching}(\mathbf{q^0},\mathbf{J}, \mathbf{W},\bar{\mathbf{X}})$     	\Comment{Section 4.2}
+		\Statex
+		
+		\State{// Form weighted monomial basis and mass matrices}
+		\State $\mathbf{Y} \gets \text{WeightedMonomials}(\mathbf{X}, \mathbf{\bar{X}}, \mathbf{w})$   \Comment{Eqn 32}     	
+		\State $\mathbf{Y^*} \gets \text{WeightedMonomials}(\mathbf{x^*}, \mathbf{\bar{X}}, \mathbf{w})$
+    	\State $\mathbf{M} \gets \text{MassMatrix}(\mathbf{Y}, \Pi)$			\Comment{Section 4.6}
+     	\State $\mathbf{M_E} \gets \text{ErrorMatrix}(\mathbf{Y^*}, \Pi)$	\Comment{Section 4.7}
+     	\Statex
+     	\myworries{todo: add volume}
+     	\While {$simulating$}
+     		\State{$\Pcox \gets \Pi\mathbf{q}$}
+     		\ForAll{$i \gets 1$ to $|\mathbf{X}|$}
+     			\State{$\mathbf{F}_i \gets \frac{\partial \mathbf{F}}{\partial c} c$}
+				\State{$\frac{\partial V}{\partial c} \gets \frac{\partial V}{\partial c} +
+				\frac{\partial \mathbf{F}}{\partial c}^T \frac{\partial \psi}{\partial \mathbf{F}}(\mathbf{F}_i)$}
+				
+				\State{$\frac{\partial^2 V}{\partial c^2} \gets \frac{\partial^2 V}{\partial c^2} +
+				 \frac{\partial \mathbf{F}}{\partial c}^T 
+				 \frac{\partial^2 \psi}{\partial \mathbf{F}^2}(\mathbf{F}_i)
+				 \frac{\partial \mathbf{F}}{\partial c}
+				 $}
+  			\EndFor
+  			\State{$\mathbf{K} \gets \Pi^T \frac{\partial^2 V}{\partial c^2} \Pi$}
+  			\State{$f_{\text{internal}} \gets \Pi^T \frac{\partial V}{\partial c}$}
+  			\State{$f_{\text{error}} \gets \mathbf{M_E}\mathbf{q}$}
+  			\State{$f_{\text{total}} \gets f_{\text{internal}} + f_{\text{error}} + f_{\text{ext}}$}
+  			\State{$\dot{\mathbf{q}} \gets \text{TimeIntegration}
+  			(f_{\text{total}},\mathbf{K}, \dot{\mathbf{q}}, \mathbf{J} , \mathbf{M}, \mathbf{M_E})$}
+  			\State{$\mathbf{q} \gets \mathbf{q} + h\dot{\mathbf{q}}$}
+     	\EndWhile
+	\EndProcedure
+\end{algorithmic}
+\caption{Shape Matching Element Algorithm}
+\end{algorithm}
 
 %\section{Methods}
 \section{Geometric Model}
@@ -161,7 +206,7 @@ fitting the remaining deformation with progressively higher-order deformations.
 For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{X}_j$.
 We next fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
 This can be repeated for polynomials of arbitrary high order, for instance here we apply this approach to quadratic shape matching:
-
+\ty{is the -1 above the A terms intentional? unsure if this is a common thing or an error}
 \begin{equation}
     \begin{split}
         \tr_i  & = \sum_{\prt_k \in \bar{\refX}_j} \underbrace{\mathbbm{1}^T\wt_k \samp{\Jnurbs}_k}_{B_{ik}}\vc{q}_k \\
@@ -193,7 +238,9 @@ terms help compensate for more local deformations.
 (4) what is the desired output
 (5) what's the algorith,
 (6) add proofs/diagrams/figures that show we satisfy (2). }
+To ensure kinematic expressiveness, it is essential that multiple origins of deformation are permitted. Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$. Each origin is computed as the centroid of the set of parts with which it is associated. While we constraint a part to be paired with only one origin, an origin may be associated any number of parts. Next, we require that each deformation origin be associated with a minimum of two part so that we avoid having an origin lie on the surface of a part.\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)} Furthermore, we seek that the sparsity of the deformation origins mirrors that of the blending weights. Intuitively, this means that regions in which the weights are high for a subset of parts should deform about an origin centered in this region.
 
+From the set of blending weights we seek to construct a set of candidate deformation origins and then produce a set of deformation origins, $\XBs$, adhering to the outlined requirements. These requirements admit a graph structure, which we exploit by forming a simple network flow problem that produces a solution satisfying the requirements. The pairwise relationships between parts and deformation origins can be realized as a bipartite network flow problem. Flow between a part and origin is constrained to binary values and a flow value on edge between a part and origin candidate indicate that the part is paired with this deformation origin. We organize the problem so that the source node is connected to each candidate origin node, and the sink node is connected with each part. We place a capacity constraint of $1$ on the sink's edge, which enforces the constraint that each part is paired with one origin.
 
 \subsection{Meshless Blending Weight Computation}
 \label{sec:weights}
@@ -227,6 +274,7 @@ For each $\refX_j$ we find the nearest point on $\prt_i$, $\clst$.
 We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the nearest part, $\rhit$.
 
 \dave{Ty: How do we deal with non-planar parts ? What if the ray cast hits the same part that the closest point is on?}
+\ty{Right now this doesn't happen as we only test intersection against other parts}
 
 Next we compute two distances, $d_{\text{primary}}$, the distance from $\mathbf{X}_j$ to $\clst$ and $d_{\text{total}}$ the distance from  $\clst$ to $\rhit$.
 Using these two distances we define a linear \emph{distance weight} using the well-known ReLU function:
