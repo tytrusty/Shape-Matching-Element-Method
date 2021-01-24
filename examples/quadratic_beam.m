@@ -22,7 +22,7 @@ pr =  0.45;
 
 options.order = 2;
 options.pin_function = @pin_function;
-options.gravity = -10;
+% options.gravity = -10;
 options.lambda = lambda;
 options.mu = mu;
 options.rho = 1;

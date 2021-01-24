@@ -1,4 +1,4 @@
-function vem_simulate_nurbs_with_collision_new(parts, varargin)
+function vem_simulate_nurbs_with_collision(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -20,23 +20,15 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     addParameter(p, 'plot_com', true);
     addParameter(p, 'collision_ratio', 0.1);    % parameter for the collision penalty force
     addParameter(p, 'self_collision', false);
-    addParameter(p, 'collision_with_other', false);
-    addParameter(p, 'collision_with_other_sim', false);
-    addParameter(p, 'collision_other_position', []);
-    addParameter(p, 'collision_with_plane', false);
+    addParameter(p, 'collision_with_other', true);
+    addParameter(p, 'collision_with_plane', true);
     addParameter(p, 'collision_plane_z', -10.0);
-    addParameter(p, 'collision_with_sphere', false);
-    addParameter(p, 'collision_sphere_c', []);
-    addParameter(p, 'collision_sphere_r', 0.05);
-    addParameter(p, 'collision_sphere_rho', 2e3);
     addParameter(p, 'initial_velocity', [0 0 0]);
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
-    addParameter(p, 'f_external', [0 0 0]);
-    addParameter(p, 'f_external_time', 1000);
     addParameter(p, 'save_obj_path', 'output/obj/');
-    
+
     parse(p,varargin{:});
     config = p.Results;
     
@@ -84,14 +76,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
-        
-    % Gravity force vector.
-  	% f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
-    % f_gravity = config.dt*P*f_gravity(:);
-    
-    % Undeformed Center of mass
-    x0_com = mean(x0,2);
-    
+
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
@@ -126,15 +111,11 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
-    
-     % Gravity force vector.
+
+    % Gravity force vector.
     dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
     f_gravity = config.dt*P*(L' * dg_dc);
     
-    % Optional external force vector
-    dext_dc = vem_ext_force(config.f_external', config.rho*vol, Y, Y_S);
-    f_external = config.dt*P*(L' * dext_dc); 
-
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
     M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
@@ -149,23 +130,16 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     [verts,faces] = triangulate_iges(parts);
     collision_ratio = config.collision_ratio;
     face_normal = normals(verts, faces);
+    verts_velocity = reshape(hires_J * qdot, 3, [])';
     
     if config.collision_with_other
-%       collide_iges_file = 'rounded_cube.iges';
-%       collide_parts = nurbs_from_iges(collide_iges_file);
-%       [collide_verts, collide_faces] = triangulate_iges(collide_parts);
-      [collide_verts, collide_faces] = readOBJ('./models/bowl.obj');
-      collide_verts = 5 * collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)));
-      if size(config.collision_other_position, 1) == 0 
-        collide_verts = collide_verts + [0 0 max(verts(:,3)) + 10.0];
-      else
-        collide_verts = collide_verts + config.collision_other_position;
-      end
+      collide_iges_file = 'rounded_cube.iges';
+      collide_parts = nurbs_from_iges(collide_iges_file);
+      [collide_verts, collide_faces] = triangulate_iges(collide_parts);
+      collide_verts = collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)))  + [0 0 max(verts(:,3))];
       t_collide = tsurf(collide_faces, collide_verts);
       move_ratio = (max(collide_verts(:,1))-min(collide_verts(:,1)));
       set(fig, 'KeyPressFcn', @keypress)
-      collide_other_v = [0; 0; -10];
-      collide_other_m = 1.0;
     end
     
     % draw the plane if needed
@@ -184,32 +158,6 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
       hold off
     end
     
-    % collision with multiple sphere
-    if config.collision_with_sphere
-      [sphere_V, sphere_F] = readOBJ('./models/sphere.obj');
-      if size(config.collision_sphere_c,1) < 1
-        sphere_c = [mean(verts(:,1)) mean(verts(:,2)) max(verts(:,3)) + 0.5];
-      else
-        sphere_c = config.collision_sphere_c;
-      end
-      sphere_r = config.collision_sphere_r;
-      sphere_V = sphere_r * sphere_V;
-      sphere_vol = (4/3) * pi * sphere_r^3;
-      sphere_v = zeros(size(sphere_c, 1), 3);
-      sphere_v(:,3) = -10.0;
-      sphere_rho = config.collision_sphere_rho;
-      sphere_m = sphere_rho * sphere_vol;
-      
-      sphere_plt = cell(size(sphere_c, 1), 1);
-      sphere_Vi = cell(size(sphere_c, 1), 1);
-      sphere_face_normal = cell(size(sphere_c, 1), 1);
-      for si = 1:size(sphere_c, 1)
-        sphere_Vi{si} = sphere_V + repmat(sphere_c(si,:), size(sphere_V,1), 1);
-        sphere_plt{si} = tsurf(sphere_F, sphere_Vi{si});
-        sphere_face_normal{si} = normals(sphere_Vi{si}, sphere_F);
-      end
-    end
-          
     collide_plane_vid = [];
     
     if config.save_obj
@@ -238,9 +186,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-        
-        dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
-        
+                
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
@@ -253,9 +199,9 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
+            
         end
         dV_dq = L' * dV_dq;
-        
         
         % Error correction force
         f_error = - 2 * ME * x(:);
@@ -270,21 +216,10 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         % detect the collision with another mesh
         if config.collision_with_other
           [IF] = intersect_other(verts,faces,collide_verts,collide_faces);
-          f_collision_other = zeros(3, 1);
           for i = 1:size(IF,1)
             fid = IF(i, 1); % colliding face id of the origin mesh
             c_fid = IF(i, 2); % colliding face id of the colliding mesh
-            [f_collision, f_collision_other_i] = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision);
-            f_collision_other = f_collision_other + f_collision_other_i;
-          end
-          
-          if config.collision_with_other_sim
-            % update the position of the other mesh
-            collide_other_v = collide_other_v + config.dt * (f_collision_other + collide_other_m * config.gravity) /collide_other_m;
-            collide_verts = collide_verts + config.dt * repmat(collide_other_v', size(collide_verts, 1), 1);
-            % Always do a redraw
-            t_collide.Vertices = collide_verts;
-            drawnow
+            f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision);
           end
         end
         % self-collision detection
@@ -296,8 +231,8 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
             if size(intersect(faces(fid,:), faces(c_fid,:)), 2) == 0 
               continue; % skip the face pairs if they share a vertex
             end
-            [f_collision, ~] = check_collision_between_faces(verts,faces,verts,faces,fid,c_fid,face_normal,collision_ratio,f_collision);
-            [f_collision, ~] = check_collision_between_faces(verts,faces,verts,faces,c_fid,fid,face_normal,collision_ratio,f_collision);
+            f_collision = check_collision_between_faces(verts,faces,verts,faces,fid,c_fid,face_normal,collision_ratio,f_collision);
+            f_collision = check_collision_between_faces(verts,faces,verts,faces,c_fid,fid,face_normal,collision_ratio,f_collision);
           end
         end
         % collision with the plane
@@ -309,36 +244,12 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
           f_collision_plane = reshape(f_collision_plane_tmp', [], 1);                           
           f_collision = f_collision + f_collision_plane;
         end
-        % collision with multiple sphere
-        if config.collision_with_sphere
-          for si = 1:size(sphere_c, 1)
-            [IF] = intersect_other(verts,faces,sphere_Vi{si},sphere_F);
-            f_collision_sphere_i = zeros(1, 3);
-            for i = 1:size(IF,1)
-              fid = IF(i, 1); % colliding face id of the origin mesh
-              c_fid = IF(i, 2); % colliding face id of the colliding mesh              
-              [f_collision, f_collision_sphere_tmp] = check_collision_between_faces(verts,faces,sphere_Vi{si},sphere_F,fid,c_fid,face_normal,collision_ratio,f_collision);
-              f_collision_sphere_i = f_collision_sphere_i + f_collision_sphere_tmp';
-            end
-            sphere_v(si, :) = sphere_v(si, :) + config.dt * (f_collision_sphere_i + sphere_m * config.gravity) / sphere_m;
-          end
-          sphere_c = sphere_c + sphere_v * config.dt;
-          
-          % draw the spheres 
-          hold on;
-         	for si = 1:size(sphere_c, 1)
-            sphere_Vi{si} = sphere_V + repmat(sphere_c(si,:), size(sphere_V,1), 1);
-            set(sphere_plt{si}, 'Faces', sphere_F, 'Vertices', sphere_Vi{si});
-            sphere_face_normal{si} = normals(sphere_Vi{si}, sphere_F);
-          end
-          hold off;
-        end
 
         f_collision = hires_J' * f_collision;
 
         % Computing linearly-implicit velocity update
         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_external) + f_collision;
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error) + f_collision;
         qdot = lhs \ rhs;
         
         if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii >= 2500
@@ -378,7 +289,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         end
         drawnow
          
-        if config.save_obj
+        if config.save_obj && ii >= 1200
             obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".obj";
             nurbs_write_obj(q,parts,obj_fn,ii);
         end
@@ -440,9 +351,8 @@ function [verts,faces] = triangulate_iges(parts)
   faces(deg_fid, :) = [];
 end
 
-function [f_collision, f_collision_other] = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision)
+function f_collision = check_collision_between_faces(verts,faces,collide_verts,collide_faces,fid,c_fid,face_normal,collision_ratio,f_collision)
   % check vertex-face collisions in the colliding faces
-  f_collision_other = zeros(3, 1);
   for j = 1:3  
     cv = collide_verts(collide_faces(c_fid,j),:);
     [dist, cp] = pointTriangleDistance(...
@@ -452,7 +362,6 @@ function [f_collision, f_collision_other] = check_collision_between_faces(verts,
       f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) = f_collision(3*faces(fid,1)-2:3*faces(fid,1), 1) - 1/3 * collision_ratio * dist * face_normal(fid,:)';
       f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) = f_collision(3*faces(fid,2)-2:3*faces(fid,2), 1) - 1/3 * collision_ratio * dist * face_normal(fid,:)';
       f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) = f_collision(3*faces(fid,3)-2:3*faces(fid,3), 1) - 1/3 * collision_ratio * dist * face_normal(fid,:)';
-      f_collision_other = f_collision_other + collision_ratio * dist * face_normal(fid,:)';
       disp('face collide!!');
     end
   end

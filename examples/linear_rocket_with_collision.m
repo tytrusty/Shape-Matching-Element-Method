@@ -13,7 +13,7 @@ pr = 0.32;
 [lambda, mu] = emu_to_lame(YM, pr);
 
 options.order = 1;
-options.gravity = -20;
+options.gravity = -9.8;
 options.rho = 8e3;
 options.pin_function = @pin_function;
 options.lambda = lambda;
@@ -21,13 +21,14 @@ options.mu = mu;
 
 options.distance_cutoff = 10; % use 5 for a single com;
 
-options.save_obj = false;
+options.save_obj = true;
+options.save_obj_path = 'output/obj_rocket_hard_2/';
 
 options.k_stability = 1e9;
-options.collision_ratio = 1e7;
+options.collision_ratio = 5e7;
 
 options.x_samples = 5;
-options.y_samples = 9;
+options.y_samples = 5;
 options.z_samples = 15; % we want more samples along vertical axis
 
 % If you want centers of mass on the legs of the rocket, you'll need to
