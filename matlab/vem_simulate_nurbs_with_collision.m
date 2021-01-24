@@ -18,23 +18,23 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
-    addParameter(p, 'collision_ratio', 0.1);    % parameter for the collision penalty force
-    addParameter(p, 'self_collision', false);
-    addParameter(p, 'collision_with_other', false);
-    addParameter(p, 'collision_with_other_sim', false);
-    addParameter(p, 'collision_other_position', []);
-    addParameter(p, 'collision_with_plane', false);
-    addParameter(p, 'collision_plane_z', -10.0);
-    addParameter(p, 'collision_with_sphere', false);
-    addParameter(p, 'collision_sphere_c', []);
-    addParameter(p, 'collision_sphere_r', 0.05);
-    addParameter(p, 'collision_sphere_rho', 2e3);
-    addParameter(p, 'initial_velocity', [0 0 0]);
+    addParameter(p, 'collision_ratio', 0.1);             % parameter for the collision penalty force
+    addParameter(p, 'self_collision', false);            % enable collision detection of the self-collision
+    addParameter(p, 'collision_with_other', false);      % enable collision detection with another mesh
+    addParameter(p, 'collision_with_other_sim', false);  % enable the collision response of the other mesh
+    addParameter(p, 'collision_other_position', []);     % the initial position of the other mesh
+    addParameter(p, 'collision_with_plane', false);      % enable collision detection with the plane
+    addParameter(p, 'collision_plane_z', -10.0);         % position of the plane
+    addParameter(p, 'collision_with_sphere', false);     % enable collision detection with multiple spheres
+    addParameter(p, 'collision_sphere_c', []);           % center of the sphere
+    addParameter(p, 'collision_sphere_r', 0.05);         % radius of the sphere
+    addParameter(p, 'collision_sphere_rho', 2e3);        % density of the sphere
+    addParameter(p, 'initial_velocity', [0 0 0]);        % initial velocity of the nurbs model
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
     addParameter(p, 'z_samples', 9);
     addParameter(p, 'f_external', [0 0 0]);
-    addParameter(p, 'f_external_time', 1000);
+    addParameter(p, 'f_external_time', 1000);     % lasting time of the external force
     addParameter(p, 'save_obj_path', 'output/obj/');
     
     parse(p,varargin{:});
