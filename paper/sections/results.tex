@@ -10,6 +10,12 @@
 \dave{we should report which models we made ourselves}
 
 
+\reftbl{perf} shows the size of all our examples along with performance statistics. 
+Note that the individual parts of all models are \emph{not connected}.
+No continuity constraints or constructive solid geometry operations have been applied, rather, the SEM approach implicitly couples the boundary parts together
+to allow for seamless volumetric simulation. 
+Models were created using Autodesk Fusion 360 ~\dave{cite} and Rhinocerous 3D 7\dave{cite}.
+
 \begin{table*}[h]
   \caption{Performance of the Shape Matching Element Method on all Examples.}
   \label{tbl:perf}
@@ -48,27 +54,38 @@
 % \end{figure} 
 
 %kinematic model is expressive
-\begin{figure}
-  \includegraphics[width=\columnwidth]{example-image-a}
-  \caption{Take an intesting geometry (maybe that geometry processing cacture), deform it, do our shape matching and then reconstruct the deformed pose. Do this for a bunch of poses (show's kinematic model is good).}
-  \label{fig:deform}
-\end{figure}
+% \begin{figure}
+%   \includegraphics[width=\columnwidth]{example-image-a}
+%   \caption{Take an intesting geometry (maybe that geometry processing cacture), deform it, do our shape matching and then reconstruct the deformed pose. Do this for a bunch of poses (show's kinematic model is good).}
+%   \label{fig:deform}
+% \end{figure}
 
 
 %% Results that relate to simulation output
 %correctness
+We first validated the physical plausibility of our method using a small, 2D, patch test (\reffig{patchtest}). 
+Here the test object is a square made of four edges (not joined at the corners) simulated using linear VEM with a single deformation center.
+We apply a battery of boundary conditions and resolve the deformation of the element by minimizing the elastic potential.
+We note that SEM is able to represent rigid motions, as well as shearing and anisotropic stretching. 
+This implies that, with sparse weights, SEM can resolve these motions locally, leading to physically plausible simulation results.
+
 \begin{figure}
   \includegraphics[width=\columnwidth]{figures/patch_test.pdf}
   \caption{2D examples (left) rigidly transform boundary and show that solving the static problem gives us rigid motion on the interior (right) isotropically scale boundary and show solving static problem gives us constant strain on the interior}
   \label{fig:patchtest}
 \end{figure}
 
+Next we check the convergence of SEM with respect to linear, tetrahedral finite elements. \reffig{convergence} we compare identical cantileavered beams, simulated using 
+a Neohookean constitutive model (Young's Modulus \dave{??}, Poisson's Ratio \dave{??}) and implicit time integration with a timestep of $0.01$s. 
+We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of 6 independent NURBS patches show's good agreement with FEM.
 \begin{figure}
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{(left) high res FEM cantileavered bar (right) several simulations using more and more surface patches plus center of mass. Need to show beam is just  unattached patches}
   \label{fig:convergence}
 \end{figure}
 
+We also demonstrate that our raycasting weights computation creates shape-aware output. Figure~\reffig{independence} shows that manipulating
+parts that are nearby, but separate  behave in an appropriately independent fashion. 
 \begin{figure}
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{X shape and show arms of X move independently}
@@ -76,6 +93,10 @@
 \end{figure}
 
 % relaxed modeling  constraints
+Here we demonstrate SEM's ability to work with poor models. \reffig{badmodels} shows simulations of two jelly coffee mugs. 
+The top row shows the result of a careless modeler who has deeply embedded the handle of the mug in the body in order to attach it, creating a large area of overlap.
+The bottom models has neglible overlap. 
+In both cases SEM produces a plausible physically-based animation, without requiring additional model clean-up.
 \begin{figure}
   \includegraphics[width=\columnwidth]{figures/mug_overlap}
   \caption{Coffee mug with overlapping handle (top) row of models with increasing overlap (middle) single weight image showing behaviour in the overlapping region, (bottom) simulation result for each one}
@@ -83,13 +104,28 @@
 \end{figure}
 
 %different material parameters / material models 
+We derive the equations of motion for SEM using a general elastic potential and so SEM supports arbitrary constitutive models. \reffig{materials} shows a 
+rocket ship simulated with both high stiffness and low stiffness materials. 
 \begin{figure}
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{Big image simulating the rocket with all different combinations of things}
   \label{fig:materials}
 \end{figure}
 
+
+%multiple materials
+SEM also supports objects made up of multiple materials, as the simulation of this tire~(\reffig{tire}) illustrates.
+\begin{figure}
+  \includegraphics[width=\columnwidth]{example-image-a}
+  \caption{Tire to show heterogenous materials}
+  \label{fig:tire}
+\end{figure}
+
+
 %different surface reps
+Though we focus on NURBS surface representations, they only NURBS specific construction in the SEM method is the Jacobian\dave{ref}.
+Many other boundary representations admit a linear representation and are thus directly consumable by our method.
+\reffig{subd} shows an example of applying our SEM method to a subdivision model by making such a modification.
 \begin{figure}
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{show subd simulation if we have it. If it works really well we'll just mix subds and nurbs throughout the paper. }
@@ -97,6 +133,7 @@
 \end{figure}
 
 %editing example
+We show that the output of the SEM simulation is itself edible in a NURBS modelling program~(\reffig{edit}).
 \begin{figure}
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{show input to simulation, show output then show output loaded in rhino/fusion 360 }
@@ -104,14 +141,9 @@
 \end{figure}
 
 
-%multiple materials
-\begin{figure}
-  \includegraphics[width=\columnwidth]{example-image-a}
-  \caption{Avocado to show heterogenous materials}
-  \label{fig:avocado}
-\end{figure}
 
 %show stoppers
+Finally we show the ability of SEM to handle complex simulations involving deformation, contact and friction~(\reffig{staypuft} and \reffig{f1})).
 \begin{figure*}[htp]
   \includegraphics[width=\textwidth,height=3in]{example-image-a}
   \caption{sequence of frames from staypuft simulation}
