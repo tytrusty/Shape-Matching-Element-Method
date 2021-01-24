@@ -18,17 +18,17 @@ part = nurbs_from_iges(iges_file, sample_density);
 
 %material properties
 % YM = 5e3; %in Pascals
-YM = 1e5; %in Pascals
+YM = 1e4; %in Pascals
 pr = 0.45;
 [lambda, mu] = emu_to_lame(YM, pr);
 
-options.dt = 0.01;
+options.dt = 0.005;
 options.order = 2;
 options.pin_function = @pin_function;
 options.gravity = -10;
 options.lambda = lambda;
 options.mu = mu;
-options.rho = 2e3;
+options.rho = 1.5e3;
 % options.distance_cutoff = 1.5;
 % options.distance_cutoff = 0.9;
 options.distance_cutoff = 0.1;
@@ -42,8 +42,8 @@ options.save_output = 0;
 % options.z_samples = 10;
 % vem_simulate_nurbs_newtons(part, options);
 
-options.save_obj = true;
-options.save_obj_path = 'output/obj_castle/';
+options.save_obj = false;
+options.save_obj_path = 'output/obj_castle_5e4/';
 
 options.k_stability = YM*1e5;
 
@@ -55,7 +55,7 @@ options.self_collision = false;
 options.collision_with_plane = true;
 options.collision_plane_z = 0.684;
 options.collision_with_sphere = true;
-options.collision_ratio = 1.2e5;
+options.collision_ratio = 2.5e5;
 
 options.collision_sphere_r = 0.0175;
 options.collision_sphere_rho = 2e3;

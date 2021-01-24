@@ -344,8 +344,10 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
             sphere_v(si, :) = sphere_v(si, :) + config.dt * ...
                               (f_collision_sphere_i + f_collision_other_sphere_i + f_collision_sphere_plane_i + sphere_m * [0 0 config.gravity] - sphere_v(si, :)) / sphere_m;
             % hacky air friction
-            if size(collide_idx, 1) == 0 && sphere_v(si, 3) > 0
-              sphere_v(si, :) = 0.95 * sphere_v(si, :);
+            if size(IF,1) == 0 && sphere_v(si, 3) > 0
+              sphere_v(si, 3) = 1.0 * sphere_v(si, 3);
+            elseif size(IF,1) > 0 && sphere_v(si, 3) < 0
+              sphere_v(si, 3) = 0;
             end
           end
           sphere_c = sphere_c + sphere_v * config.dt;
