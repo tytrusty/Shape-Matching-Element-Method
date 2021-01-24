@@ -12,8 +12,6 @@ iges_file = 'mug_complex.iges';
 
 part = nurbs_from_iges(iges_file);
 
-% YM = 2e3; %in Pascals
-% pr =  0.25;
 YM = 2.9e7;
 pr = 0.32;
 [lambda, mu] = emu_to_lame(YM, pr);
