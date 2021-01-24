@@ -6,4 +6,4 @@
 *.synctex.gz
 acmart.cls
 acmart.dtx
-*.pdf
+main.pdf

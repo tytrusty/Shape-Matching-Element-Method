@@ -35,17 +35,6 @@ function vem_simulate_subd(parts, varargin)
     
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = subd_assemble_coords(parts);
-
-    % Generating centers of mass. Temporary method!
-    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
-        config.com_threshold, n);
-    
-    if config.plot_com
-        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                        '.','Color','g','MarkerSize',20);
-        hold on;
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%
     
     % Initial deformed positions and velocities
     x = x0;
@@ -61,9 +50,10 @@ function vem_simulate_subd(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [9 9], 5);
+        yz_samples = [config.y_samples config.z_samples];
+        [V, vol] = raycast_quadrature(parts, yz_samples, config.x_samples);
     else
-    	V=x0;
+        V=x0;
         vol=ones(size(V,2),1);
     end
     m = size(V,2);  % number of quadrature points
@@ -75,21 +65,25 @@ function vem_simulate_subd(parts, varargin)
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
-        
-    % Gravity force vector.
-  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
-    f_gravity = config.dt*P*f_gravity(:);
-    
-    % Shape Matrices
-    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
 
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
-                             
+    
+    % Generate centers of mass.
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    if config.plot_com
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
+    end
+    
+    % Shape Matrices
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, config.order, config.fitting_mode);
+
     % Build Monomial bases for all quadrature points
     [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
     [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
@@ -107,6 +101,10 @@ function vem_simulate_subd(parts, varargin)
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
+    f_gravity = config.dt*P*(L' * dg_dc);
+    
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
     M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);

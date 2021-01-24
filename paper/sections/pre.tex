@@ -1,10 +1,11 @@
 \usepackage{xcolor}
 \usepackage{colortbl}
+\usepackage{bbm}
 \usepackage[ruled,vlined]{algorithm2e}
 
 %font stuff
 \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
-
+\newcommand{\reftbl}[1]{Tbl.~\ref{tbl:#1}}
 \newcommand{\reffig}[1] {Fig.~\ref{fig:#1}}
 \newcommand{\refalg}[1] {Alg.~\ref{alg:#1}}
 \newcommand{\refeq}[1] {Eq.~\ref{eq:#1}}
@@ -37,3 +38,8 @@
 \newcommand{\prt}{\mathpzc{b}}
 \newcommand{\Prts}{\mathpzc{B}}
 \newcommand{\XBs}{\bar{\mathpzc{X}}}
+\newcommand{\st}[1]{\mathpzc{#1}}
+\newcommand{\clst}{\refX^*}
+\newcommand{\rhit}{\refX^h}
+
+

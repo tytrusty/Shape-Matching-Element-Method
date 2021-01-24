@@ -9,14 +9,14 @@ function pinned_ids = pin_function(x)
     verts_to_pin = 10; 
     [~,I] = mink(x(3,:),verts_to_pin);
     pinned_ids = I(1:verts_to_pin);
-    
-    pinned_ids_2 = find(x(3,:) < 5 & x(3,:) > 4);
-    pinned_ids = [pinned_ids pinned_ids_2];
 end
 
 iges_file = 'lamppost.iges';
 
-part = nurbs_from_iges(iges_file);
+% To avoid singular nurbs jacobian with excessive pinning, I up the sample
+% density to ensure we have enough unpinned samples.
+sample_density=3;
+part = nurbs_from_iges(iges_file, sample_density);
 
 YM = 1e8; %in Pascals
 pr = 0.4;
@@ -39,7 +39,7 @@ options.k_stability = YM * 1e-2;
 options.x_samples = 5;
 options.y_samples = 5;
 options.z_samples = 15;
-% options.initial_velocity = [-20 0 0];
+
 options.f_external = [-1e4 0 0];
 options.f_external_time = 2.0;
 

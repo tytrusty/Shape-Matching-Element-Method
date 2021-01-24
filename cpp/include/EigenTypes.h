@@ -118,6 +118,17 @@ auto default_callback = [](auto &element_matrix){};
 
 auto default_linesearch_callback = [](auto &x) {};
 
+// Types used in parsing cell array
+template <typename T>
+using EigenMatrixList = std::vector<Eigen::MatrixXx<T>, Eigen::aligned_allocator<Eigen::MatrixXx<T>>>;
+
+template <typename T>
+using EigenVectorList = std::vector<Eigen::VectorXx<T>, Eigen::aligned_allocator<Eigen::VectorXx<T>>>;
+
+template <typename T>
+using EigenSparseMatrixList = std::vector<Eigen::SparseMatrix<T>, Eigen::aligned_allocator<Eigen::SparseMatrix<T>>>;
+
+
 //include flatten operations
 #include <flatten.h>
 #include <flatten_multiply.h>
