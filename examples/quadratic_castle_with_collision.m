@@ -67,6 +67,6 @@ options.collision_sphere_c = [-10 10 85;
 %                               -0.2 0.2 1.5;
 %                               -0.2 -0.2 1.5];
 
-vem_simulate_nurbs_with_collision_new(part, options);
+vem_simulate_nurbs_with_collision(part, options);
 
 end
