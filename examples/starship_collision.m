@@ -12,7 +12,7 @@ YM = 2e11; %in Pascals
 pr = 0.32;
 [lambda, mu] = emu_to_lame(YM, pr);
 
-options.dt = 0.005;
+options.dt = 0.01;
 options.order = 1;
 options.gravity = -20;
 options.rho = 8e3;
@@ -26,8 +26,9 @@ options.distance_cutoff = 1; % use 5 for a single com;
 
 options.k_stability = 1e9;
 
-% increase this would give a larger penalty force for collision
-options.collision_ratio = 5e6;
+% Increase this would give a larger penalty force for collision and
+% bounces back to a higher position
+options.collision_ratio = 9.5e5;    % Decrease to 9e5 or 8e5 to make it bounce back lower
 
 options.x_samples = 7;
 options.y_samples = 10;
