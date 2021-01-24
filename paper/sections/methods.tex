@@ -148,6 +148,7 @@ We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1
 \end{equation} where we have suppressed the dependence of $\refX$ and $\Jnurbs$ on $u$ and $v$ for the sake of brevity.
 
 \dave{Ty: need some text to explain how we pick points on the nurbs surface.}
+\ty{Need to think a little more on how to write this. The main idea is that each surface has a knot vector and each Bspline covers a span of those knots. Therefore to guarantee we represent all control points for a surface, we uniformly sample $d+1$ points in each span, where $d$ is the NURBS surface}
 We discretize the shape matching energy and minimize by solving
 \begin{equation}
 \samp{\Pmat}^T\wt\samp{\Pmat}\Pcox = \samp{\Pmat}^T\wt\samp{\Jnurbs}\vc{q}.
@@ -228,31 +229,6 @@ Coupling via the deformation origins ensures our method will reproduce rigid and
 terms help compensate for more local deformations.
 
 \dave{should have done Chebyshev shape matching to ensure higher order terms are orthogonal which would gaurantee exact reconstruction}
-
-\subsection{Choosing Deformation Centers}
-\label{sec:origins}
-\dave{Ty: try to follow this formula when writing 
-\dave{maybe this should come after weight computation ?}
-(1) what is the purpose of this part of the method ?
-(2) what are the criteria for success
-(3) what is our assumed input 
-(4) what is the desired output
-(5) what's the algorith,
-(6) add proofs/diagrams/figures that show we satisfy (2). }
-To ensure kinematic expressiveness, it is essential that multiple origins of deformation are permitted. Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$. Each origin is computed as the centroid of the set of parts with which it is associated. While we constraint a part to be paired with only one origin, an origin may be associated any number of parts. Next, we require that each deformation origin be associated with a minimum of two part so that we avoid having an origin lie on the surface of a part.\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)} Furthermore, we seek that the sparsity of the deformation origins mirrors that of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
-
-\begin{figure}[h]
-    \includegraphics[width=\columnwidth]{figures/origin_network}
-    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each parts origin association.}
-    \label{fig:multiparts}
-\end{figure}
-
-From the set of blending weights we seek to construct a set of candidate deformation origins and then produce a set of deformation origins, $\XBs$, adhering to the outlined requirements. These requirements admit a graph structure ~(\reffig{multiparts}), which we exploit by forming a simple network flow problem that produces a solution satisfying the requirements. The relationships between parts and deformation origins can be realized as a bipartite min-cost-flow problem.
-
-Consider a directed bipartite graph $G=(V = A \cup B,E)$ where each node in $A$ corresponds to a deformation origin candidate and each node in $B$ represents one part. $E$ is the set of edges connecting nodes in $A$ to $B$ where each origin has an each to every part with which it attempts to associate. We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing the source, $s$, and sink, $t$, nodes. $E'$ is the augmented set of nodes connecting $s$ to each candidate in $A$ and connecting each part in $B$ to the sink $t$. Each edge $(i,j) \in E'$ has an associated flow $f_{ij}$ and capacity constraint $u_{ij}$, and each edge in $E'$ also has a cost $c_{ij}$. The principal constraint for this network flow problem is the conservation constraint, meaning that the net flow for all nodes in $V$ is zero.
-
-First, we constrain all flow values to be integral and place a capacity of $1$ on the edges from $B$ to $t$. This has the effect of enforcing that any node in $B$ receives flow from a single edge, and as a consequence each part may only be associated with a single deformation origin. 
-Flow between a part and origin is constrained to binary values and a flow value on edge between a part and origin candidate indicate that the part is paired with this deformation origin. We organize the problem so that the source node is connected to each candidate origin node, and the sink node is connected with each part. We place a capacity constraint of $1$ on the sink's edge, which enforces the constraint that each part is paired with one origin.
 
 \subsection{Meshless Blending Weight Computation}
 \label{sec:weights}
@@ -353,6 +329,33 @@ The price we pay for these advantages is that our weights are not C0 continuous 
 Perturbations in the boundaries of parts can cause bounded jumps in our distance weights. 
 However these jumps occupy an infinitesimal percentage of the volume of our object are easy to avoid when integrating
 physical quantities, leaving our simulation unaffected. 
+
+\subsection{Choosing Deformation Centers}
+\label{sec:origins}
+\dave{Ty: try to follow this formula when writing 
+\dave{maybe this should come after weight computation ?}
+(1) what is the purpose of this part of the method ?
+(2) what are the criteria for success
+(3) what is our assumed input 
+(4) what is the desired output
+(5) what's the algorith,
+(6) add proofs/diagrams/figures that show we satisfy (2). }
+To ensure kinematic expressiveness, it is essential that multiple origins of deformation are permitted. Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$. Each origin is computed as the centroid of the set of parts with which it is associated. While we constrain a part to be paired with only one deformation origin, an origin may be associated any number of parts. Next, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part.\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)} Furthermore, we seek that the sparsity of the deformation origins mirrors that of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
+
+\begin{figure}[h]
+    \includegraphics[width=\columnwidth]{figures/origin_network}
+    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each parts origin association.}
+    \label{fig:network_flow}
+\end{figure}
+
+From the set of blending weights we seek to construct a set of candidate deformation origins and then produce a set of deformation origins, $\XBs$, adhering to the outlined requirements. This set of candidate origins is identified by examining the unique combinations of weight assignments for the quadrature points. For each $\refX_j$, we form a set $\mathbf{c}\left(\refX_j\right)$ with $c_i\left(\refX_j\right)= 1-\delta_{\bld_i\left(\refX_j\right),0}$ where $\delta_{x,0}$ is the Kronecker delta. This produces a binary code for each quadrature point that identifies the parts to which this point has nonzero weights. We use each unique binary code as a deformation origin candidate.
+
+With the set of requirements and candidate origins, we see this problem may be organized in a graph structure ~(\reffig{network_flow}) where the relationships between parts and deformation origins can be realized as a bipartite graph. We exploit this structure by forming a min-cost-flow problem that produces a solution satisfying the requirements.
+
+Consider a directed bipartite graph $G=(V = A \cup B,E)$ where each node in $A$ corresponds to a deformation origin candidate and each node in $B$ represents a part. $E$ is the set of edges connecting nodes in $A$ to $B$ where each origin has an edge to every part with which it attempts to associate. We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing the source, $s$, and sink, $t$, nodes. $E'$ is the augmented set of nodes connecting $s$ to each candidate in $A$ and connecting each part in $B$ to the sink $t$. Each edge $(i,j) \in E'$ has an associated flow $f_{ij}$ and capacity constraint $u_{ij}$, and each edge in $E'$ also has a cost $c_{ij}$. The principal constraint for this network flow problem is the conservation constraint, meaning that the net flow for all nodes in $V$ is zero.
+
+First, we constrain all flow values to be integral and place a capacity of $1$ on the edges from $B$ to $t$. This has the effect of enforcing that any part node in $B$ receives flow from a single edge, and as a consequence each part may only be associated with a single deformation origin.  With the specified network and constraints, we solve this problem with an integer constrained linear program. We choose $\XBs$ to be all nodes in $A$ that have an outgoing flow of at least $1$.
+
 
 \subsection{Meshless Integration}
 
