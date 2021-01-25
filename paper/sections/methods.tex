@@ -435,7 +435,7 @@ The velocity of a point on the object is then
 
 We derive the mass matrix for our system from the definition of kinetic energy:
 \begin{equation}
-    T = \dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\shapef\left(\refX\right)^Tshapef\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
+    T = \dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\bldmat\left(\refX\right)^T\shapef\left(\refX\right)^T\shapef\left(\refX\right)\bldmat\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
 \end{equation}
 % \begin{equation}
 % T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
@@ -454,6 +454,12 @@ We derive the mass matrix for our system from the definition of kinetic energy:
 
 
 \subsection{Deformation Gradient}
+The deformation at a point $\refX$ in the reference space is given by
+\begin{equation}
+    \frac{\partial\defX}{\partial \refX} = \sum_{i=1}^m\left(\bld_i\frac{\partial \Pmatxi}{\partial X}\Pi_i\vc{q}_i + \frac{\partial \bld_i}{\partial X}\Pmatxi\Pi_i\vc{q}\right), 
+\end{equation}
+
+For physics-based animation, we find that it is sufficient to assume the blending weights are constant in the region around quadrature points, allowing us to discard the second term.
 % \dave{gotta deal with this weight gradient}
 % At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
 % \begin{equation}
