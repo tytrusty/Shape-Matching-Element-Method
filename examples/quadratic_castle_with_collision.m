@@ -8,7 +8,7 @@ function pinned_ids = pin_function(x)
 end
 
 % iges_file = 'lamppost.iges';
-iges_file = 'castle_simple.iges';
+iges_file = 'castle_simple_smaller_flip.iges';
 
 % To avoid singular nurbs jacobian with excessive pinning, I up the sample
 % density to ensure we have enough unpinned samples.
@@ -18,19 +18,20 @@ part = nurbs_from_iges(iges_file, sample_density);
 
 %material properties
 % YM = 5e3; %in Pascals
-YM = 5e4; %in Pascals
+YM = 1e4; %in Pascals
 pr = 0.45;
 [lambda, mu] = emu_to_lame(YM, pr);
 
+options.dt = 0.005;
 options.order = 2;
 options.pin_function = @pin_function;
 options.gravity = -10;
 options.lambda = lambda;
 options.mu = mu;
-options.rho = 1.27e3;
+options.rho = 1.5e3;
 % options.distance_cutoff = 1.5;
 % options.distance_cutoff = 0.9;
-options.distance_cutoff = 1;
+options.distance_cutoff = 0.1;
 options.k_stability = 1e5;
 options.enable_secondary_rays = 1;
 options.fitting_mode = 'hierarchical';
@@ -41,31 +42,70 @@ options.save_output = 0;
 % options.z_samples = 10;
 % vem_simulate_nurbs_newtons(part, options);
 
+options.save_obj = true;
+options.save_obj_path = 'output/obj_castle_1e4_2balls/';
+
+options.k_stability = YM*1e5;
+
 % options.initial_velocity = [0 0 -10];
 options.collision_with_other = false;
 options.collision_other_position = [0 0 -10];
 options.collision_with_other_sim = false;
 options.self_collision = false;
-options.collision_with_plane = false;
+options.collision_with_plane = true;
+options.collision_plane_z = 0.684;
 options.collision_with_sphere = true;
-options.collision_ratio = 5e4;
+options.collision_ratio = 2.5e5;
 
-options.collision_sphere_r = 2.0;
-options.collision_sphere_c = [-10 10 85;
-                              -10 30 85;
-                              -10 50 85;
-                              -30 10 85;
-                              -30 30 85;
-                              -30 50 85;
-                              -50 10 85;
-                              -50 30 85;
-                              -50 50 85];
+options.collision_sphere_r = 0.0175;
+options.collision_sphere_rho = 2e3;
+options.collision_sphere_initial_veloity = [0 0 -10];
+% options.collision_sphere_initial_veloity = [-15 0 -10];
+% options.collision_sphere_c = [-1 -1 8.5;
+%                               -1  0 8.5;
+%                               -1  1 8.5;
+%                                0 -1 8.5;
+%                                0  0 8.5;
+%                                0  1 8.5;
+%                                1 -1 8.5;
+%                                1  0 8.5;
+%                                1  1 8.5];
+% options.collision_sphere_c = [-2 -2 2;
+%                               -2  0 2;
+%                               -2  2 2;
+%                                0 -2 2;
+%                                0  0 2;
+%                                0  2 2;
+%                                2 -2 2;
+%                                2  0 2;
+%                                2  2 2];
+% options.collision_sphere_c = [0.3 0.3 0.8;
+% %                               0.3 0.4 0.8;
+%                               0.3 0.5 0.8;
+% %                               0.4 0.3 0.8;
+% %                               0.4 0.4 0.8;
+% %                               0.4 0.5 0.8;
+%                               0.5 0.3 0.8;
+% %                               0.5 0.4 0.8;
+%                               0.5 0.5 0.8];
+ options.collision_sphere_c = [0.3 0.5 0.8;
+%                               0.3 0.4 0.8;
+%                               0.4 0.5 0.8;
+%                               0.4 0.3 0.8;
+%                               0.4 0.4 0.8;
+%                               0.4 0.5 0.8;
+%                               0.5 0.3 0.8;
+%                               0.5 0.4 0.8;
+                              0.5 0.5 0.8];                           
+options.collision_sphere_c = options.collision_sphere_c + 0.025 * rand(size(options.collision_sphere_c, 1), 3) ...
+                              - 0.0125 - repmat([0 -0.05 0], size(options.collision_sphere_c, 1), 1);
+% options.collision_sphere_c = options.collision_sphere_c + repmat([0.5 0 0], 9, 1);
                               
 
-% options.collision_sphere_c = [0.2 0.2 1.5;
-%                               0.2 -0.2 1.5;
-%                               -0.2 0.2 1.5;
-%                               -0.2 -0.2 1.5];
+% options.collision_sphere_c = [0.0.5 0.0.5 0.5;
+%                               0.0.5 -0.0.5 0.5;
+%                               -0.0.5 0.0.5 0.5;
+%                               -0.0.5 -0.0.5 0.5];
 
 vem_simulate_nurbs_with_collision(part, options);
 

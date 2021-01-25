@@ -29,6 +29,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     addParameter(p, 'collision_sphere_c', []);           % center of the sphere
     addParameter(p, 'collision_sphere_r', 0.05);         % radius of the sphere
     addParameter(p, 'collision_sphere_rho', 2e3);        % density of the sphere
+    addParameter(p, 'collision_sphere_initial_veloity', [0 0 0]);        % density of the sphere
     addParameter(p, 'initial_velocity', [0 0 0]);        % initial velocity of the nurbs model
     addParameter(p, 'x_samples', 5);
     addParameter(p, 'y_samples', 9);
@@ -149,6 +150,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     [verts,faces] = triangulate_iges(parts);
     collision_ratio = config.collision_ratio;
     face_normal = normals(verts, faces);
+    writeOBJ('./test.obj', verts, faces, [], zeros(size(faces,1),3), face_normal, zeros(size(faces,1),3));
     
     if config.collision_with_other
 %       collide_iges_file = 'rounded_cube.iges';
@@ -171,11 +173,12 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % draw the plane if needed
     if config.collision_with_plane
       if config.collision_plane_z > min(verts(:,3))
-        config.collision_plane_z = min(verts(:,3)) - 20.0;
+%         config.collision_plane_z = min(verts(:,3)) - 20.0;
+        config.collision_plane_z = min(verts(:,3));
       end
       hold on
-      x_range = 2 * (max(verts(:,1))-min(verts(:,1)));
-      y_range = 2 * (max(verts(:,2))-min(verts(:,2)));
+      x_range = 1 * (max(verts(:,1))-min(verts(:,1)));
+      y_range = 1 * (max(verts(:,2))-min(verts(:,2)));
       p = patch('XData', x_range*[-1 -1 1 1],'YData', y_range*[-1 1 1 -1], ...
                 'ZData', config.collision_plane_z * [1 1 1 1], ...
                 'FaceColor',[0.5 0.5 0.5], 'FaceAlpha', 0.5, 'FaceLighting', 'gouraud');
@@ -195,19 +198,20 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
       sphere_r = config.collision_sphere_r;
       sphere_V = sphere_r * sphere_V;
       sphere_vol = (4/3) * pi * sphere_r^3;
-      sphere_v = zeros(size(sphere_c, 1), 3);
-      sphere_v(:,3) = -10.0;
+      sphere_v = repmat(config.collision_sphere_initial_veloity, size(sphere_c, 1), 1);
       sphere_rho = config.collision_sphere_rho;
       sphere_m = sphere_rho * sphere_vol;
       
       sphere_plt = cell(size(sphere_c, 1), 1);
       sphere_Vi = cell(size(sphere_c, 1), 1);
       sphere_face_normal = cell(size(sphere_c, 1), 1);
+      hold on
       for si = 1:size(sphere_c, 1)
         sphere_Vi{si} = sphere_V + repmat(sphere_c(si,:), size(sphere_V,1), 1);
         sphere_plt{si} = tsurf(sphere_F, sphere_Vi{si});
         sphere_face_normal{si} = normals(sphere_Vi{si}, sphere_F);
       end
+      hold off
     end
           
     collide_plane_vid = [];
@@ -238,8 +242,6 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-        
-        dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
         
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
@@ -318,9 +320,35 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
               fid = IF(i, 1); % colliding face id of the origin mesh
               c_fid = IF(i, 2); % colliding face id of the colliding mesh              
               [f_collision, f_collision_sphere_tmp] = check_collision_between_faces(verts,faces,sphere_Vi{si},sphere_F,fid,c_fid,face_normal,collision_ratio,f_collision);
-              f_collision_sphere_i = f_collision_sphere_i + f_collision_sphere_tmp';
+              f_collision_sphere_i = f_collision_sphere_i + f_collision_sphere_tmp'; 
             end
-            sphere_v(si, :) = sphere_v(si, :) + config.dt * (f_collision_sphere_i + sphere_m * config.gravity) / sphere_m;
+            % also check collision with other spheres
+            dist_vec = repmat(sphere_c(si, :), size(sphere_v, 1), 1) - sphere_c;   
+            dist_vec(si, :) = [];
+            dist = sqrt(sum(dist_vec.^2, 2));
+            [collide_idx, ~] = find(dist < sphere_r);
+            if size(collide_idx, 1) > 0
+              collide_idx
+              dist_dir = dist_vec ./ repmat(dist, 1, 3);
+              f_collision_other_sphere_i = config.collision_ratio * sum(repmat(2*sphere_r*ones(size(dist,1),1) - dist, 1, 3) .* dist_dir);
+            else
+              f_collision_other_sphere_i = zeros(1, 3);
+            end
+            % also check collision with the plane
+            if config.collision_with_plane && sphere_c(si,3) < config.collision_plane_z + sphere_r
+              f_collision_sphere_plane_i = collision_ratio * (config.collision_plane_z + sphere_r - sphere_c(si,3)) * [0 0 1];
+            else
+              f_collision_sphere_plane_i = zeros(1, 3);
+            end
+            % update velocity
+            sphere_v(si, :) = sphere_v(si, :) + config.dt * ...
+                              (f_collision_sphere_i + f_collision_other_sphere_i + f_collision_sphere_plane_i + sphere_m * [0 0 config.gravity] - sphere_v(si, :)) / sphere_m;
+            % hacky air friction
+            if size(IF,1) == 0 && sphere_v(si, 3) > 0
+              sphere_v(si, 3) = 1.0 * sphere_v(si, 3);
+            elseif size(IF,1) > 0 && sphere_v(si, 3) < 0
+              sphere_v(si, 3) = 0;
+            end
           end
           sphere_c = sphere_c + sphere_v * config.dt;
           
@@ -378,9 +406,15 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         end
         drawnow
          
-        if config.save_obj
+        if config.save_obj 
             obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".obj";
             nurbs_write_obj(q,parts,obj_fn,ii);
+            if config.collision_with_sphere
+               for si = 1:size(sphere_c, 1)
+                 obj_fn = config.save_obj_path + "sphere_" + int2str(si) + "_" + int2str(ii) + ".obj";
+                 writeOBJ(obj_fn, sphere_Vi{si}, sphere_F);
+               end
+            end
         end
         
         if config.save_output

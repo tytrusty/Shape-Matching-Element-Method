@@ -17,3 +17,4 @@ output/*
 figures/*.pdf
 blender/*
 matlab/libigl/
+*.igesbak
