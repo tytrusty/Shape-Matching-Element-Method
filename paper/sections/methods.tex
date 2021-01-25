@@ -208,12 +208,12 @@ fitting the remaining deformation with progressively higher-order deformations.
 For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{X}_j$.
 We next fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
 This can be repeated for polynomials of arbitrary high order, for instance here we apply this approach to quadratic shape matching:
-\ty{is the -1 above the A terms intentional? unsure if this is a common thing or an error}
+
 \begin{equation}
     \begin{split}
         \tr_i  & = \sum_{\prt_k \in \bar{\refX}_j} \underbrace{\mathbbm{1}^T\wt_k \samp{\Jnurbs}_k}_{B_{ik}}\vc{q}_k \\
-        \vc{c}_i^1 & = \underbrace{\left(\samp{\Pmat^1}^T\wt_i\samp{\Pmat^1}\right)}_{A^1_i}^{-1}\bigg(\underbrace{\samp{\Pmat^1}^T\wt_i\samp{\Jnurbs}_i}_{B^1_i}\vc{q}_i-\underbrace{\samp{\Pmat^1}^T\wt_i\mathbbm{1}}_{T^1_i}\tr_i\bigg)\\
-        \vc{c}_i^2 & = \underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg)
+        \vc{c}_i^1 & = \smash{\underbrace{\left(\samp{\Pmat^1}^T\wt_i\samp{\Pmat^1}\right)}_{A^1_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^1}^T\wt_i\samp{\Jnurbs}_i}_{B^1_i}\vc{q}_i-\underbrace{\samp{\Pmat^1}^T\wt_i\mathbbm{1}}_{T^1_i}\tr_i\bigg)\\
+        \vc{c}_i^2 & = \smash{\underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg)
     \end{split},
     \label{eq:hfit} 
 \end{equation} where $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^1}$ is the stacked evaluation of this matrix at $n$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
@@ -241,17 +241,17 @@ terms help compensate for more local deformations.
 
 Our kinematic map~(\refeq{kinematics}) requires blending weights in order to homogenize our per-part representation. 
 Specifying weights manually would be antithetical to our goal of providing a seamless translation from surface representation to physics-based animation.
-Automatic  weight computation is a well-studied topic (see ~\citet{10.1145/2766952,BBW:2011} and ~\citet{10.1145/2010324.1964968}) but typically requires solving 
+Automatic  weight computation is well-studied (see ~\citet{10.1145/2766952,BBW:2011} and ~\citet{10.1145/2010324.1964968}) but typically requires solving 
 an optimization problem that itself relies on a volumetric discretization. 
 This can be avoided by using stochastic methods~\cite{Sawhney:2020:MCG} but these do not yet support the boundary conditions we require for our problem. 
 
-Ideally our shape functions would both partition unity and obey the Kronecker delta property (the $i^th$ blending function is one at $i^th$ part and zero on all other parts).
+Ideally our shape functions would both partition unity and obey the Kronecker delta property (the $i^{th}$ blending function is one at $i^{th}$ part and zero on all other parts).
 These properties ensure that our simulation can properly represent translation and that the solution stored at each part is the actual deformed position.
 Additionally we would like our weights to be sparse both for performance reasons (leads to sparse matrices) and for expressivity (leads to locality of deformation). 
 
 While partition of unity and sparsity are straightforward to enforce, the overlapping and intersecting parts~(\reffig{badmodels}) often encountered in non-engineering models leads
 to a contradiction -- how can the blending functions be both one and zero at the points of overlap ? 
-Our solution is to allow weights to include bounded discontinuities at these points and it is these discontinuous boundary conditions that are difficult to enforce 
+Our solution is to allow weights to include bounded discontinuities at these points and it is these discontinuities that are difficult to enforce 
 with previous methods. 
 \dave{ideally need a didactic figure showing this}
 
@@ -263,16 +263,16 @@ We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the
 
 \dave{Ty: How do we deal with non-planar parts ? What if the ray cast hits the same part that the closest point is on?}
 \ty{Right now this doesn't happen as we only test intersection against other parts}
-
-Next we compute two distances, $d_{\text{primary}}$, the distance from $\mathbf{X}_j$ to $\clst$ and $d_{\text{total}}$ the distance from  $\clst$ to $\rhit$.
+\dave{can't that mean the ray can just miss everything ? If staypuft's body was just a single ellipse the wieghts inside should all be one, in this case they would be very odd.}
+We compute two distances, $d_{\text{primary}}$, the distance from $\mathbf{X}_j$ to $\clst$ and $d_{\text{total}}$ the distance from  $\clst$ to $\rhit$.
 Using these two distances we define a linear \emph{distance weight} using the well-known ReLU function:
 \begin{equation}
 \theta_i = \max (1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0)
 \text{,}
 \end{equation}
 where $\alpha$ is a distance cutoff parameter. 
-This distance weight~\reffig{plot_distance_weight} is the result of interpolating along this ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
-These weights obey the Kronecker delta property for all parts but does not partition unity.
+This distance weight~(\reffig{plot_distance_weight}) is the result of interpolating along the ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
+These weights obey the Kronecker delta property for all parts but do not partition unity which we repair using a post-normalization step.
 
 \begin{figure}[h]
     \centering
@@ -289,7 +289,6 @@ These weights obey the Kronecker delta property for all parts but does not parti
 %    \label{fig:weightcompute}
 %\end{figure}
 
-Next we use these distance weights to compute our final blending weights.
 At each $\refX_j$ we want to compute $\mathbf{\bld}(\mathbf{X}_j) =  \left( \bld_1(\mathbf{X}_j), \dots, \bld_n(\mathbf{X}_j) \right)$, where 
 $\sum_{i=1}^n\bld_i(\mathbf{X}_j) = 1$, and each $\bld_i \geq 0$, which we enforce by solving a local optimization problem: 
 
@@ -305,10 +304,9 @@ where $\Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta
 
 This post-process ensures that our blending weights partition unity and are non-negative~(\reffig{distance_weight_puft}). 
 For any point on a part that is non-intersecting, the weights will satisfy the Kronecker delta property since the inverse distance weights imply that only
-a single theta will have a non-infinite weight. 
+a single $\Theta_i$ will have a non-infinite weight. 
 For points that lie on more than one part, the weights associated with the intersecting parts will be equal and all others will be zero
-In other words, the deformed positions of these intersecting points will be an average, which is a plausible solution and ensures continuity.
-The blending weights immediately jump back to one and zero for non-intersecting points on each part. 
+This implies that the deformed positions of these intersecting points will be an average, which is a plausible solution and ensures continuity.
 Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the blending weights.
 
 \begin{figure}[h]
@@ -325,21 +323,21 @@ Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the b
 Using raycasting to compute blending weights imbues our method with similar advantages to \citet{Sawhney:2020:MCG} (allowing us to 
 handle intersecting geometry, geometry with gaps and to perform constructive solid geometry operations on the fly),
 but allows us to use more general weighting functions and apply the appropriate behavior for intersecting parts.
-The price we pay for these advantages is that our weights are not C0 continuous but rather Lipchitz smooth.
+The price we pay is that our weights are not C0 continuous but rather Lipchitz smooth.
 Perturbations in the boundaries of parts can cause bounded jumps in our distance weights. 
-However these jumps occupy an infinitesimal percentage of the volume of our object are easy to avoid when integrating
+However, these jumps occupy an infinitesimal percentage of the volume of our object are easy to avoid when integrating
 physical quantities, leaving our simulation unaffected. 
 
-\subsection{Choosing Deformation Centers}
+\subsection{Choosing Deformation Origins}
 \label{sec:origins}
-\dave{Ty: try to follow this formula when writing 
-\dave{maybe this should come after weight computation ?}
-(1) what is the purpose of this part of the method ?
-(2) what are the criteria for success
-(3) what is our assumed input 
-(4) what is the desired output
-(5) what's the algorith,
-(6) add proofs/diagrams/figures that show we satisfy (2). }
+% \dave{Ty: try to follow this formula when writing 
+% \dave{maybe this should come after weight computation ?}
+% (1) what is the purpose of this part of the method ?
+% (2) what are the criteria for success
+% (3) what is our assumed input 
+% (4) what is the desired output
+% (5) what's the algorith,
+% (6) add proofs/diagrams/figures that show we satisfy (2). }
 To ensure kinematic expressiveness, it is essential that multiple origins of deformation are permitted. Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$. Each origin is computed as the centroid of the set of parts with which it is associated. While we constrain a part to be paired with only one deformation origin, an origin may be associated any number of parts. Next, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part.\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)} Furthermore, we seek that the sparsity of the deformation origins mirrors that of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
 
 \begin{figure}[h]
