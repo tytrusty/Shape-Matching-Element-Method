@@ -345,7 +345,11 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
                               (f_collision_sphere_i + f_collision_other_sphere_i + f_collision_sphere_plane_i + sphere_m * [0 0 config.gravity] - sphere_v(si, :)) / sphere_m;
             % hacky air friction
             if size(IF,1) == 0 && sphere_v(si, 3) > 0
-              sphere_v(si, 3) = 1.0 * sphere_v(si, 3);
+              if ii > 500
+                sphere_v(si, 3) = 0.1 * sphere_v(si, 3);
+              else
+                sphere_v(si, 3) = 0.9 * sphere_v(si, 3);
+              end
             elseif size(IF,1) > 0 && sphere_v(si, 3) < 0
               sphere_v(si, 3) = 0;
             end
@@ -361,6 +365,11 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
           end
           hold off;
         end
+        
+        fprintf("f_internal = %d\n", sqrt(sum(f_internal.^2)));
+        fprintf("f_gravity = %d\n", sqrt(sum(f_gravity.^2)));
+        fprintf("f_error = %d\n", sqrt(sum(f_error.^2)));
+        fprintf("f_collision = %d\n", sqrt(sum(f_collision.^2)));
 
         f_collision = hires_J' * f_collision;
 
@@ -369,7 +378,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_external) + f_collision;
         qdot = lhs \ rhs;
         
-        if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii >= 2500
+        if config.collision_with_plane && size(collide_plane_vid, 1) > 5 && ii >= 300
           qdot = reshape(qdot, 3, [])';
           qdot(:, [1 2]) = 0 * qdot(:, [1 2]);
           qdot = reshape(qdot', [], 1); 
