@@ -5,7 +5,7 @@ function pinned_ids = pin_function(x)
 end
 
 % iges_file = 'chicken.iges'; % complex version 
-iges_file = 'chicken_little.iges'; % simplified version
+iges_file = 'chicken_simple_closed_small.iges'; % simplified version
 
 part = nurbs_from_iges(iges_file);
 
@@ -40,16 +40,17 @@ cutoff_distance=cutoff_heuristic(part, 0.9);
 
 options.distance_cutoff = cutoff_distance;
 % options.distance_cutoff=0.2;
-options.save_obj = false;
-% options.k_stability = 1e7;
+options.save_obj = true;
+options.save_obj_path = 'output/chicken_closed_soft/';
+options.k_stability = 1e7;
 
 % options.collision_ratio = 4e-1;
-options.collision_ratio = 1;
+options.collision_ratio = 6e-3;
 options.collision_with_other = false;
 options.self_collision = false;
 options.collision_with_plane = true;
-options.collision_plane_z = -5;
-options.initial_velocity = [-10 0 -10];
+options.collision_plane_z = -0.2;
+options.initial_velocity = 0.1 * [-10 0 -4];
 vem_simulate_nurbs_with_collision(part, options);
   
 end
