@@ -9,9 +9,13 @@ end
 
 iges_file = 'castle_simple_smaller_flip_cut.iges';
 
+% If the normal file is too slow, you can try this one which was about 2x
+% faster on my pc.
+% iges_file = 'castle_super_simple.iges'; 
+
 % To avoid singular nurbs jacobian with excessive pinning, I up the sample
 % density to ensure we have enough unpinned samples.
-sample_density=3;
+sample_density=2;
 
 part = nurbs_from_iges(iges_file, sample_density);
 
