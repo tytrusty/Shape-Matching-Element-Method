@@ -405,133 +405,96 @@ deformation origin extraction~\refsec{origins} and blending weights computation~
 
 \section{Physics-Based Animation}
 
+Having defined the individual components of the SEM method, we now briefly detail how we apply it to the problem of 
+physics-based animation, specifically elastodynamics. 
+The advantage of having a unified kinematic description~(\refeq{kinematics}) is that we can directly apply Lagrangian Mechanics~\dave{cite Lanczos again} to arrive at 
+the pertinent equations of motion:
+\begin{equation*}
+    \MM\ddot{\vc{q}} = \fo\left(\vc{q}\right) + \fext,
+\end{equation*} where $\MM\in\real^{n\times n}$ is the mass matrix, $\vc{q}\in\real^{n}$ is the stacked vector of surface control points, $\fo\in\real^{n}$ is the 
+vector of internal forces and $\fext\in\real^{n}$ are external forces such due to gravity or contact. 
+We use penalty springs~\cite{10.1145/1964921.1964932} to resolve contact, and the approach of \citet{10.1145/566654.566623} for approximating frictional effects. 
+Because SEM yields equations of motion in the standard form, it is compatible with any standard integration scheme, though in this submission we limit ourselves to
+Implicit Euler.
+
+\subsection{Generalized Velocity}
+
+We can rewrite \refeq{kinematics} in matrix form as 
+
+\begin{equation}
+    \defX\left(\refX\right) = \shapef\left(\refX\right)\bldmat\Pi\vc{q},
+\end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, $m$ is number of 
+parts in the object, $\bldmat$ is the diagonal matrix of blending weights and $\Pi$ is the global projection operator.
+
+The velocity of a point on the object is then  
+\begin{equation}
+        \vc{v}\left(\refX\right) = \underbrace{\shapef\left(\refX\right)\bldmat\Pi}_{\Jkin}\dot{\vc{q}},
+    \end{equation} where $\Jkin\left(\refX\right)$ is the kinematic Jacobian and $\dot{\vc{q}}$ are the generalized velocities of the system.
 
 \subsection{Mass Matrix}
-The kinetic energy for a model may be expressed as
-\begin{equation}
-T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
-\text{,}
-\end{equation}
-where $\Omega$ is the 3D integration domain, $\rho$ is the density, and $\dot{\mathbf{x}}$ is the velocity for some point in the domain. Using the deformation map defined in \ref{eqn:compact_x_map}, we may rewrite this kinetic energy as
-\begin{equation}
-\begin{split}
-T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)}^T\mathbf{Y(X)}\ d\Omega \\
-  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{J}^T \left[ \int_{ \Omega} \rho \mathbf{Y(X)}^T\mathbf{Y(X)} d\Omega \right] \mathbf{J}\dot{\mathbf{q}} \\
-  & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{M} \dot{\mathbf{q}}
-\end{split}
-\text{.}
-\end{equation}
-The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
 
-\subsection{Error Energy}
-\dave{We should cite VEM literature and point out this is a standard thing they do to make the algorithm consistent and convergent}
-Over the course of the simulation we may see the true boundary values deviate from their positions estimated by the polynomial. This is most notable in cases where the degree of the polynomial on a NURBS is higher than the degree of the B-spline surface. To address this we augment our kinetic energy with a term to account for this error. The error for a boundary point $\mathbf{x}_i^*$ that is known to lie on the limit surface of the NURBS can be written as
+We derive the mass matrix for our system from the definition of kinetic energy:
 \begin{equation}
-\begin{split}
-\epsilon_i & = ||\mathbf{x}(\mathbf{X}_i) - \mathbf{x}_i^*|| \\
-		   & = ||(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{\hat{b}}||
-\end{split}
-\text{,}
+    T = \dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\shapef\left(\refX\right)^Tshapef\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
 \end{equation}
-where $\mathbf{S_i}$ extracts $\mathbf{x}_i^*$ from $\mathbf{\hat{b}}$. We modify this error further to be expressed in terms of the control points. We note that $\mathbf{x}^*(u,v)$ yields the position on the NURBS surface whereas $\mathbf{x(X)}$ is the deformed value estimated by the polynomial fitting. Furthermore $\mathbf{X}$ may be written as a function of the parametric coordinates $\mathbf{X}(u,v)$ as its position on the surface is produced using the initial set of control points representing the undeformed model. This leads to an energy potential over the NURBS surface in parametric space
-\begin{equation}
-T_E = \iint (\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v))^T(\mathbf{x}(\mathbf{X}(u,v)) - \mathbf{x}^*(u,v)) du dv
-\text{.}
-\end{equation}
-The discrete form of this written in terms of the control points may be written as
-\begin{equation}
-\begin{split}
-T_E & = \sum_i^N  \dot{\mathbf{q}}^T\mathbf{J}^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})\mathbf{J}\dot{\mathbf{q}} \\
-  & = \dot{\mathbf{q}}^T\mathbf{J}^T \left[ \sum_i^N  (\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i})^T(\mathbf{Y}(\mathbf{X}_i)\mathbf{L} - \mathbf{S_i}) \right] \mathbf{J}\dot{\mathbf{q}} \\
-  & = \dot{\mathbf{q}}^T \mathbf{M}_E \dot{\mathbf{q}}
-\end{split}
-\text{,}
-\end{equation}
-where $N$ is the total number of boundary points and $\mathbf{M}_E$ is our \textit{error mass matrix}.
-% \subsection{Generalized Forces}
-% We write our potential energy as 
 % \begin{equation}
-%     V = \int_\Omega \psi(\mathbf{F(X)}) d\Omega
-% \text{.}
-% \end{equation}
-% To evaluate this energy (as well as its derivatives), we require a definition for the deformation gradient, $\mathbf{F(X)}$:
-% \begin{equation}
-%         \mathbf{F(X)} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}}
-%                = \frac{\partial \mathbf{Y(X)}}{\partial \mathbf{X}}\mathbf{L}\hat{\mathbf{b}}
-% \text{.}
-% \end{equation}
-% In the expression for the deformed position $\mathbf{x(X)}$ we see that the dependence on $\mathbf{X}$ only exists in $\mathbf{Y(X)}$, making $\mathbf{L}$ and $\hat{\mathbf{b}}$ constant terms when compute $\mathbf{F}$. Full details on how to compute $\mathbf{F}$ and its derivative $\frac{\partial \mathbf{F}}{\partial \mathbf{q}}$ may be found in the appendix. (\myworries{I just wrote this because I'm too tired to right the d etails right now :p}. Now that we have an expression for the deformation gradient, we discretize our potential energy as follows
-% \begin{equation}
-%     V =  \sum_i^m \psi(\mathbf{F(X}_i) A_i
+% T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
 % \text{,}
 % \end{equation}
-% where $m$ is the number of integration points and $A_i$ is the volume for the $i$-th integration point.
-
-% Like in the case of the kinetic energy, we also introduce an error force potential, which takes the simple form
+% where $\Omega$ is the 3D integration domain, $\rho$ is the density, and $\dot{\mathbf{x}}$ is the velocity for some point in the domain. Using the deformation map defined in \ref{eqn:compact_x_map}, we may rewrite this kinetic energy as
 % \begin{equation}
-% V_E = \mathbf{q}^T \mathbf{M}_E \mathbf{q}
+% \begin{split}
+% T & = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{q}}^T \mathbf{J}^T\mathbf{Y(X)}^T\mathbf{Y(X)}\ d\Omega \\
+%   & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{J}^T \left[ \int_{ \Omega} \rho \mathbf{Y(X)}^T\mathbf{Y(X)} d\Omega \right] \mathbf{J}\dot{\mathbf{q}} \\
+%   & = \frac{1}{2} \dot{\mathbf{q}}^T \mathbf{M} \dot{\mathbf{q}}
+% \end{split}
+% \text{.}
 % \end{equation}
-\subsection{Deformation Gradient}
-\dave{gotta deal with this weight gradient}
-At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
-\begin{equation}
-\label{eqn:deformation_map}
-	\mathbf{x}(\mathbf{X}) = \sum_i^n w_i(\mathbf{X}) \left[ \mathbf{M}(\mathbf{X-\bar{X}}_j)\mathbf{c}_i + \mathbf{t}_j \right]
-	\text{,}
-\end{equation}
-where we have $n$ surfaces, and $w_i$ and $\mathbf{c}_i$ are the weights and the coefficients for the $i$-th surface, respectively. The terms $\mathbf{\bar{X}}_j$ and $\mathbf{t}_j$ the undeformed and deformed centers of mass, respectively, that are associated with the $i$-th surface.
+% The second line is a result of the fact that all terms except for $\mathbf{Y(X)}$ are spatially constant, allowing us to move these outside the volume integral, which enables fast assembly of the mass matrix, $\mathbf{M}$.
 
+
+\subsection{Deformation Gradient}
+% \dave{gotta deal with this weight gradient}
+% At this point we have shown how to fit a polynomial describing the deformation of each surface. With these polynomial coefficients coupled with their associated centers of mass, we can construct an estimate of some arbitrary material point $\mathbf{X}$ using the deformation described by the surface. This lends itself to a general definition for the deformed position of a point as a weighted sum of the polynomials, which yields a unique polynomial for the point. Thus we arrive at a definition for the deformed position, $\mathbf{x}$, of a material point $\mathbf{X}$ in the undeformed space:
+% \begin{equation}
+% \label{eqn:deformation_map}
+% 	\mathbf{x}(\mathbf{X}) = \sum_i^n w_i(\mathbf{X}) \left[ \mathbf{M}(\mathbf{X-\bar{X}}_j)\mathbf{c}_i + \mathbf{t}_j \right]
+% 	\text{,}
+% \end{equation}
+% where we have $n$ surfaces, and $w_i$ and $\mathbf{c}_i$ are the weights and the coefficients for the $i$-th surface, respectively. The terms $\mathbf{\bar{X}}_j$ and $\mathbf{t}_j$ the undeformed and deformed centers of mass, respectively, that are associated with the $i$-th surface.
+
+\subsection{Constitutive Models}
+Our algorithm supports arbitrary elastic constitutive models. 
+In this submission we focus on hyperelastic models~\cite{10.1145/2343483.2343501} wherein the potential energy stored by the object, per unit volume,
+is given by the strain energy density function $\psi\left(\defo\right)$, and its internal forces and stiffness are the negative gradient and hessian respectively. 
+Evaluating and applying constitutive models of this form requires the ability to (1) evaluate the deformation gradient over the reference domain of the model and 
+(2) integrate the resulting constitutive properties. 
+SEM provides both features and thus support for such models.
 
 \subsection{External Forces}
-\dave{Jacobian transpose}
+We compute the force of gravity and apply external forces in the standard way --
+$\vc{f}_g = \int_{\Omega} \rho\vc{g} d\Omega$, where $\vc{g}$ is the acceleration due to gravity acting on the object. 
+We leverage our meshless quadrature~(\refsec{quadrature}) for integration.
 
-\subsection{Time Integration}
-With our definition of the deformation map as well as a strategy for integrating the volume, we now have the necessary ingredient to perform dynamic simulation. We follow the Variational Mechanics approach that defines a pair of kinetic and potential energies, and we apply the Euler-Lagrange equation to develop our equations of motion.
+External point forces are applied using the Jacobian transpose technique which specifies that the generalized force, $\fext$, 
+that results from a point load, applied at $\refX$ is given by $\fext=\Jkin^T\vc{f}\left(\refX\right)$, where $\vc{f}$ is the point load itself.
+Using the Jacobian transpose allows us to easily apply all manner of external forces including collision and frictional forces. 
 
-Before we define these energies we first would like to simplify the form of the deformation map presented in equation \ref{eqn:deformation_map}. We may write $\mathbf{x}(\mathbf{X})$ in matrix form as
+\subsection{Error Energy}
+Like all VEM-type methods, ours requires an error energy to ensure its consistency~\cite{10.1142/S021820251440003X}.
+A natural choice is to adapt the error energy specified by \citet{10.1145/1073204.1073216} to penalize deviations between the pose prescribed by  $\vc{q}$ and 
+that prescribed by polynomial basis. 
+
+The total error at the boundary of the object can be written as
 \begin{equation}
-\mathbf{x}(\mathbf{X}) = \underbrace{\left[w_1\mathbf{M}(\mathbf{X - \bar{X}}_j) \dots w_n\mathbf{M}(\mathbf{X - \bar{X}}_j) \middle| \sum_i^{n_1}w_1^i\mathbf{I} \dots \sum_i^{n_m}w_m^i\mathbf{I} \right]}_{\mathbf{Y}(\mathbf{X})}
-\begin{bmatrix}
-\mathbf{\hat{c}} \\
-\mathbf{\hat{t}}
-\end{bmatrix}
-\text{,}
-\end{equation}
-\myworries{I'm not sure how to write this matrix form for x(X), especially on finding the best notation for the center of mass indexing. So this above equation is temporary.}
-where we have $n$ shape elements, $m$ centers of mass. We simplify the above equation and use the following form
-\begin{equation}
-\label{eqn:x_simple_form}
-\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{L}\hat{\mathbf{b}}
-\text{,}
-\end{equation}
-where we make use of equation \ref{eqn:c_multiple_elements} to rewrite this in terms of the boundary points $\mathbf{\hat{b}}$. As one final step, we rewrite this again in terms of the control points of our NURBS surfaces:
-\begin{equation}
-\label{eqn:compact_x_map}
-\mathbf{x}(\mathbf{X}) = \mathbf{Y}(\mathbf{X})\mathbf{LJq}
-\text{,}
-\end{equation}
-where we use the fact that $\mathbf{\hat{b}} = \mathbf{Jq}$. \myworries{not a fan of this, perhaps we change $\hat{b}$ to something else...} This gives us an expression for the deformed position in terms of our generalized coordinates, $\mathbf{q}$.
+\epsilon = \int_{\partial\Omega}||\Gamma\left(\refX\right)\vc{q} - \Jnurbs\left(\refX\right)\vc{q}||_2^2 d\refX \\
+\end{equation}, which is a quadratic.
 
-\dave{discrete Equations of motion with quadratured integrals, reference/details on how we handle collisions}
+We augment our physical system with the  quadratic penalty energy $\gamma\epsilon$ and use it to derive additional force and Hessian terms.
+In practice we find that choosing $\gamma $ to be the Young's Modulus of the elastic solid provides good behavior in all cases.
+If the polynomial basis can exactly match the deformation of the boundary representation, this error naturally elides to zero.
 
-We have now provided all the necessary ingredient to produce equations of motion for deformable bodies, which we derive via Euler-Lagrange equation. We begin with the Lagrangian
-\begin{equation}
-    L=(T+T_E)-(V + V_E)
-\end{equation}
-Then from the Euler-Lagrange equation we have:
-\begin{equation}
-    \frac{d}{dt} \frac{\partial L}{\partial \dot{\mathbf{p}}} + \frac{\partial L}{\partial {\mathbf{p}}} = 0
-\end{equation}
-\myworries{todo: not totally sure what to write here since we're experimenting with both linearly implicit backward euler as well as Newton's method soon}
-
-
-
-\begin{equation}
-   \frac{\partial L}{\partial \mathbf{q}} = \sum_i^m \frac{\partial V_i}{\partial \mathbf{q}} = \sum_i^m \frac{\partial \psi(\mathbf{F_i)}}{\partial \mathbf{F}}\frac{\partial \mathbf{F_i}}{\partial \mathbf{q}}A_i
-\end{equation}
-\
-
-\dave{Some extra notes on how we handle collisions, add a reference, just say we do this from here.}
+In the next section we show a plethora of physics-based animations created using our approach.
 %%% ------- OLD STUFF BELOW --------
 % \section{Methods}
 % \dave{We should probably put some pseudo code for the preprocessing and the runtime algorithms right up fron, along with a quick textual walk through of the method.}

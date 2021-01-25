@@ -805,4 +805,36 @@ publisher = {ACM},
 address = {New York, NY, USA},
 }
 
+@inbook{10.1145/1964921.1964932,
+author = {McAdams, Aleka and Zhu, Yongning and Selle, Andrew and Empey, Mark and Tamstorf, Rasmus and Teran, Joseph and Sifakis, Eftychios},
+title = {Efficient Elasticity for Character Skinning with Contact and Collisions},
+year = {2011},
+isbn = {9781450309431},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1964921.1964932},
+abstract = {We present a new algorithm for near-interactive simulation of skeleton driven, high resolution elasticity models. Our methodology is used for soft tissue deformation in character animation. The algorithm is based on a novel discretization of corotational elasticity over a hexahedral lattice. Within this framework we enforce positive definiteness of the stiffness matrix to allow efficient quasistatics and dynamics. In addition, we present a multigrid method that converges with very high efficiency. Our design targets performance through parallelism using a fully vectorized and branch-free SVD algorithm as well as a stable one-point quadrature scheme. Since body collisions, self collisions and soft-constraints are necessary for real-world examples, we present a simple framework for enforcing them. The whole approach is demonstrated in an end-to-end production-level character skinning system.},
+booktitle = {ACM SIGGRAPH 2011 Papers},
+articleno = {37},
+numpages = {12}
+}
 
+@article{10.1145/566654.566623,
+author = {Bridson, Robert and Fedkiw, Ronald and Anderson, John},
+title = {Robust Treatment of Collisions, Contact and Friction for Cloth Animation},
+year = {2002},
+issue_date = {July 2002},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {21},
+number = {3},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/566654.566623},
+doi = {10.1145/566654.566623},
+abstract = {We present an algorithm to efficiently and robustly process collisions, contact and friction in cloth simulation. It works with any technique for simulating the internal dynamics of the cloth, and allows true modeling of cloth thickness. We also show how our simulation data can be post-processed with a collision-aware subdivision scheme to produce smooth and interference free data for rendering.},
+journal = {ACM Trans. Graph.},
+month = jul,
+pages = {594–603},
+numpages = {10},
+keywords = {kinetic friction, static friction, contacts, physically based animation, cloth, collision detection, collision response}
+}
