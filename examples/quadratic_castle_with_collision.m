@@ -42,8 +42,8 @@ options.save_output = 0;
 % options.z_samples = 10;
 % vem_simulate_nurbs_newtons(part, options);
 
-options.save_obj = false;
-options.save_obj_path = 'output/obj_castle_5e4/';
+options.save_obj = true;
+options.save_obj_path = 'output/obj_castle_1e4_2balls/';
 
 options.k_stability = YM*1e5;
 
@@ -79,17 +79,26 @@ options.collision_sphere_initial_veloity = [0 0 -10];
 %                                2 -2 2;
 %                                2  0 2;
 %                                2  2 2];
-options.collision_sphere_c = [0.3 0.3 0.8;
-                              0.3 0.4 0.8;
-                              0.3 0.5 0.8;
-                              0.4 0.3 0.8;
-                              0.4 0.4 0.8;
-                              0.4 0.5 0.8;
-                              0.5 0.3 0.8;
-                              0.5 0.4 0.8;
-                              0.5 0.5 0.8];
-options.collision_sphere_c = options.collision_sphere_c + 0.025 * rand(9, 3) ...
-                              - 0.0125 - repmat([0 -0.05 0], 9, 1);
+% options.collision_sphere_c = [0.3 0.3 0.8;
+% %                               0.3 0.4 0.8;
+%                               0.3 0.5 0.8;
+% %                               0.4 0.3 0.8;
+% %                               0.4 0.4 0.8;
+% %                               0.4 0.5 0.8;
+%                               0.5 0.3 0.8;
+% %                               0.5 0.4 0.8;
+%                               0.5 0.5 0.8];
+ options.collision_sphere_c = [0.3 0.5 0.8;
+%                               0.3 0.4 0.8;
+%                               0.4 0.5 0.8;
+%                               0.4 0.3 0.8;
+%                               0.4 0.4 0.8;
+%                               0.4 0.5 0.8;
+%                               0.5 0.3 0.8;
+%                               0.5 0.4 0.8;
+                              0.5 0.5 0.8];                           
+options.collision_sphere_c = options.collision_sphere_c + 0.025 * rand(size(options.collision_sphere_c, 1), 3) ...
+                              - 0.0125 - repmat([0 -0.05 0], size(options.collision_sphere_c, 1), 1);
 % options.collision_sphere_c = options.collision_sphere_c + repmat([0.5 0 0], 9, 1);
                               
 
