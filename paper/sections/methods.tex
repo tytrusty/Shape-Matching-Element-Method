@@ -382,7 +382,7 @@ The last step is to specify the costs on the edges, $E$, between the origin cand
 
 Given a quadrature point group, and an edge from the associated deformation origin to $\prt_i$, we set the edge cost to be the sum, 
 over all quadrature points in the group, of the blending weights associated with $\prt_i$.
-This costs causes more heavily ``connected'' origin candidates to be penalized, encouraging sparsity during origin selection. 
+This costs penalizes heavily ``connected'' origin candidates, encouraging sparsity during origin selection. 
 We solve this problem with an integer constrained linear program\dave{cite solver, add equation with formulation} and choose $\XBs$ to be all the deformation origin candidates in $A$ 
 that have an outgoing flow of at least $1$. 
 
