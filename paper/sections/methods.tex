@@ -361,28 +361,30 @@ which mirrors the pointwise sparsity of our blending weights,
 
 \begin{figure}[h]
     \includegraphics[width=\columnwidth]{figures/origin_network}
-    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each parts origin association. \dave{make it clear edges of triangle are sep. parts}}
+    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each parts origin association. \dave{make it clear edges of triangle are sep. parts, add capacities and costs}}
     \label{fig:network_flow} 
 \end{figure}
 
-Candidate deformation origins are selected by clustering quadrature points~(\refsec{quadrature}).
+Candidate deformation origins are selected by clustering quadrature points~(themselves computed in \refsec{quadrature}).
 We group quadrature points by the combination of parts influencing each point (non-zero blending weight~(\refsec{weights})).
-Each group now represents a unique part combination and the centroid of these parts becomes a deformation origin candidate.
+Each group now represents a unique part combination and the centroids of these groups become deformation origin candidates.
 To assign deformation origins to parts we use an integer network flow approach~\dave{cite}~(\reffig{origin_network}). 
 
-Consider a directed bipartite graph $G=(V = A \cup B,E)$ where each node in $A$ corresponds to a deformation origin candidate and each node in $B$ represents to a part. 
+Consider a directed bipartite graph $G=(V = A \cup B,E)$ where each node in $A$ corresponds to a deformation origin candidate and each node in $B$ represents a part. 
 $E$ is the set of edges connecting nodes in $A$ to $B$ where each origin has an edge to every part with which it attempts to associate. 
-We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing the source, $s$, and sink, $t$. $E'$ is the augmented set of nodes connecting $s$ to each candidate in $A$ and connecting each part in $B$ to the sink $t$. Each edge $(i,j) \in E'$ has an associated flow $f_{ij}$ and capacity constraint $u_{ij}$, and each edge in $E$ also has a cost $c_{ij}$. The principal constraint for this network flow problem is the conservation constraint, meaning that the net flow for all nodes in $V$ is zero.\dave{B is really overloaded}
-Each edge from from $B$ to $t$ is assigned a capacity of $1$, which enforces that any part node in $B$ receives flow from a single edge, 
+We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing the source, $s$, and sink, $t$. 
+$E'$ is the augmented set of nodes connecting $s$ to each candidate in $A$ and connecting each part in $B$ to the sink $t$. 
+Each edge $(i,j) \in E'$ has an associated flow $f_{ij}$ and capacity constraint $u_{ij}$, and each edge in $E$ also has a cost $c_{ij}$. 
+The principal constraint for this network flow problem is the conservation constraint, meaning that the net flow for all nodes in $V$ is zero.\dave{B is really overloaded}
+Each edge from $B$ to $t$ is assigned a capacity of $1$, which enforces that any part node in $B$ receives flow from a single edge, 
 and as a consequence each part may only be associated with a single deformation origin. 
 The last step is to specify the costs on the edges, $E$, between the origin candidates and the parts. 
 
-Given a quadrature point group, and an edge from the associated deformation origin to $\prt_i$, we set the edge capacity to be the sum, 
+Given a quadrature point group, and an edge from the associated deformation origin to $\prt_i$, we set the edge cost to be the sum, 
 over all quadrature points in the group, of the blending weights associated with $\prt_i$.
-This capacity causes more heavily ``connected'' origin candidates to be selected. 
-We solve this problem with an integer constrained linear program\dave{cite solver} and choose $\XBs$ to be all the deformation origin candidates in $A$ 
+This costs causes more heavily ``connected'' origin candidates to be penalized, encouraging sparsity during origin selection. 
+We solve this problem with an integer constrained linear program\dave{cite solver, add equation with formulation} and choose $\XBs$ to be all the deformation origin candidates in $A$ 
 that have an outgoing flow of at least $1$. 
-This approach chooses deformation origins that satisfy our stated criteria.
 
 \subsection{Meshless Integration}
 \label{sec:quadrature}
