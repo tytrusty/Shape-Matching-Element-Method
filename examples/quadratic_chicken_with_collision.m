@@ -4,7 +4,8 @@ function pinned_ids = pin_function(x)
   pinned_ids = [];
 end
 
-iges_file = 'chicken_from_autodesk_gallery.iges';
+% iges_file = 'chicken.iges'; % complex version 
+iges_file = 'chicken_little.iges'; % simplified version
 
 part = nurbs_from_iges(iges_file);
 
@@ -28,11 +29,16 @@ options.mu = mu;
 
 options.plot_points=1;
 options.x_samples=3; %2 on regular 3 on bad
-options.y_samples=3;
-options.z_samples=3;
+options.y_samples=6;
+options.z_samples=6;
 % options.z_samples=11;
 
-options.distance_cutoff = 20;
+% New cutoff heuristic thing. The second argument is the "sparsity" which
+% is a 0 to 1 value for how local you want deformations to be.
+% So 0.9 yields a cutoff distance value that is very local.
+cutoff_distance=cutoff_heuristic(part, 0.9);
+
+options.distance_cutoff = cutoff_distance;
 % options.distance_cutoff=0.2;
 options.save_obj = false;
 % options.k_stability = 1e7;
