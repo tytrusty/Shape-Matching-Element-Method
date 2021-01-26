@@ -81,7 +81,7 @@ We apply a battery of boundary conditions and resolve the deformation of the ele
 We note that SEM is able to represent rigid motions, as well as shearing and anisotropic stretching. 
 This implies that, with sparse weights, SEM can resolve these motions locally, leading to physically plausible simulation results.
 
-\begin{figure}
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/patch_test.pdf}
   \caption{2D examples (left) rigidly transform boundary and show that solving the static problem gives us rigid motion on the interior (right) isotropically scale boundary and show solving static problem gives us constant strain on the interior}
   \label{fig:patchtest}
@@ -90,16 +90,16 @@ This implies that, with sparse weights, SEM can resolve these motions locally, l
 Next we check the convergence of SEM with respect to linear, tetrahedral finite elements. \reffig{convergence} we compare identical cantileavered beams, simulated using 
 a Neohookean constitutive model (Young's Modulus \dave{??}, Poisson's Ratio \dave{??}) and implicit time integration with a timestep of $0.01$s. 
 We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of 6 independent NURBS patches show's good agreement with FEM.
-\begin{figure}
-  \includegraphics[width=\columnwidth]{example-image-a}
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/beams.pdf}
   \caption{(left) high res FEM cantileavered bar (right) several simulations using more and more surface patches plus center of mass. Need to show beam is just  unattached patches}
   \label{fig:convergence}
 \end{figure}
 
 We also demonstrate that our raycasting weights computation creates shape-aware output. Figure~\reffig{independence} shows that manipulating
 parts that are nearby, but separate  behave in an appropriately independent fashion. 
-\begin{figure}
-  \includegraphics[width=\columnwidth]{example-image-a}
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/independent_movement}
   \caption{X shape and show arms of X move independently}
   \label{fig:independence}
 \end{figure}
@@ -109,7 +109,7 @@ Here we demonstrate SEM's ability to work with poor models. \reffig{badmodels} s
 The top row shows the result of a careless modeler who has deeply embedded the handle of the mug in the body in order to attach it, creating a large area of overlap.
 The bottom models has neglible overlap. 
 In both cases SEM produces a plausible physically-based animation, without requiring additional model clean-up.
-\begin{figure}
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/mug_overlap}
   \caption{Coffee mug with overlapping handle (top) row of models with increasing overlap (middle) single weight image showing behaviour in the overlapping region, (bottom) simulation result for each one}
   \label{fig:badmodels}
@@ -118,7 +118,7 @@ In both cases SEM produces a plausible physically-based animation, without requi
 %different material parameters / material models 
 We derive the equations of motion for SEM using a general elastic potential and so SEM supports arbitrary constitutive models. \reffig{materials} shows a 
 rocket ship simulated with both high stiffness and low stiffness materials. 
-\begin{figure*}
+\begin{figure*}[htp]
   \includegraphics[width=\textwidth]{figures/rocket.pdf}
   \caption{Big image simulating the rocket with all different combinations of things}
   \label{fig:rocket}
@@ -126,7 +126,7 @@ rocket ship simulated with both high stiffness and low stiffness materials.
 
 %multiple materials
 SEM also supports objects made up of multiple materials, as the simulation of this tire~(\reffig{tire}) illustrates.
-\begin{figure}
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/tire}
   \caption{Tire to show heterogenous materials}
   \label{fig:tire}
@@ -137,7 +137,7 @@ SEM also supports objects made up of multiple materials, as the simulation of th
 Though we focus on NURBS surface representations, they only NURBS specific construction in the SEM method is the Jacobian\dave{ref}.
 Many other boundary representations admit a linear representation and are thus directly consumable by our method.
 \reffig{subd} shows an example of applying our SEM method to a subdivision model by making such a modification.
-\begin{figure}
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{show subd simulation if we have it. If it works really well we'll just mix subds and nurbs throughout the paper. }
   \label{fig:subd}
@@ -145,7 +145,7 @@ Many other boundary representations admit a linear representation and are thus d
 
 %editing example
 We show that the output of the SEM simulation is itself edible in a NURBS modelling program~(\reffig{edit}).
-\begin{figure}
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{example-image-a}
   \caption{show input to simulation, show output then show output loaded in rhino/fusion 360 }
   \label{fig:edit}

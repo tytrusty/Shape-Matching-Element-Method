@@ -1,30 +1,31 @@
 \section{Future Work and Conclusions}
-
 We have presented the Shape Matching Element Method (SEM), the first completely meshless approach to direct simulation of NURBS models.
 Our approach is unique in its ability to infer volumetric shape from surface only models,
 including ones with intersecting geometry, between parts and other defects common to non-engineering models.
 Our method allows simulation of such input directly, with a variety of contitutive models and time integration schemes
 and is compatibale with standard methods for collision resolution. 
-We believe that SEM is a signficant improvement over standard physics-based animtion pipelines for NURBS models. 
+We believe that SEM is a significant improvement over standard physics-based animation pipelines for NURBS models. 
 As evidence of the efficacy of our approach, the authors submit that many of the examples in this paper were constructed ourselves
 (since the standard graphics menagerie is not available as NURBS models). 
 Modelling, cleaning, meshing and simulating would've been a burdensome experience without SEM's
 ability to leap directly from (often hastily) constructed models to physics-based animations.
 
-But SEM as it's presented here is only the beginning and we believe there are many exciting areas of future work to explore.
+SEM as it's presented here is only the beginning and we believe there are many exciting areas of future work to explore.
 We are very excited to couple SEM to machine learning approaches for design, parameter estimation and Real2Sim applications.
-One of the cumbersome elements in using finite element simulation for such problems is the need for robust, differentiable volumetric meshing.
-While there has been some work on this~\dave{cite} it is far from a solved problem.
+One of the cumbersome elements in using finite element simulation for such problems is the need for robust, differentiable volumetric meshing~\cite{gao2020deftet}.
 SEM removes this bottleneck entirely, providing a direct mapping from geometric input to physics-driven output. 
-We believe this will both enable simpler and more robust algorithms for  physics-based ML and 
+We believe SEM will enable simpler and more robust algorithms for  physics-based ML and 
 allow the application of such algorithms to a much broader class of problems. 
 
 SEM itself has much room for addition.
 First, while we focus on NURBS surfaces here, the only part of SEM that is NURBS specific is the shape matching operation.
 We believe there is potential to allow mixed models (models which include polygonal meshes, particles, subdivision surfaces and NURBS)
 by extending the range of shape matching operations used by the algorithm. The shape matching operation itself could be improved to be material aware 
-(to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data). The Finite Element method took over 
-40 years to take over the world of simulation. 
-We see this work as the first step in a similar journey for SEM
+(to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data). 
+It is also interesting to consider the relationship between our error term and the orthogonality constraint proposed by~\citet{Zhang:CompDynamics:2020}. 
+Their approach could be used to remove this parameter from the approach entirely.
 
-To encourage future research on SEM the authors will release our SEM implementation under a permissive license as well as all models created for this submission.
+The Finite Element method took over  40 years to mature to its current state and to become the preeminent tool in physically-based animation.
+We hope that this is the beginning of a similar, exciting journey for SEM. 
+Motivated by this sentiment, and to encourage future research on SEM, the authors will release our SEM implementation 
+under a permissive license as well as all models created for this submission.
