@@ -1,7 +1,7 @@
 \section{Related Work}
 
 %% Set the scene
-Geometric modeling is a necessary precursor to physics-based animation, however differing geometric representations for modelling and simulation often require
+Geometric modeling is a necessary precursor to physics-based animation, however differing geometric representations for modelling and simulation often requires
 time-consuming, complex geometry processing pipelines. 
 For instance, the popular tetrahedral finite element approach for simulating solid elastodynamics~\cite{10.1145/2343483.2343501} requires robust algorithms for converting input surface geometry into 
 a volumetric tetrahedral mesh. This is a difficult problem and while significant progress has been made,
@@ -23,7 +23,7 @@ Finally, our method should put only moderate constraints on input model quality 
 \emph{Isogeometric Analysis}~\cite{10.1002/9780470749081.ch7} endeavors to perform simulation directly on the NURBS output from 
 Computer-Aided Design (CAD) software. Initial attempts used NURBS surfaces to represent the mid-surface of thin objects~\cite{10.1145/176579.176580}.
 Volumetric simulations relied on volumetric NURBS~\cite{10.1007/978-3-642-03596-8_2} but were limited to a narrow class of geometries.
-Finite volume methods are applicable to more general geometries~\cite{HEINRICH20121645,10.1002/nme.2311} but require a volumetric mesh be generated.
+Finite volume methods are applicable to more general geometries~\cite{HEINRICH20121645,10.1002/nme.2311} but require a volumetric mesh to be generated.
 Modern approaches are constructed around the extended finite element method which enriches the standard finite element basis with discontinuous basis functions
 to enable improved boundary handling~\cite{https://doi.org/10.1002/nme.3120,10.1007/s00466-013-0854-7,https://doi.org/10.1002/nme.4852,SAFDARI2016373,10.1145/3355089.3356576}. 
 These methods typically start with an easy-to-generate structured volumetric mesh (tetrahedral or hexahedral), ``cutting'' the NURBS geomtric model against
