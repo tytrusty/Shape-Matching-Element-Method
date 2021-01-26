@@ -135,6 +135,14 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % Optional external force vector
     dext_dc = vem_ext_force(config.f_external', config.rho*vol, Y, Y_S);
     f_external = config.dt*P*(L' * dext_dc); 
+    
+    % Add these lines before mass matrix computation
+    bottom_ids = find(V(3,:) < 0.1); % set this number to top z value of the bottom area
+    YM = 1e10; pr = 0.4; % make it stiff than towers
+    [lambda, mu] = emu_to_lame(YM, pr);
+    new_lame = repmat([mu * 0.5  lambda * 0.5], numel(bottom_ids),1);
+    params(bottom_ids,:) = new_lame;
+    config.rho(bottom_ids) = 6e3;   % you can make it denser too
 
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
@@ -153,14 +161,16 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     writeOBJ('./test.obj', verts, faces, [], zeros(size(faces,1),3), face_normal, zeros(size(faces,1),3));
     
     if config.collision_with_other
-%       collide_iges_file = 'rounded_cube.iges';
-%       collide_parts = nurbs_from_iges(collide_iges_file);
-%       [collide_verts, collide_faces] = triangulate_iges(collide_parts);
-      [collide_verts, collide_faces] = readOBJ('./models/bowl.obj');
-      collide_verts = 5 * collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)));
+      collide_iges_file = 'puft_full_simpler.iges';
+      collide_parts = nurbs_from_iges(collide_iges_file);
+      [collide_verts, collide_faces] = triangulate_iges(collide_parts);
+%       [collide_verts, collide_faces] = readOBJ('./models/fandisk.obj');
+%       collide_verts = 5 * collide_verts * (max(verts(:,1))-min(verts(:,1))) / (max(collide_verts(:,1))-min(collide_verts(:,1)));
       if size(config.collision_other_position, 1) == 0 
         collide_verts = collide_verts + [0 0 max(verts(:,3)) + 10.0];
       else
+        tmp = [-1  0  0; 0 -1  0; 0  0  1];
+        collide_verts = (tmp * collide_verts')';
         collide_verts = collide_verts + config.collision_other_position;
       end
       t_collide = tsurf(collide_faces, collide_verts);
@@ -345,12 +355,12 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
                               (f_collision_sphere_i + f_collision_other_sphere_i + f_collision_sphere_plane_i + sphere_m * [0 0 config.gravity] - sphere_v(si, :)) / sphere_m;
             % hacky air friction
             if size(IF,1) == 0 && sphere_v(si, 3) > 0
-              if ii > 500
-                sphere_v(si, 3) = 0.1 * sphere_v(si, 3);
+              if ii > 300
+                sphere_v(si, 3) = 0.5 * sphere_v(si, 3);
               else
-                sphere_v(si, 3) = 0.9 * sphere_v(si, 3);
+                sphere_v(si, 3) = 1.0 * sphere_v(si, 3);
               end
-            elseif size(IF,1) > 0 && sphere_v(si, 3) < 0
+            elseif size(IF,1) > 0 && sphere_v(si, 3) < 0 && ii > 400
               sphere_v(si, 3) = 0;
             end
           end
