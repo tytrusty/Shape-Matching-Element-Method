@@ -1,5 +1,4 @@
 \section{Future Work and Conclusions}
-\dave{mention that constraint from complimentary dynamics could be used to replace error energy}
 We have presented the Shape Matching Element Method (SEM), the first completely meshless approach to direct simulation of NURBS models.
 Our approach is unique in its ability to infer volumetric shape from surface only models,
 including ones with intersecting geometry, between parts and other defects common to non-engineering models.
@@ -23,8 +22,11 @@ SEM itself has much room for addition.
 First, while we focus on NURBS surfaces here, the only part of SEM that is NURBS specific is the shape matching operation.
 We believe there is potential to allow mixed models (models which include polygonal meshes, particles, subdivision surfaces and NURBS)
 by extending the range of shape matching operations used by the algorithm. The shape matching operation itself could be improved to be material aware 
-(to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data). The Finite Element method took over 
-40 years to take over the world of simulation. 
-We see this work as the first step in a similar journey for SEM
+(to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data). 
+It is also interesting to consider the relationship between our error term and the orthogonality constraint proposed by \citet{Zhang:CompDynamics:2020}. 
+Their approach could be used to remove this parameter from the approach entirely.
 
-To encourage future research on SEM the authors will release our SEM implementation under a permissive license as well as all models created for this submission.
+The Finite Element method took over  40 years to mature to its current state and to become the preeminent tool in physically-based animation.
+We hope that this is the beginning of a similar, exciting journey for SEM. 
+Motivated by this sentiment, and to encourage future research on SEM, the authors will release our SEM implementation 
+under a permissive license as well as all models created for this submission.
