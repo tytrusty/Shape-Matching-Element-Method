@@ -9,6 +9,11 @@
 
 \dave{we should report which models we made ourselves}
 
+\begin{figure*}
+  \includegraphics[width=\textwidth]{figures/chicken.pdf}
+  \caption{Chicken with seams}
+  \label{fig:chicken}
+\end{figure*}
 
 \reftbl{perf} shows the size of all our examples along with performance statistics. 
 Note that the individual parts of all models are \emph{not connected}.
@@ -26,8 +31,13 @@ Models were created using Autodesk Fusion 360 ~\dave{cite} and Rhinocerous 3D 7\
    \textbf{Example} & \textbf{CPU} & $|\vc{q}|$ &  \textbf{Sample Model} & \textbf{Quadrature} & \textbf{Weights} & \textbf{Build $\Pi$} & \textbf{Time Step} \\
    \hline 
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Cantilever}  & ? & ? & ? & ? & ? & ? & ? & ? \\
-   \textbf{Rocket}      & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Cantilever}      & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Coffee mug}      & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Rocket}          & ? & 648 & ? & ? & ? & ? & ? & ? \\
+   \textbf{Castle}          & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Chicken}         & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Starship}        & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Tire}            & ? & ? & ? & ? & ? & ? & ? & ? \\
    \hline
   \end{tabular}
   \end{center}
@@ -111,9 +121,8 @@ rocket ship simulated with both high stiffness and low stiffness materials.
 \begin{figure*}
   \includegraphics[width=\textwidth]{figures/rocket.pdf}
   \caption{Big image simulating the rocket with all different combinations of things}
-  \label{fig:materials}
+  \label{fig:rocket}
 \end{figure*}
-
 
 %multiple materials
 SEM also supports objects made up of multiple materials, as the simulation of this tire~(\reffig{tire}) illustrates.
