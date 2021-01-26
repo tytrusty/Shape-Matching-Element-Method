@@ -1,7 +1,7 @@
 \section{Related Work}
 
 %% Set the scene
-Geometric modeling is a necessary precursor to physics-based animation, however differing geometric representations for modelling and simulation often requires
+Geometric modelling is a necessary precursor to physics-based animation, however differing geometric representations for modelling and simulation often requires
 time-consuming, complex geometry processing pipelines. 
 For instance, the popular tetrahedral finite element approach for simulating solid elastodynamics~\cite{10.1145/2343483.2343501} requires robust algorithms for converting input surface geometry into 
 a volumetric tetrahedral mesh. This is a difficult problem and while significant progress has been made,
@@ -31,13 +31,13 @@ it to enable boundary handling (such a mesh is called a \emph{cutcell} mesh).
 Like volumetric meshing, this cutting operation can be difficult and our ideal method would avoid it. 
 Some cutcell algorithms assume engineering/manufacturing quality input, which puts tight requirements on input models~\cite{10.1145/3355089.3356576}.
 Finally these approaches require additional mechanisms to ensure that simulation results lie inside the shape space of the input model's primitives,
-increasing complexity. 
+which increases the complexity. 
 
 \emph{Shape Matching} is a meshless approach to physics-based animation~\cite{10.1145/1073204.1073216,10.1145/2019406.2019438} and geometry processing~\cite{10.1111/j.1467-8659.2012.03171.x}
-built around shape registration. The algorithm has been extended from volumetric triangle mesh input to cloth~\cite{10.2312/PE/vriphys/vriphys08/039-046} to particles~\cite{10.1145/1964921.1964987}
+built around shape registration. The algorithm has been extended from volumetric triangle mesh input to cloth~\cite{10.2312/PE/vriphys/vriphys08/039-046}, to particles~\cite{10.1145/1964921.1964987}
 and even to visual geometry for video games~\cite{10.1145/2994258.2994260}. 
 Shape Matching is fast~\cite{10.1145/1275808.1276480,10.5555/1632592.1632606} and meshless, but state-of-the-art methods require 
-additional modeling input to position simulation primitives~\cite{10.1145/1964921.1964987} or limit simulation primitives to be 
+additional modelling input to position simulation primitives~\cite{10.1145/1964921.1964987} or limit simulation primitives to be 
 collections of convex polytopes~\cite{10.1145/2994258.2994260}.
 Finally, Shape Matching is tightly coupled to the position-based dynamics (PBD)~\cite{muller2007position}
 time integration methodology. 
@@ -46,9 +46,9 @@ other time integration schemes.
 The popular Projective Dynamics algorithm~\cite{10.1145/2601097.2601116} enables a more flexible Shape Matching implementation but is still limited to a subset of
 constitutive models for elastic solids. 
 
-To alleviate these restrictions we can to turn to other meshless methods popular in computer graphics and 
+To alleviate these restrictions we turn to other meshless methods popular in computer graphics and 
 engineering~\cite{10.1145/1028523.1028542,https://doi.org/10.1002/fld.1650200824,10.1145/1778765.1778776,10.1145/2010324.1964968, 10.1145/1944846.1944855}.
-These support more advanced constitutive models and integration schemes but often require background integration meshes and lose the direct connection with
+These methods support more advanced constitutive models and integration schemes but often require background integration meshes and lose the direct connection with
 modelling geometry. 
 Like cutcell-based, Isogeometric Analysis approaches, additional constraints must be added to ensure that simulation output can be represented by the input model.
 Given this, we conclude that there is no existing algorithm that meets our desiderata for success. 
@@ -69,7 +69,7 @@ with NURBS input geometry rather than piecewise linear surfaces.
 Furthermore, we improve the expressivity of the VEM basis by using a shape blending approach inspired by
 algorithms for skinning~\cite{skinningcourse:2014}.
 Our method is entirely meshless (requiring no volumetric meshes or cutcells) and is compatible with standard constitutive models and time integrators.
-It guarantees that simulation output is directly consumable by the input modeling software and can ingest models which include large gaps,
+It guarantees that simulation output is directly consumable by the input modelling software and can ingest models which include large gaps,
 intersections and disconnected primitives without additional user input. 
 These features mean that our algorithm is the first truly meshless approach for the direct simulation of NURBS models for physics-based animation.
 
