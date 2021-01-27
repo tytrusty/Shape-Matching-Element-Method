@@ -8,19 +8,19 @@
   \label{tbl:perf}
   \begin{center}
   \begin{tabular}{l c c c c c c c c c c}
-   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample Model}(s) & \textbf{Quadrature}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
+   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
    \hline 
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Cantilever (soft)}       & 564 & Jelly & $1 \times 10^3$ & $1 \times 10^6$& 0.45 & $2.53 \times 10^{-2}$ & $4.45 \times 10^{-3}$ & $4.78 \times 10^{-1}$ & $1.86 \times 10^{-1}$ & $1.20 \times 10^{0}$ \\
-   \textbf{Cantilever (stiff)}      & 564 & Rubber & $1 \times 10^3$ & $5 \times 10^6$ & 0.45 & $2.48 \times 10^{-2}$ & $6.37 \times 10^{-3}$ & $5.10 \times 10^{-1}$ & $1.68 \times 10^{-1}$ & $1.19 \times 10^{0}$ \\
-   \textbf{Coffee mug}              & 1800 & Jelly & $1 \times 10^3$ & $1 \times 10^4$ & 0.47 & $4.18 \times 10^{-1}$ & $2.87 \times 10^{-2}$ & $3.77 \times 10^{0}$ & $2.08 \times 10^{0}$ & $1.19 \times 10^{1}$  \\
-   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 \times 10^3$ & $7 \times 10^6$ & 0.4 & $2.83 \times 10^{-2}$ & $5.62 \times 10^{-3}$ & $5.58 \times 10^{-1}$ & $6.83 \times 10^{-2}$ & $1.26 \times 10^{0}$ \\
-   \textbf{Rocket (stiff)}          & 648 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & $2.56 \times 10^{-2}$ & $5.97 \times 10^{-3}$ & $4.59 \times 10^{-1}$ & $3.48 \times 10^{-2}$ & $9.99 \times 10^{-2}$ \\
-   \textbf{Castle}                  & 1872 & Jelly & $1.27 \times 10^3$ & $2 \times 10^3$ & 0.45 & $4.84 \times 10^{-1}$ & $1.44 \times 10^{-2}$ & $1.52 \times 10^{0}$ & $5.78 \times 10^{-1}$ & $8.02 \times 10^{0}$ \\
-   \textbf{Chicken}                 & 1773 & Rubber & $1.27 \times 10^3$ & $1 \times 10^4$ & 0.47 & $9.19 \times 10^{-1}$ & $2.31 \times 10^{-2}$ & $3.38 \times 10^{0}$ & $1.91 \times 10^{0}$ & $1.08 \times 10^{1}$ \\
-   \textbf{Starship}                & 750 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & $6.78 \times 10^{-2}$ & $1.52 \times 10^{-2}$ & $8.50 \times 10^{-1}$ & $9.52 \times 10^{-2}$ & $6.95 \times 10^{-1}$ \\
+   \textbf{Cantilever (soft)}       & 564 & Jelly & $1 e^3$ & $1e10^6$& 0.45 & $2.53 e^{-2}$ & $4.45 e^{-3}$ & $4.78 e^{-1}$ & $1.86 e^{-1}$ & $1.20 e^{0}$ \\
+   \textbf{Cantilever (stiff)}      & 564 & Rubber & $1 e^3$ & $5 e^6$ & 0.45 & $2.48 e^{-2}$ & $6.37 e^{-3}$ & $5.10 e^{-1}$ & $1.68 e^{-1}$ & $1.19 e^{0}$ \\
+   \textbf{Coffee mug}              & 1800 & Jelly & $1 e^3$ & $1 e^4$ & 0.47 & $4.18 e^{-1}$ & $2.87 e^{-2}$ & $3.77 e^{0}$ & $2.08 e^{0}$ & $1.19 e^{1}$  \\
+   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 e^3$ & $7 e^6$ & 0.4 & $2.83 e^{-2}$ & $5.62 e^{-3}$ & $5.58 e^{-1}$ & $6.83 e^{-2}$ & $1.26 e^{0}$ \\
+   \textbf{Rocket (stiff)}          & 648 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $2.56 e^{-2}$ & $5.97 e^{-3}$ & $4.59 e^{-1}$ & $3.48 e^{-2}$ & $9.99 e^{-2}$ \\
+   \textbf{Castle}                  & 1872 & Jelly & $1.27 e^3$ & $2 e^3$ & 0.45 & $4.84 e^{-1}$ & $1.44 e^{-2}$ & $1.52 e^{0}$ & $5.78 e^{-1}$ & $8.02 e^{0}$ \\
+   \textbf{Chicken}                 & 1773 & Rubber & $1.27 e^3$ & $1 e^4$ & 0.47 & $9.19 e^{-1}$ & $2.31 e^{-2}$ & $3.38 e^{0}$ & $1.91 e^{0}$ & $1.08 e^{1}$ \\
+   \textbf{Starship}                & 750 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $6.78 e^{-2}$ & $1.52 e^{-2}$ & $8.50 e^{-1}$ & $9.52 e^{-2}$ & $6.95 e^{-1}$ \\
    \textbf{Astronauts}              & ? & ? & ? & ? & ? & ? & ? & ? & ? & ? \\
-   \textbf{Tire}                    & ? & Rubber/Steel & $2 \times 10^3$ / $3 \times 10^3$ & $1 \times 10^6$ / $7 \times 10^9$ & 0.47 / 0.35 & ? & ? & ? & ? & ? \\
+   \textbf{Tire}                    & ? & Rubber/Steel & $2 e^3$ / $3 e^3$ & $1 e^6$ / $7 e^9$ & 0.47 / 0.35 & ? & ? & ? & ? & ? \\
    \hline
   \end{tabular}
   \end{center}
@@ -34,7 +34,7 @@
 %\dave{use as many different meshes as possible for figures (i.e try not to have the same mesh show up in more than one figure if possible).}
 
 %\dave{we should report which models we made ourselves}
-We implemented SEM in a combination of MATLAB and C++ using both GPToolbox~\cite{gptoolbox} and Bartels~\cite{bartels} for geometry processing and constitutive models 
+We implemented SEM using a combination of MATLAB and C++ using both GPToolbox~\cite{gptoolbox} and Bartels~\cite{bartels} for geometry processing and constitutive models 
 respectively. Benchmarks were performed using a MacBook Pro with an Intel i5 2.3GHz processor, 16GB of RAM and an Intel Iris Plus Graphics 655 GPU.
 
 \reftbl{perf} shows the size of all our examples along with performance statistics and relevant parameters.
@@ -42,8 +42,8 @@ Note that the individual parts of all models are \emph{not connected}, and no co
 Rather, the SEM approach implicitly couples the boundary parts together to allow for seamless volumetric simulation. 
 Models were created using Autodesk Fusion 360 \cite{AutodeskFusion360} and Rhinocerous 3D 7 \cite{mcneel-rhinoceros}.
   
-For raycasting operations and rendering we rely on Embree~\cite{10.1145/2601097.2601199} and triangulate the NURBS surfaces, which only represents an implementation simplification. 
-Our algorithm is not dependent on triangulating the boundary, and an ideal alternative would be using a path tracer.
+For raycasting operations and rendering we rely on Embree~\cite{10.1145/2601097.2601199} and Blender~\cite{blender}, and triangulate the NURBS surfaces, which only represents an implementation simplification. 
+Our algorithm is not dependent on triangulating the boundary, and an ideal alternative would be using a path tracer that directly accepts NURBS geometry.
 
 \nicetohave{Would be nice to mention TNURBS, which would give us a good reason to include the wrench (which i really wanna do). I doubt we have time to do a 3 point bending test, but a simple elastic wrench simulation would be easy to cook up}
 For handling trimmed NURBS surfaces, we augment our sampling of the surfaces by using raycasting integration in 2D. Trimmed NURBS may be defined by a boundary curve in the parametric space, so we raycast to find intersection intervals in the UV space on which quadrature points are generated. For rendering Trimmed NURBS, we discretize the the boundary curve as a polyline and use triangle \cite{shewchuk96b, SHEWCHUK200221} to form a boundary conforming triangulation. The vertices of this triangulation serve as fixed set of high resolution UV samples for constructing a render mesh.
@@ -116,7 +116,7 @@ its leg without causing unrealistic deformations in the plant foot.
 
 % relaxed modelling constraints
 By virtue of its meshless nature, SEM is robust to a wide range of challenging models with large gaps and disconnected primitives.
-\reffig{fig:chicken} shows frames from a simulation of a rubber chicken. Note that the chicken model itself features large gaps between the individual NURBS parts. 
+\reffig{chicken} shows frames from a simulation of a rubber chicken. Note that the chicken model itself features large gaps between the individual NURBS parts. 
 Despite the lack of explicit connectivity, the SEM blending weights have the effect of implicitly enforcing connectivity at these seams. 
 
 \begin{figure*}[htp]
@@ -129,7 +129,7 @@ SEM is also robust to intersections in modelling input. \reffig{badmodels} shows
 The top row shows a model with negligible overlap, whereas the bottom row shows the result of a careless modeller who has deeply embedded the handle of the mug in the body in order to attach it, creating a large area of overlap.
 In both cases SEM produces a plausible physically-based animation without requiring additional model clean-up.
 
-\begin{figure}[H]
+\begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/mug_overlap}
   \caption{Our SEM is robust to overlapping regions and self-intersections. Here the simulation result of the coffee mug with overlapping handle (bottom) still matches its corresponding counterpart without negligible overlaps (top). }
   % \caption{Coffee mug with overlapping handle. (top) row of models with increasing overlap (middle) single weight image showing behaviour in the overlapping region, (bottom) simulation result for each one}

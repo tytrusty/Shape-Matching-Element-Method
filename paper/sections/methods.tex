@@ -376,12 +376,12 @@ deformation origin extraction~\refsec{origins} and blending weights computation~
 \section{Physics-Based Animation}
 Having defined the individual components of the SEM method, we now briefly detail how we apply it to the problem of 
 physics-based animation, specifically elastodynamics. 
-The advantage of having a unified kinematic description~(\refeq{kinematics}) is that we can directly apply Lagrangian Mechanics~\dave{cite Lanczos again} to arrive at 
+The advantage of having a unified kinematic description~(\refeq{kinematics}) is that we can directly apply Lagrangian Mechanics~\cite{lanczos2012variational} to arrive at 
 the pertinent equations of motion:
 \begin{equation*}
-    \MM\ddot{\vc{q}} = \fo\left(\vc{q}\right) + \fext,
-\end{equation*} where $\MM\in\real^{n\times n}$ is the mass matrix, $\vc{q}\in\real^{n}$ is the stacked vector of surface control points, $\fo\in\real^{n}$ is the 
-vector of internal forces and $\fext\in\real^{n}$ are external forces such due to gravity or contact. 
+    \MM\ddot{\vc{q}} = \fo\left(\vc{q}\right) + \vc{f}_g + \fext,
+\end{equation*} where $\MM\in\real^{n\times n}$ is the mass matrix, $\ddot{\vc{q}}\in\real^{n}$ are the generalized accelerations, $\vc{q}\in\real^{n}$ is the stacked vector of surface control points, $\fo\in\real^{n}$ is the 
+vector of internal forces, $\vc{f}_g\in\real^{n}$ are body forces such as gravity and $\fext\in\real^{n}$ are external forces such as those due to contact. 
 We use penalty springs~\cite{10.1145/1964921.1964932} to resolve contact, and the approach of \citet{10.1145/566654.566623} for approximating frictional effects. 
 Because SEM yields equations of motion in the standard form, it is compatible with any standard integration scheme, though in this submission we limit ourselves to
 Implicit Euler.
@@ -436,7 +436,7 @@ The velocity of a point on the object is then
 
 We derive the mass matrix for our system from the definition of kinetic energy:
 \begin{equation}
-    T = \dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\bldmat\left(\refX\right)^T\shapef\left(\refX\right)^T\shapef\left(\refX\right)\bldmat\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
+    T = \frac{1}{2}\dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\bldmat\left(\refX\right)^T\shapef\left(\refX\right)^T\shapef\left(\refX\right)\bldmat\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
 \end{equation}
 % \begin{equation}
 % T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
@@ -479,8 +479,8 @@ Evaluating and applying constitutive models of this form requires the ability to
 SEM provides both features and thus support for such models.
 
 \subsection{External Forces}
-We compute the force of gravity and apply external forces in the standard way --
-$\vc{f}_g = \int_{\Omega} \rho\vc{g} d\Omega$, where $\vc{g}$ is the acceleration due to gravity acting on the object. 
+We compute the force of gravity and apply external forces in the standard way.
+Gravity is defined as $\vc{f}_g = \int_{\Omega} \rho\vc{g} d\Omega$, where $\vc{g}$ is the acceleration due to gravity acting on the object. 
 We leverage our meshless quadrature~(\refsec{quadrature}) for integration.
 
 External point forces are applied using the Jacobian transpose technique which specifies that the generalized force, $\fext$, 
@@ -495,8 +495,8 @@ that prescribed by polynomial basis.
 
 The total error at the boundary of the object can be written as
 \begin{equation}
-\epsilon = \int_{\partial\Omega}||\Gamma\left(\refX\right)\vc{q} - \Jnurbs\left(\refX\right)\vc{q}||_2^2 d\refX \\
-\end{equation}, which is a quadratic.
+\epsilon = \int_{\partial\Omega}||\Gamma\left(\refX\right)\vc{q} - \Jnurbs\left(\refX\right)\vc{q}||_2^2 d\refX, \\
+\end{equation} which is a quadratic.
 
 We augment our physical system with the  quadratic penalty energy $\gamma\epsilon$ and use it to derive additional force and Hessian terms.
 In practice we find that choosing $\gamma $ to be the Young's Modulus of the elastic solid provides good behavior in all cases.
