@@ -315,12 +315,9 @@ physical quantities, leaving our simulation unaffected.
 % (4) what is the desired output
 % (5) what's the algorith,
 % (6) add proofs/diagrams/figures that show we satisfy (2). }
-Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$. 
-Each origin is computed as the centroid of the set of parts with which it is associated. 
+Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$, and each origin is computed as the centroid of the set of parts with which it is associated. 
 While we constrain a part to be paired with only one deformation origin, an origin may be associated any number of parts. 
-Further, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part.\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)}\dave{yes} 
-Finally, to avoid unduly coupling the parts and reducing the expressivity of the simulation, we seek a sparse association of origins 
-which mirrors the pointwise sparsity of our blending weights, 
+Further, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part. One exception to this rule is periodic NURBS surfaces, where we allow for a deformation origin associated with only this part. Finally, to avoid unduly coupling the parts and limiting the expressivity of the simulation, we seek a sparse association of origins which mirrors the pointwise sparsity of our blending weights.
 
 %of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
 
@@ -333,23 +330,31 @@ which mirrors the pointwise sparsity of our blending weights,
 Candidate deformation origins are selected by clustering quadrature points~(themselves computed in \refsec{quadrature}).
 We group quadrature points by the combination of parts influencing each point (non-zero blending weight~(\refsec{weights})).
 Each group now represents a unique part combination and the centroids of these groups become deformation origin candidates.
-To assign deformation origins to parts we use an integer network flow approach~\dave{cite}~(\reffig{origin_network}). 
+To assign deformation origins to parts we use an integer network flow approach~\dave{cite}~(\reffig{network_flow}). 
 
 Consider a directed bipartite graph $G=(V = A \cup B,E)$ where each node in $A$ corresponds to a deformation origin candidate and each node in $B$ represents a part. 
 $E$ is the set of edges connecting nodes in $A$ to $B$ where each origin has an edge to every part with which it attempts to associate. 
-We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing the source, $s$, and sink, $t$. 
+We augment $G$ to form $G'=(V' = A \cup B \cup \{s,t\}, E')$ where $V'$  is the new set of nodes now containing a source, $s$, and sink, $t$. 
 $E'$ is the augmented set of nodes connecting $s$ to each candidate in $A$ and connecting each part in $B$ to the sink $t$. 
 Each edge $(i,j) \in E'$ has an associated flow $f_{ij}$ and capacity constraint $u_{ij}$, and each edge in $E$ also has a cost $c_{ij}$. 
 The principal constraint for this network flow problem is the conservation constraint, meaning that the net flow for all nodes in $V$ is zero.\dave{B is really overloaded}
 Each edge from $B$ to $t$ is assigned a capacity of $1$, which enforces that any part node in $B$ receives flow from a single edge, 
 and as a consequence each part may only be associated with a single deformation origin. 
-The last step is to specify the costs on the edges, $E$, between the origin candidates and the parts. 
+The last step is to specify the costs on the edges, $E$, between the deformation origin candidates and the parts. 
 
 Given a quadrature point group, and an edge from the associated deformation origin to $\prt_i$, we set the edge cost to be the sum, 
-over all quadrature points in the group, of the blending weights associated with $\prt_i$.
+over all quadrature points in the group of the blending weights associated with $\prt_i$.
 This costs penalizes heavily ``connected'' origin candidates, encouraging sparsity during origin selection. 
-We solve this problem with an integer constrained linear program\dave{cite solver, add equation with formulation} and choose $\XBs$ to be all the deformation origin candidates in $A$ 
-that have an outgoing flow of at least $1$. 
+We solve this problem with the following integer constrained linear program
+\begin{equation}
+\begin{aligned}
+\mathbf{f} =  \arg\min_{\mathbf{f}} \quad & \mathbf{c}^T \mathbf{f}    \\
+\textrm{st} \quad & A_{\text{cons}} \mathbf{f} = 0  \\
+                  & f_i \in \integer \mbox{ }\forall i	\\
+                  & 0 \leq f_i \leq u_i
+\end{aligned}
+\end{equation}
+where $\mathbf{f}$ and $\mathbf{c}$ are the edge flow and cost values, respectively, assembled into vectors, and $A_{\text{cons}}$ forms the set of constraints satisfying the flow conservation constraint. \ty{we use the default in intlinprog, which should be dual-simplex} We choose $\XBs$ to be all the deformation origin candidates in $A$ that have an outgoing flow of at least $1$. 
 
 \subsection{Meshless Integration}
 \label{sec:quadrature}
