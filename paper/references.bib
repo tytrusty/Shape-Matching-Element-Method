@@ -907,3 +907,18 @@ author = "Jonathan Richard Shewchuk",
 keywords = "Triangular mesh generation, Delaunay triangulation, Constrained Delaunay triangulation, Delaunay refinement, Computational geometry",
 abstract = "Delaunay refinement is a technique for generating unstructured meshes of triangles for use in interpolation, the finite element method, and the finite volume method. In theory and practice, meshes produced by Delaunay refinement satisfy guaranteed bounds on angles, edge lengths, the number of triangles, and the grading of triangles from small to large sizes. This article presents an intuitive framework for analyzing Delaunay refinement algorithms that unifies the pioneering mesh generation algorithms of L. Paul Chew and Jim Ruppert, improves the algorithms in several minor ways, and most importantly, helps to solve the difficult problem of meshing nonmanifold domains with small angles. Although small angles inherent in the input geometry cannot be removed, one would like to triangulate a domain without creating any new small angles. Unfortunately, this problem is not always soluble. A compromise is necessary. A Delaunay refinement algorithm is presented that can create a mesh in which most angles are 30° or greater and no angle is smaller than arcsin[(3/2)sin(φ/2)]∼(3/4)φ, where φ⩽60°is the smallest angle separating two segments of the input domain. New angles smaller than 30° appear only near input angles smaller than 60°. In practice, the algorithm's performance is better than these bounds suggest. Another new result is that Ruppert's analysis technique can be used to reanalyze one of Chew's algorithms. Chew proved that his algorithm produces no angle smaller than 30° (barring small input angles), but without any guarantees on grading or number of triangles. He conjectures that his algorithm offers such guarantees. His conjecture is conditionally confirmed here: if the angle bound is relaxed to less than 26.5°, Chew's algorithm produces meshes (of domains without small input angles) that are nicely graded and size-optimal."
 }
+
+@misc{gptoolbox,
+  title = {{gptoolbox}: Geometry Processing Toolbox},
+  author = {Alec Jacobson and others},
+  note = {http://github.com/alecjacobson/gptoolbox},
+  year = {2018},
+}
+
+@misc{bartels,
+  title = {{Bartels}: A lightweight collection of routines for physics
+    simulation},
+  author = {David I.W. Levin},
+  note = {https://github.com/dilevin/Bartels},
+  year = {2020},
+}
