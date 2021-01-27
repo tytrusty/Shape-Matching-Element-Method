@@ -394,28 +394,27 @@ Implicit Euler.
 
 \begin{algorithm}[h]
 	\begin{algorithmic}[1]
-		\Procedure{Preprocess}{$model$}
-     	\myworries{todo: add volume}
+		\Procedure{Simulate}{$model$}
+     	 %\MM\ddot{\vc{q}} = \fo\left(\vc{q}\right) + \vc{f}_g + \fext,
      	\While {$simulating$}
-     		\State{$\Pcox \gets \Pi\mathbf{q}$}
+     		\State{$\Pcox \gets \Pi\vc{q}$}
      		\ForAll{$i \gets 1$ to $|\st{X}|$}
-     			\State{$\mathbf{F}_i \gets \frac{\partial \mathbf{F}}{\partial c} c$}
+     			\State{$\mathbf{F}_i \gets \frac{\partial \mathbf{F}}{\partial c} c \quad$ // deformation gradient}
 				\State{$\frac{\partial V}{\partial c} \gets \frac{\partial V}{\partial c} +
-				\frac{\partial \mathbf{F}}{\partial c}^T \frac{\partial \psi}{\partial \mathbf{F}}(\mathbf{F}_i)$}
+				\frac{\partial \mathbf{F}}{\partial c}^T \frac{\partial \psi}{\partial \mathbf{F}}(\mathbf{F}_i) \cdot \text{volume}_i$}
 				
 				\State{$\frac{\partial^2 V}{\partial c^2} \gets \frac{\partial^2 V}{\partial c^2} +
 				 \frac{\partial \mathbf{F}}{\partial c}^T 
-				 \frac{\partial^2 \psi}{\partial \mathbf{F}^2}(\mathbf{F}_i)
+				 \frac{\partial^2 \psi}{\partial \mathbf{F}^2}(\mathbf{F}_i) 
 				 \frac{\partial \mathbf{F}}{\partial c}
-				 $}
+				 \cdot \text{volume}_i$}
   			\EndFor
   			\State{$K \gets \Pi^T \frac{\partial^2 V}{\partial c^2} \Pi$}
-  			\State{$f_{\text{internal}} \gets \Pi^T \frac{\partial V}{\partial c}$}
-  			\State{$f_{\text{error}} \gets \ME \vc{q}$}
-  			\State{$f_{\text{total}} \gets f_{\text{internal}} + f_{\text{error}} + f_{\text{ext}}$}
-  			\State{$\dot{\mathbf{q}} \gets \text{TimeIntegration}
-  			(f_{\text{total}},\mathbf{K}, \dot{\mathbf{q}}, \mathbf{J} , \mathbf{M}, \mathbf{M_E})$}
-  			\State{$\mathbf{q} \gets \mathbf{q} + h\dot{\mathbf{q}}$}
+  			\State{$\fo\left(\vc{q}\right) \gets \Pi^T \frac{\partial V}{\partial c} + \ME \vc{q}$}
+  			\State{$\vc{f}_{\text{total}} \gets \fo\left(\vc{q}\right) + \vc{f}_g + \fext$}
+  			\State{$\dot{\vc{q}} \gets \text{TimeIntegration}
+  			(K, \vc{f}_{\text{total}}, \dot{\vc{q}}, \samp{\Jnurbs} , \MM, \ME)$}
+  			\State{$\vc{q} \gets \vc{q} + h\dot{\vc{q}} \quad$ // $h$ is timestep size}
      	\EndWhile
 	\EndProcedure
 \end{algorithmic}
