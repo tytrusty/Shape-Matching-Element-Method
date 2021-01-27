@@ -369,7 +369,7 @@ The key idea behind raycasting quadrature is to transform a domain integral of t
 where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral two and integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
 
 We make a minor modification this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces by performing 
-CSG unions while raycasting\dave{find a citation}. 
+CSG unions while raycasting~\cite{ROTH1982109}. 
 The output of this raycasting procedure is a set of quadrature points $\st{X}$ and weights $\st{v}$ that we use for integration and also as input to our 
 deformation origin extraction~\refsec{origins} and blending weights computation~\refsec{weights}
 \reffig{raycasting} shows the convergence of this quadrature approach when used to compute the volume of a NURBS model.
