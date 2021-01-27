@@ -18,15 +18,11 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 	const Eigen::SparseMatrix<double> &L,
 	int k, int n, int d, int x0_coms_size, double k_stability) {
 
-	// std::cout << "hello "<< std::endl;
 	Eigen::VectorXd dV_dq, dV_dF;
 	dV_dq.resize(d*(k*n + x0_coms_size));
 	dV_dq.setZero();
 	dV_dF.resize(9);
 
-	// std::cout << "hello 2"<< std::endl;
-
-	// TODO move this to separate file
 	for (int i = 0; i < dF_dc.size(); ++i) {
 		Eigen::MatrixXx<DerivedParam> CD = params.row(i);
 		Eigen::VectorXd F_flat = dF_dc[i] * dF_dc_S[i] * c;
@@ -36,7 +32,7 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 
 		// std::cout << "dV_dF[" << i << "] = " << dV_dF.transpose() << std::endl;
 		
-    dV_dq += dF_dc_S[i].transpose() * dF_dc[i].transpose() * dV_dF * volume(i);
+		dV_dq += dF_dc_S[i].transpose() * dF_dc[i].transpose() * dV_dF * volume(i);
 
 		// if (i < 2) {
 		// 		std::cout << "i = " << i << std::endl;
@@ -54,7 +50,7 @@ void sim::vem3dmesh_neohookean_dq(Eigen::VectorXx<DerivedRet> &g,
 
 	// std::cout << "dV_dq with L= " << dV_dq.segment(0,9) << std::endl;
 
-  //  Error correction force
+	//  Error correction force
 	Eigen::VectorXd x_vec = Eigen::Map<const Eigen::VectorXd>(x.data(), x.size());
 	Eigen::MatrixXd f_error_tmp = - 2.0 * ME * x_vec;
 	Eigen::VectorXd f_error_tmp_vec = Eigen::Map<Eigen::VectorXd>(f_error_tmp.data(), f_error_tmp.size());

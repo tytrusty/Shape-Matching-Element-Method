@@ -361,8 +361,14 @@ We solve this using the dual simplex solver in MATLAB.
 We integrate physical quantities over our undeformed object using raycasting based quadrature~\cite{KHOSRAVIFARD201030}.
 
 \dave{Ty: a bit more here, show the transformation of the integral via divergence theorem then show the final discrete version. Clearly define the quadrature rules.}
+The key idea behind raycasting quadrature is to transform a domain integral of the form $I=\int_{\Omega} f(X,Y,Z) d\Omega$ to an easier form that enables us to select quadrature points in an entirely meshless manner. The first transformation is to convert the domain of the integral to an \textit{auxiliary domain}, $\Omega_R$ on which integration is easy to compute. In our case we take this domain to be an axis-aligned bounding box around our model, and rewrite integration as $I=\int_{\Omega_R} g(X,Y,Z) d\Omega_R$ where $g$ evaluates to zero outside of $\Omega$, but equals $f$ inside $\Omega$. Next we apply the Divergence theorem \ty{the paper calls it Green-Gauss theorem, but these are same, right} to rewrite our integral as
+\newcommand{\Zeta}{\mathrm{Z}}
+\begin{equation}
+\int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} g(\alpha, Y, Z) d\alpha)\right)\mathbf{n} d\Gamma.
+\end{equation}
+where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral two and integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
 
-We make a minor modifiction this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces by performing 
+We make a minor modification this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces by performing 
 CSG unions while raycasting\dave{find a citation}. 
 The output of this raycasting procedure is a set of quadrature points $\st{X}$ and weights $\st{v}$ that we use for integration and also as input to our 
 deformation origin extraction~\refsec{origins} and blending weights computation~\refsec{weights}

@@ -1,7 +1,7 @@
 %cantileaver simulation
-[V,T,F] = readMESH('vem_beam_tet0.mesh');
+[V,T,F] = readMESH('vem_beam_tet2.mesh');
 
-
+writeOBJ('vem_2.obj',V,F);
 %setup simulation variables
    
 %tet volumes
@@ -11,11 +11,11 @@ vol = volume(V,T);
 dphidX = linear_tetmesh_dphi_dX(V,T);
 
 %Mass Matrix
-rho =  100.0*ones(size(T,1),1);
+rho =  1000.0*ones(size(T,1),1);
 M = linear_tetmesh_mass_matrix(V,T, rho, vol);
 
 %material properties 
-YM = 1e5; %in Pascals
+YM = 1e6; %in Pascals
 pr =  0.45;
 [lambda, mu] = emu_to_lame(YM*ones(size(T,1),1), pr*ones(size(T,1),1));
 
@@ -55,7 +55,9 @@ h = text(0.5*(max(V(:,1)) + min(V(:,1))), 0.9*max(V(:,2)), num2str(0));
 h.FontSize = 28;
     
 for ti=1:500
-    
+     if ti == 200
+         writeOBJ('vem_200.obj',p.Vertices,F);
+     end
      h.String = num2str(ti);
 
      g =  -M*vt + ...

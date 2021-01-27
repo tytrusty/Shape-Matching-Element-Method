@@ -47,6 +47,7 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 		}
 
 		// Project each local stiffness matrix to PSD
+		/*
 		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXx<DerivedRet>> es(tmp);
     Eigen::MatrixXd DiagEval = es.eigenvalues().real().asDiagonal();
     Eigen::MatrixXd Evec = es.eigenvectors().real();
@@ -56,7 +57,7 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
         }
     }
     tmp = Evec * DiagEval * Evec.transpose();
-		
+		*/
 		// Assembly
 		int kd = 3 * k;
 		for (int jj = 0; jj < tmp.cols(); ++jj) {

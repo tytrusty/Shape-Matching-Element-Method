@@ -17,9 +17,9 @@ function [x_coms, com_cluster, com_map] = generate_com(x0, E, w, n)
         
         % Remove candidates consisting of a single part
         singletons = (w_num==1);
-        w_vals(singletons,:) = [];
-        wids(singletons,:) = [];
-        w_num(singletons) = [];
+%         w_vals(singletons,:) = [];
+%         wids(singletons,:) = [];
+%         w_num(singletons) = [];
 
         m = size(wids,1);               % number of candidate coms
         ninternal = sum(w_num);         % # of candidate -> part edges

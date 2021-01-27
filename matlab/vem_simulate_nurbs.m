@@ -50,7 +50,20 @@ function vem_simulate_nurbs(parts, varargin)
      qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
     % Setup pinned vertices constraint matrix
-    pin_I = config.pin_function(x0);
+    x_beg = 0;
+    x_end = 0;
+    for i = 1: numel(parts)
+        if parts{i}.srf.color(1) == 1
+        	x_end = x_beg + size(parts{i}.x0,2);
+            x_beg = x_beg + 1;
+            break;
+        end
+        x_beg = x_beg + size(parts{i}.x0,2);
+    end
+    
+%     pin_I = x_beg:3:x_end;
+    pin_I = x_beg:3:x_end;
+%     pin_I = config.pin_function(x0,x_beg,x_end);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plotting pinned vertices.
@@ -127,9 +140,10 @@ function vem_simulate_nurbs(parts, varargin)
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-   
+           obj_fn = config.save_obj_path + "cmp4.iges";
+           nurbs_write_iges(q,parts,obj_fn);
     ii=1;
-    for t=0:config.dt:30
+    for t=0:config.dt:500
         tic
 
         % Preparing input for stiffness matrix mex function.
@@ -223,5 +237,7 @@ function vem_simulate_nurbs(parts, varargin)
         ii=ii+1
         toc
     end
+    obj_fn = config.save_obj_path + "cmp4.iges";
+           nurbs_write_iges(q,parts,obj_fn);
 end
 

@@ -57,7 +57,6 @@ function cutoff_distance=cutoff_heuristic(parts, T, n, X)
         elseif sparsity(index) > T
             R = index - 1;
         else
-            index = m;
             break;
         end
     end

@@ -9,7 +9,7 @@ function [nurbs_objects] = nurbs_from_iges(filename, sample_density)
     enable_trimming = 1;
     use_triangle = 1;
     generate_hires = 1;
-    trimmed_hires_res = 8;
+    trimmed_hires_res = 3;
     nurbs_objects = nurbs_sample(data, enable_trimming, sample_density);
     disp('Done Generating samples');
 
