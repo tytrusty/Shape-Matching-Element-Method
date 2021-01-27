@@ -109,11 +109,18 @@ for i = 1:numel(hit_ids)
             vol_j = dt * dA;
             X = [X; pnts]; % inefficient, yea
             vol = [vol; repelem(vol_j, samples,1)];
+            
+%             [x,w]=lgwt(samples,t_range(1),t_range(2));
+%             pnts = x_origin - x;
+%             pnts = [pnts UV_rep];
+%             vol_j = w * dA;
+%             X = [X; pnts]; % inefficient, yea
+%             vol = [vol; vol_j];            
         else
-            pnts = x_origin - intervals{j};
-            pnts = [pnts' UV(idx,:)];
-            X = [X; pnts];
-            vol = [vol; repelem(dA, numel(dist),1)];
+%             pnts = x_origin - intervals{j};
+%             pnts = [pnts' UV(idx,:)];
+%             X = [X; pnts];
+%             vol = [vol; repelem(dA, numel(dist),1)];
         end
     end
 end

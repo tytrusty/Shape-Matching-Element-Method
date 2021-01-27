@@ -6,12 +6,13 @@ end
  
 iges_file = 'puft_full_simpler.iges'; % simplified version
 
-part = nurbs_from_iges(iges_file);
+sample_density=2;
+part = nurbs_from_iges(iges_file,sample_density);
 
 % YM = 2e3; %in Pascals
 % pr =  0.25;
 % YM = 1e5;
-YM = 5e5;
+YM = 1e6;
 pr = 0.47;
 [lambda, mu] = emu_to_lame(YM, pr);
 
@@ -41,7 +42,7 @@ options.distance_cutoff = cutoff_distance;
 % options.distance_cutoff=0.2;
 options.save_obj = true;
 options.save_obj_path = 'output/puft_with_puft/';
-options.k_stability = 1e10;
+options.k_stability = 1e7;%1e10;
 
 % options.collision_ratio = 4e-1;
 options.collision_ratio = 5e4;
