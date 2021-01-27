@@ -152,19 +152,20 @@ geometry itself.
     \label{eq:kinematics}
  \end{equation} where $\bldxi$, $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
  part respectively.  
+ \ty{I'm wondering if we should add a line emphasizing that while we linearly blend, the resulting deformation map is a nonlinear map unique to each X. But maybe this obvious}
  
  \subsection*{Multiple Part Projection}
 As in ~\refsec{shapematching} we construct each $\Pi_i$ via shape matching. 
 It is tempting to use an identical polynomial basis matrix, $\Pmatx$ for all parts, $\prt_i$, but recall that constructing $\Pmatx$ requires the selection of a deformation
 origin $\bar{\refX}$~(\refeq{projection}). 
 Using the same origin for all polynomials limits the expressivity of the kinematic model~\cite{STBS:2011}.
-Instead we choose a number of points in $\refX$ ($|\Prts| > |\XBs| > 0$, where $\XBs$ is the set of points)  to act as deformation origins~(\refsec{origins}).
-For each part we now construct $\Pmatxi$ using the associated deformation origin $\bar{\refX}_j\in \XBs$, where each origin can
+Instead we choose a set of points $\XBs$ ($0 < |\XBs| < |\Prts|$) to act as deformation origins~(\refsec{origins}).
+For each part we now construct $\Pmatxi$ using its associated deformation origin $\bar{\refX}_j\in \XBs$, where each origin can
 be shared between multiple parts.
 
 \begin{figure}[h]
     \includegraphics[width=\columnwidth]{figures/projection_operator_solve}
-    \caption{A simple, four part model with two deformation origins and the corresponding matrix equation for the quadratic coefficients.}
+    \caption{A simple, four part model with two deformation origins and the corresponding matrix equation for the quadratic coefficients. \ty{these $T^1$ and $T^2$ blocks in the U matrix need to be swapped I think} }
     \label{fig:multiparts}
 \end{figure}
 
@@ -176,8 +177,8 @@ Mechanically, this principle suggests that the amount of motion modelled by incr
 This implies that we can achieve acceptable shape matching results by performing shape matching hierarchically -- starting with the constant term and then 
 fitting the remaining deformation with progressively higher-order deformations. 
 
-For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{X}_j$.
-We next fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
+For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{\refX}_j$.
+Next we fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
 This can be repeated for polynomials of arbitrary high order, for instance here we apply this approach to quadratic shape matching:
 
 \begin{equation}
@@ -188,11 +189,10 @@ This can be repeated for polynomials of arbitrary high order, for instance here 
     \end{split},
     \label{eq:hfit} 
 \end{equation} where $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^1}$ is the stacked evaluation of this matrix at $n$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
-Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3n\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point.
-
+Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3n\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point. \ty{it looks like we are missing the divisor for t? This looks like it's computing the sum and $\mathbbm{1}$ should be defined as $1/N$ where $N$ is the total number of points in all associated parts}
 
 %%single projector for every object
-When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a spare matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently to compute the projection 
+When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a sparse matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently to compute the projection 
 operator for the entire object $\Pi = U^{-1}B\vc{q}$. 
 The structure of $U$ and $B$ ensures that $\Pi$ only couples objects which share deformation centers, which implies a sparse $\Pi$. 
 The per-part projection operators $\Pi_i$ correspond to blocks of rows of $\Pi$. 
@@ -232,10 +232,6 @@ the $i^{th}$ part, $\prt_i$, and $\refX_j\in\st{X}$.
 For each $\refX_j$ we find the nearest point on $\prt_i$, $\clst$.
 We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the nearest part, $\rhit$.
 
-\dave{Ty: How do we deal with non-planar parts ? What if the ray cast hits the same part that the closest point is on?}
-\ty{Right now this doesn't happen as we only test intersection against other parts}
-\dave{can't that mean the ray can just miss everything ? If staypuft's body was just a single ellipse the wieghts inside should all be one, in this case they would be very odd.}
-We compute two distances, $d_{\text{primary}}$, the distance from $\mathbf{X}_j$ to $\clst$ and $d_{\text{total}}$ the distance from  $\clst$ to $\rhit$.
 Using these two distances we define a linear \emph{distance weight} using the well-known ReLU function:
 \begin{equation}
 \theta_i = \max (1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0)
@@ -243,7 +239,7 @@ Using these two distances we define a linear \emph{distance weight} using the we
 \end{equation}
 where $\alpha$ is a distance cutoff parameter. 
 This distance weight~(\reffig{plot_distance_weight}) is the result of interpolating along the ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
-These weights obey the Kronecker delta property for all parts but do not partition unity which we repair using a post-normalization step.
+These weights obey the Kronecker delta property for all parts but do not partition unity which we repair using a post-normalization step. For non-planar surfaces, $\rhit$ may lie on the same part as $\clst$. For points inside closed periodic surfaces, it is critical that the weights equal one in this case, so we set $\theta_i = 1$.
 
 % \begin{figure}[h]
 %     \centering
@@ -290,7 +286,7 @@ For any point on a part that is non-intersecting, the weights will satisfy the K
 a single $\Theta_i$ will have a non-infinite weight. 
 For points that lie on more than one part, the weights associated with the intersecting parts will be equal and all others will be zero
 This implies that the deformed positions of these intersecting points will be an average, which is a plausible solution and ensures continuity.
-Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the blending weights.
+Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the blending weights. We employ a simple heuristic to select $\alpha$ by searching for a $\alpha$ that produces a set of blending weights meeting a desired sparsity target $T \in \left( 0,1\right)$, which is defined as the ratio of non-zeros to total number of weights. This yields a unitless, easy to tune parameter.
 
 \begin{figure}[h]
     \centering
@@ -306,9 +302,9 @@ Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the b
 Using raycasting to compute blending weights imbues our method with similar advantages to \citet{Sawhney:2020:MCG} (allowing us to 
 handle intersecting geometry, geometry with gaps and to perform constructive solid geometry operations on the fly),
 but allows us to use more general weighting functions and apply the appropriate behavior for intersecting parts.
-The price we pay is that our weights are not C0 continuous but rather Lipchitz smooth.
+The price we pay is that our weights are not C0 continuous but rather Lipschitz smooth.
 Perturbations in the boundaries of parts can cause bounded jumps in our distance weights. 
-However, these jumps occupy an infinitesimal percentage of the volume of our object are easy to avoid when integrating
+However, these jumps occupy an infinitesimal percentage of the volume of our object, and are easy to avoid when integrating
 physical quantities, leaving our simulation unaffected. 
 
 \subsection{Choosing Deformation Origins}
