@@ -260,7 +260,7 @@ $\sum_{i=1}^n\bld_i(\mathbf{X}_j) = 1$, and each $\bld_i \geq 0$, which we enfor
 \begin{equation}
 \begin{aligned}
 \mathbf{w}(\mathbf{X}_j) =  \arg\min_{\mathbf{w}} \quad & \mathbf{w}^T \Theta(\mathbf{X}_j) \mathbf{w}    \\
-\textrm{st} \quad & 0 \leq w_i \leq 1 \mbox{ }\forall i                    \\
+\textrm{s.t.} \quad & 0 \leq w_i \leq 1 \mbox{ }\forall i                    \\
                   &   \sum_i^n w_i = 1                      \\
 \end{aligned}
 \end{equation}
@@ -347,8 +347,8 @@ This amounts to minimizing the following integer linear program:
 \begin{equation}
 \begin{aligned}
 \mathbf{f} =  \arg\min_{\mathbf{f}} \quad & \mathbf{c}^T \mathbf{f}    \\
-\textrm{st} \quad & A_{\text{cons}} \mathbf{f} = 0  \\
-                  & f_i \in \integer \mbox{ }\forall i	\\
+\textrm{s.t.} \quad & A_{\text{cons}} \mathbf{f} = 0  \\
+                  & f_i \in \integer \mbox{ }, \forall i	\\
                   & 0 \leq f_i \leq u_i
 \end{aligned}
 \end{equation}
