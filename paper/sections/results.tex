@@ -2,8 +2,10 @@
 \section{Results and Discussion}
 
 \begin{table*}[h]
-  \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All timings are reported in seconds, physical  parameters are
-  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio. Here the time per step doesn't include the time for collision handling. 
+  \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical  parameters are
+  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio.
+  \textbf{Sample} is the time taken to sample and construct $\samp{\Jnurbs}$ and $\samp{\Pmatx}$, \textbf{Quad} is the time taken to generate quadrature points via raycasting,
+  \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator and  \textbf{Step} is the average time required to step the simulation (not including collision detection).
   }
   \label{tbl:perf}
   \begin{center}
