@@ -176,7 +176,8 @@ This can be repeated for polynomials of arbitrary high order, for instance here 
 
 \begin{equation}
     \begin{split}
-        \tr_i  & = \sum_{\prt_k \in \bar{\refX}_j} \underbrace{\mathbbm{1}^T\wt_k \samp{\Jnurbs}_k}_{B_{ik}}\vc{q}_k \\
+\tr_i  & = \frac{1}{\sum_{\prt_k \in \bar{\refX}_j} \Tr \wt_k}
+        \sum_{\prt_k \in \bar{\refX}_j} \underbrace{\mathbbm{1}^T\wt_k \samp{\Jnurbs}_k}_{B_{ik}}\vc{q}_k \\   
         \vc{c}_i^1 & = \smash{\underbrace{\left(\samp{\Pmat^1}^T\wt_i\samp{\Pmat^1}\right)}_{A^1_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^1}^T\wt_i\samp{\Jnurbs}_i}_{B^1_i}\vc{q}_i-\underbrace{\samp{\Pmat^1}^T\wt_i\mathbbm{1}}_{T^1_i}\tr_i\bigg)\\
         \vc{c}_i^2 & = \smash{\underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg)
     \end{split},
@@ -283,7 +284,7 @@ For any point on a part that is non-intersecting, the weights will satisfy the K
 a single $\Theta_i$ will have a non-infinite weight. 
 For points that lie on more than one part, the weights associated with the intersecting parts will be equal and all others will be zero
 This implies that the deformed positions of these intersecting points will be an average, which is a plausible solution and ensures continuity.
-Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the blending weights. We employ a simple heuristic to select $\alpha$ by searching for a $\alpha$ that produces a set of blending weights meeting a desired sparsity target $T \in \left( 0,1\right)$, which is defined as the ratio of non-zeros to total number of weights. This yields a unitless, easy to tune parameter.
+Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the blending weights. We employ a simple heuristic to select $\alpha$ by searching for one that produces a set of blending weights meeting a desired sparsity target $T \in \left( 0,1\right)$, which is defined as the ratio of non-zeros to total number of weights. This yields a unitless, easy to tune parameter.
 
 \begin{figure}[h]
     \centering
