@@ -3,23 +3,24 @@
 
 \begin{table*}[h]
   \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All timings are reported in seconds, physical  parameters are
-  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio.
+  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio. Here the time per step doesn't include the time for collision handling. 
   }
   \label{tbl:perf}
   \begin{center}
   \begin{tabular}{l c c c c c c c c c c}
-   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample Model}(s) & \textbf{Quadrature}(s)& \textbf{Weights}(s)& \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
+   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample Model}(s) & \textbf{Quadrature}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
    \hline 
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Cantilever (soft)}       & ? & Jelly & $1 \times 10^3$ & $1 \times 10^6$& 0.45 & ? & ? & ? & ? & ? \\
-   \textbf{Cantilever (stiff)}      & ? & Rubber & $1 \times 10^3$ & $5 \times 10^6$ & 0.45 & ? & ? & ? & ? & ? \\
-   \textbf{Coffee mug}              & ? & Jelly & $1 \times 10^3$ & $1 \times 10^4$ & 0.47 & ? & ? & ? & ? & ?  \\
-   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 \times 10^3$ & $7 \times 10^6$ & 0.4 & ? & ? & ? & ? & ? \\
-   \textbf{Rocket (stiff)}          & 648 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & ? & ? & ? & ? & ? \\
-   \textbf{Castle}                  & ? & Jelly & $1.27 \times 10^3$ & $2 \times 10^3$ & 0.45 & ? & ? & ? & ? & ? \\
-   \textbf{Chicken}                 & ? & Rubber & $1.27 \times 10^3$ & $1 \times 10^4$ & 0.47 & ? & ? & ? & ? & ? \\
-   \textbf{Starship}                & ? & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & ? & ? & ? & ? & ? \\
-   \textbf{Tire}                    & ? & Rubber & $2 \times 10^3$ & $1 \times 10^6$ & 0.47 & ? & ? & ? & ? & ? & ?\\
+   \textbf{Cantilever (soft)}       & 564 & Jelly & $1 \times 10^3$ & $1 \times 10^6$& 0.45 & $2.53 \times 10^{-2}$ & $4.45 \times 10^{-3}$ & $4.78 \times 10^{-1}$ & $1.86 \times 10^{-1}$ & $1.20 \times 10^{0}$ \\
+   \textbf{Cantilever (stiff)}      & 564 & Rubber & $1 \times 10^3$ & $5 \times 10^6$ & 0.45 & $2.48 \times 10^{-2}$ & $6.37 \times 10^{-3}$ & $5.10 \times 10^{-1}$ & $1.68 \times 10^{-1}$ & $1.19 \times 10^{0}$ \\
+   \textbf{Coffee mug}              & 1800 & Jelly & $1 \times 10^3$ & $1 \times 10^4$ & 0.47 & $4.18 \times 10^{-1}$ & $2.87 \times 10^{-2}$ & $3.77 \times 10^{0}$ & $2.08 \times 10^{0}$ & $1.19 \times 10^{1}$  \\
+   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 \times 10^3$ & $7 \times 10^6$ & 0.4 & $2.83 \times 10^{-2}$ & $5.62 \times 10^{-3}$ & $5.58 \times 10^{-1}$ & $6.83 \times 10^{-2}$ & $1.26 \times 10^{0}$ \\
+   \textbf{Rocket (stiff)}          & 648 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & $2.56 \times 10^{-2}$ & $5.97 \times 10^{-3}$ & $4.59 \times 10^{-1}$ & $3.48 \times 10^{-2}$ & $9.99 \times 10^{-2}$ \\
+   \textbf{Castle}                  & 1872 & Jelly & $1.27 \times 10^3$ & $2 \times 10^3$ & 0.45 & $4.84 \times 10^{-1}$ & $1.44 \times 10^{-2}$ & $1.52 \times 10^{0}$ & $5.78 \times 10^{-1}$ & $8.02 \times 10^{0}$ \\
+   \textbf{Chicken}                 & 1773 & Rubber & $1.27 \times 10^3$ & $1 \times 10^4$ & 0.47 & $9.19 \times 10^{-1}$ & $2.31 \times 10^{-2}$ & $3.38 \times 10^{0}$ & $1.91 \times 10^{0}$ & $1.08 \times 10^{1}$ \\
+   \textbf{Starship}                & 750 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & $6.78 \times 10^{-2}$ & $1.52 \times 10^{-2}$ & $8.50 \times 10^{-1}$ & $9.52 \times 10^{-2}$ & $6.95 \times 10^{-1}$ \\
+   \textbf{Astronauts}              & ? & ? & ? & ? & ? & ? & ? & ? & ? & ? \\
+   \textbf{Tire}                    & ? & Rubber/Steel & $2 \times 10^3$ / $3 \times 10^3$ & $1 \times 10^6$ / $7 \times 10^9$ & 0.47 / 0.35 & ? & ? & ? & ? & ? \\
    \hline
   \end{tabular}
   \end{center}
