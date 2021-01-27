@@ -24,64 +24,56 @@ At runtime we use standard time integration schemes to time step the system (we 
 These require us to evaluate the energy, gradient and Hessian (implicit only) which we do at the previously computed quadrature points. 
 For collisions we use penalty forces and apply them as external forces during integration.
 
-\ty{Update notation, split this into two figures}
 \begin{algorithm}[h]
     \label{alg:sem}
 	\caption{Shape Matching Element Algorithm}\label{sem_algorithm}
 	\begin{algorithmic}[1]
-		\Procedure{Preprocess}{$model$}
-		\State{// Get initial DOF and sample boundary}
-		\State $\mathbf{q^0} \gets \text{GetControlPoints}(model)$ \Comment{Section 4}
-		\State $\mathbf{J}, \mathbf{W} \gets \text{SampleNURBS}(model)$ \Comment{Section 4}
-		\State $\mathbf{x^0} \gets \mathbf{Jq^0}$
-		\State{$\mathbf{q} \gets \mathbf{q^0}$}
-      \Statex
+		\Procedure{PrepareSim}{$model$}
+		\State{// Get initial DOF and sample boundary  \Comment{Section \ref{sec:geometric_model}}}
+		\State $\vc{q} \gets \text{GetControlPoints}(model)$
+		\State $\samp{\Jnurbs}, \wt \gets \text{SampleNURBS}(model)$
+		\State $\vc{x^0} \gets \wt \samp{\Jnurbs} \vc{q}$
+        \Statex
       
     	\State{// Generate material points inside the model}
-		\State $\mathbf{X} \gets \text{RaycastQuadrature}(model)$ \Comment{Section 4.5}
+		\State $\st{X} \gets \text{RaycastQuadrature}(model)$ \Comment{Section \ref{sec:quadrature}}
 		\Statex   
-		 
-      \State{// Weights for quadrature and boundary points}
-     	\State $\mathbf{w} \gets \text{BlendingWeights}(model, \mathbf{X}, d_{\text{max}})$    \Comment{Section 4.3}
-      	\State $\mathbf{w^*} \gets \text{BlendingWeights}(model, \mathbf{x^0}, d_{\text{max}})$   
-		\Statex
 		
-		\State{// Generate centers of mass}
-		\State $\bar{\mathbf{X}} \gets \text{GenerateCOM}(\mathbf{X}, \mathbf{w})$  \Comment{Section 4.}
+		\State{// Set of blending weights for each $\refX \in \st{X}$} 
+     	\State $\st{W} \gets \text{BlendingWeights}(model, \st{X}, \alpha)$    \Comment{Section \ref{sec:weights}}
+		\Statex
+		\State $\XBs \gets \text{DeformationOrigins}(\st{X}, \st{w})$  \Comment{Section \ref{sec:origins}}
 		\Statex
 		
 		\State{// Create projection operator}
-		\State $\Pi \gets \text{ShapeMatching}(\mathbf{q^0},\mathbf{J}, \mathbf{W},\bar{\mathbf{X}})$     	\Comment{Section 4.2}
+		\State $\Pi \gets \text{ShapeMatching}(\vc{q}, \samp{\Jnurbs}, \wt, \XBs)$ \Comment{Section \ref{sec:shapematching}}
 		\Statex
 		
-		\State{// Form weighted monomial basis and mass matrices}
-		\State $\mathbf{Y} \gets \text{WeightedMonomials}(\mathbf{X}, \mathbf{\bar{X}}, \mathbf{w})$   \Comment{Eqn 32}     	
-		\State $\mathbf{Y^*} \gets \text{WeightedMonomials}(\mathbf{x^*}, \mathbf{\bar{X}}, \mathbf{w})$
-    	\State $\mathbf{M} \gets \text{MassMatrix}(\mathbf{Y}, \Pi)$			\Comment{Section 4.6}
-     	\State $\mathbf{M_E} \gets \text{ErrorMatrix}(\mathbf{Y^*}, \Pi)$	\Comment{Section 4.7}
-     	\Statex
-     	\myworries{todo: add volume}
-     	\While {$simulating$}
-     		\State{$\Pcox \gets \Pi\mathbf{q}$}
-     		\ForAll{$i \gets 1$ to $|\mathbf{X}|$}
-     			\State{$\mathbf{F}_i \gets \frac{\partial \mathbf{F}}{\partial c} c$}
-				\State{$\frac{\partial V}{\partial c} \gets \frac{\partial V}{\partial c} +
-				\frac{\partial \mathbf{F}}{\partial c}^T \frac{\partial \psi}{\partial \mathbf{F}}(\mathbf{F}_i)$}
-				
-				\State{$\frac{\partial^2 V}{\partial c^2} \gets \frac{\partial^2 V}{\partial c^2} +
-				 \frac{\partial \mathbf{F}}{\partial c}^T 
-				 \frac{\partial^2 \psi}{\partial \mathbf{F}^2}(\mathbf{F}_i)
-				 \frac{\partial \mathbf{F}}{\partial c}
-				 $}
-  			\EndFor
-  			\State{$\mathbf{K} \gets \Pi^T \frac{\partial^2 V}{\partial c^2} \Pi$}
-  			\State{$f_{\text{internal}} \gets \Pi^T \frac{\partial V}{\partial c}$}
-  			\State{$f_{\text{error}} \gets \mathbf{M_E}\mathbf{q}$}
-  			\State{$f_{\text{total}} \gets f_{\text{internal}} + f_{\text{error}} + f_{\text{ext}}$}
-  			\State{$\dot{\mathbf{q}} \gets \text{TimeIntegration}
-  			(f_{\text{total}},\mathbf{K}, \dot{\mathbf{q}}, \mathbf{J} , \mathbf{M}, \mathbf{M_E})$}
-  			\State{$\mathbf{q} \gets \mathbf{q} + h\dot{\mathbf{q}}$}
-     	\EndWhile
+		\State{// Form mass matrix and error hessian, respectively}
+    	\State $\MM \gets \text{MassMatrix}(\st{X}, \XBs, \st{W},\Pi)$    \Comment{Section \ref{ssec:mass_matrix}}
+     	\State $\ME \gets \text{ErrorMatrix}(\vc{x^0}, \XBs, \st{W},\Pi)$  \Comment{Section \ref{ssec:error_energy}}
+%     	\myworries{todo: add volume}
+%     	\While {$simulating$}
+%     		\State{$\Pcox \gets \Pi\mathbf{q}$}
+%     		\ForAll{$i \gets 1$ to $|\st{X}|$}
+%     			\State{$\mathbf{F}_i \gets \frac{\partial \mathbf{F}}{\partial c} c$}
+%				\State{$\frac{\partial V}{\partial c} \gets \frac{\partial V}{\partial c} +
+%				\frac{\partial \mathbf{F}}{\partial c}^T \frac{\partial \psi}{\partial \mathbf{F}}(\mathbf{F}_i)$}
+%				
+%				\State{$\frac{\partial^2 V}{\partial c^2} \gets \frac{\partial^2 V}{\partial c^2} +
+%				 \frac{\partial \mathbf{F}}{\partial c}^T 
+%				 \frac{\partial^2 \psi}{\partial \mathbf{F}^2}(\mathbf{F}_i)
+%				 \frac{\partial \mathbf{F}}{\partial c}
+%				 $}
+%  			\EndFor
+%  			\State{$K \gets \Pi^T \frac{\partial^2 V}{\partial c^2} \Pi$}
+%  			\State{$f_{\text{internal}} \gets \Pi^T \frac{\partial V}{\partial c}$}
+%  			\State{$f_{\text{error}} \gets \ME \vc{q}$}
+%  			\State{$f_{\text{total}} \gets f_{\text{internal}} + f_{\text{error}} + f_{\text{ext}}$}
+%  			\State{$\dot{\mathbf{q}} \gets \text{TimeIntegration}
+%  			(f_{\text{total}},\mathbf{K}, \dot{\mathbf{q}}, \mathbf{J} , \mathbf{M}, \mathbf{M_E})$}
+%  			\State{$\mathbf{q} \gets \mathbf{q} + h\dot{\mathbf{q}}$}
+%     	\EndWhile
 	\EndProcedure
 \end{algorithmic}
 \caption{Shape Matching Element Algorithm}
@@ -89,6 +81,7 @@ For collisions we use penalty forces and apply them as external forces during in
 
 %\section{Methods}
 \section{Geometric Model}
+\label{sec:geometric_model}
 
 Our algorithm acts on objects composed of multiple NURBS surfaces~\reffig{NURBS}.
 
@@ -404,7 +397,6 @@ deformation origin extraction~\refsec{origins} and blending weights computation~
 \end{figure}
 
 \section{Physics-Based Animation}
-
 Having defined the individual components of the SEM method, we now briefly detail how we apply it to the problem of 
 physics-based animation, specifically elastodynamics. 
 The advantage of having a unified kinematic description~(\refeq{kinematics}) is that we can directly apply Lagrangian Mechanics~\dave{cite Lanczos again} to arrive at 
@@ -432,6 +424,7 @@ The velocity of a point on the object is then
     \end{equation} where $\Jkin\left(\refX\right)$ is the kinematic Jacobian and $\dot{\vc{q}}$ are the generalized velocities of the system.
 
 \subsection{Mass Matrix}
+\label{ssec:mass_matrix}
 
 We derive the mass matrix for our system from the definition of kinetic energy:
 \begin{equation}
@@ -487,6 +480,7 @@ that results from a point load, applied at $\refX$ is given by $\fext=\Jkin^T\vc
 Using the Jacobian transpose allows us to easily apply all manner of external forces including collision and frictional forces. 
 
 \subsection{Error Energy}
+\label{ssec:error_energy}
 Like all VEM-type methods, ours requires an error energy to ensure its consistency~\cite{10.1142/S021820251440003X}.
 A natural choice is to adapt the error energy specified by \citet{10.1145/1073204.1073216} to penalize deviations between the pose prescribed by  $\vc{q}$ and 
 that prescribed by polynomial basis. 
