@@ -128,6 +128,8 @@ $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
 Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank required to represent all control points. We achieve this by sampling over each knot span defined by the  B-splines, and find it effective to use the order of the NURBS as the number of quadrature points sampled in each knot span.
 \ty{the number of samples may be different if order in the u direction and v differ, but I figured it was best to keep this simple.}
 
+\nicetohave{now I do want that shape matching figure showing constant, linear and quadratic matching}
+
 \paragraph*{Relationship to the Virtual Element Method}
 For a non-planar NURBS part, and given a sufficient number of quadrature points, ~\refeq{shapematch} will be well-posed allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
 \begin{equation*}
@@ -161,19 +163,12 @@ Instead we choose a set of points $\XBs$ ($0 < |\XBs| < |\Prts|$) to act as defo
 For each part we now construct $\Pmatxi$ using its associated deformation origin $\bar{\refX}_j\in \XBs$, where each origin can
 be shared between multiple parts.
 
-\begin{figure}[h]
-    \includegraphics[width=\columnwidth]{figures/projection_operator_solve}
-    \caption{A simple, four part model with two deformation origins and the corresponding matrix equation for the quadratic coefficients. \ty{these $T^1$ and $T^2$ blocks in the U matrix need to be swapped I think} }
-    \label{fig:multiparts}
-\end{figure}
-
-
 Attempting to use $\Pmatxi$ in~\refeq{shapematch} on a per-part basis is problematic as it can become ill-posed, especially for planar boundary representations. 
 To alleviate this problem we invoke the \emph{hierarchical ordering principle}, which argues that the behavior of a system is typically 
 dominated by lower order effects~\cite{li2006regularities}. 
-Mechanically, this principle suggests that the amount of motion modelled by increasingly high-order polynomials is decreasing. 
+Mechanically, this principle suggests that the amount of motion modelled by increasingly high-order polynomials is, itself, decreasing. 
 This implies that we can achieve acceptable shape matching results by performing shape matching hierarchically -- starting with the constant term and then 
-fitting the remaining deformation with progressively higher-order deformations. 
+fitting the remaining deformation with progressively higher-order expressions. 
 
 For a given part, $\prt_i$, with associated origin $\bar{\refX}_j$ we first estimate the constant term, $\tr_i$ as the centroid of all parts associated with $\bar{\refX}_j$.
 Next we fit the linear part of the deformation by performing linear shape matching to $\prt_i$. 
@@ -186,8 +181,14 @@ This can be repeated for polynomials of arbitrary high order, for instance here 
         \vc{c}_i^2 & = \smash{\underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg)
     \end{split},
     \label{eq:hfit} 
-\end{equation} where $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^1}$ is the stacked evaluation of this matrix at $n$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
-Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3n\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point. \ty{it looks like we are missing the divisor for t? This looks like it's computing the sum and $\mathbbm{1}$ should be defined as $1/N$ where $N$ is the total number of points in all associated parts}
+\end{equation} where $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^l}$ is the stacked evaluation of this matrix at the $s$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
+Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3s\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point.
+
+\begin{figure}[h]
+    \includegraphics[width=\columnwidth]{figures/projection_operator_solve}
+    \caption{A simple, four part model with two deformation origins and the corresponding matrix equation for the quadratic coefficients.}
+    \label{fig:multiparts}
+\end{figure}
 
 %%single projector for every object
 When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a sparse matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently to compute the projection 
@@ -226,7 +227,6 @@ with previous methods.
 
 Given a set of reference space points $\st{X}$ inside our model, we want to evaluate $\bld_i\left(\refX_j\right)$, where $\bld_i$ is the weight function associated with 
 the $i^{th}$ part, $\prt_i$, and $\refX_j\in\st{X}$. 
-
 For each $\refX_j$ we find the nearest point on $\prt_i$, $\clst$.
 We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the nearest part, $\rhit$.
 
@@ -274,8 +274,7 @@ where $\Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta
             \includegraphics[width=0.3\columnwidth]{figures/plot_distance_weight.pdf}
             
     \end{center}
-    \label{fig:plot_distance_weight}
-    \caption{Distance weight as a function of primary and total ray length with cutoff distance 50.}
+    \caption{ \label{fig:plot_distance_weight} Distance weight as a function of primary and total ray length with cutoff distance 50.}
   \end{wrapfigure}
 
 
@@ -317,7 +316,13 @@ physical quantities, leaving our simulation unaffected.
 % (6) add proofs/diagrams/figures that show we satisfy (2). }
 Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$, and each origin is computed as the centroid of the set of parts with which it is associated. 
 While we constrain a part to be paired with only one deformation origin, an origin may be associated any number of parts. 
+%<<<<<<< HEAD
 Further, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part. One exception to this rule is periodic NURBS surfaces, where we allow for a deformation origin associated with only this part. Finally, to avoid unduly coupling the parts and limiting the expressivity of the simulation, we seek a sparse association of origins which mirrors the pointwise sparsity of our blending weights.
+%=======
+%Further, we require that each deformation origin be associated with a minimum of two parts, which avoids the case of an origin laying on the surface of a part.%\ty{Should we mention periodic surfaces? You can have a periodic nurbs sphere consisting of a single surface, which we couldn't handle with this constraint (easy fix, but not sure if worth mentioning)}\dave{yes} 
+%Finally, to avoid unduly coupling the parts and reducing the expressivity of the simulation, we seek a sparse association of origins 
+%which mirrors the pointwise sparsity of our blending weights, 
+%>>>>>>> 198c892300fe3ce994edc867d772724e8c90c47f
 
 %of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
 
