@@ -1,7 +1,7 @@
 \section{Related Work}
 
 %% Set the scene
-Geometric modelling is a necessary precursor to physics-based animation, however differing geometric representations for modelling and simulation often requires
+Geometric modeling is a necessary precursor to physics-based animation, however connecting differing geometric representations for modelling and simulation often requires
 time-consuming, complex geometry processing pipelines. 
 For instance, the popular tetrahedral finite element approach for simulating solid elastodynamics~\cite{10.1145/2343483.2343501} requires robust algorithms for converting input surface geometry into 
 a volumetric tetrahedral mesh. This is a difficult problem and while significant progress has been made,
@@ -26,7 +26,7 @@ Volumetric simulations relied on volumetric NURBS~\cite{10.1007/978-3-642-03596-
 Finite volume methods are applicable to more general geometries~\cite{HEINRICH20121645,10.1002/nme.2311} but require a volumetric mesh to be generated.
 Modern approaches are constructed around the extended finite element method which enriches the standard finite element basis with discontinuous basis functions
 to enable improved boundary handling~\cite{https://doi.org/10.1002/nme.3120,10.1007/s00466-013-0854-7,https://doi.org/10.1002/nme.4852,SAFDARI2016373,10.1145/3355089.3356576}. 
-These methods typically start with an easy-to-generate structured volumetric mesh (tetrahedral or hexahedral), ``cutting'' the NURBS geomtric model against
+These methods typically start with an easy-to-generate structured volumetric mesh (tetrahedral or hexahedral), ``cutting'' the NURBS geometric model against
 it to enable boundary handling (such a mesh is called a \emph{cutcell} mesh). 
 Like volumetric meshing, this cutting operation can be difficult and our ideal method would avoid it. 
 Some cutcell algorithms assume engineering/manufacturing quality input, which puts tight requirements on input models~\cite{10.1145/3355089.3356576}.
@@ -48,7 +48,8 @@ constitutive models for elastic solids.
 
 To alleviate these restrictions we turn to other meshless methods popular in computer graphics and 
 engineering~\cite{10.1145/1028523.1028542,https://doi.org/10.1002/fld.1650200824,10.1145/1778765.1778776,10.1145/2010324.1964968, 10.1145/1944846.1944855}.
-These methods support more advanced constitutive models and integration schemes but often require background integration meshes and lose the direct connection with
+These methods support more advanced constitutive models and integration schemes but often require background integration meshes, limit themselves to low order deformation functions 
+and lose the direct connection with
 modelling geometry. 
 Like cutcell-based, Isogeometric Analysis approaches, additional constraints must be added to ensure that simulation output can be represented by the input model.
 Given this, we conclude that there is no existing algorithm that meets our desiderata for success. 
@@ -60,7 +61,7 @@ VEM relaxes the mesh generation requirements of the finite element method by ena
 on domains partitioned with arbitrary polytopes~\cite{10.1145/3386569.3392389}. 
 The solution inside each polytope is approximated using a polynomial function of a specified order.
 VEM typically assumes that the boundary of the the problem domain is described by a piecewise linear complex
-which makes its standard formulation incompatible with our NURBS based input geometry. 
+which makes its standard formulation incompatible with our curved input geometry. 
 
 
 \subsection*{Contributions} 
@@ -71,7 +72,7 @@ algorithms for skinning~\cite{skinningcourse:2014}.
 Our method is entirely meshless (requiring no volumetric meshes or cutcells) and is compatible with standard constitutive models and time integrators.
 It guarantees that simulation output is directly consumable by the input modelling software and can ingest models which include large gaps,
 intersections and disconnected primitives without additional user input. 
-These features mean that our algorithm is the first truly meshless approach for the direct simulation of NURBS models for physics-based animation.
+These features mean that our algorithm is the first truly meshless approach for the direct simulation of curved surface, NURBS models for physics-based animation.
 
 %\subsection{Virtual Element and other Element Methods}
 %\begin{enumerate}
