@@ -93,9 +93,9 @@ The Shape Matching Element Method will follow from this kinematic description.
 \label{sec:shapematching}
 
 We begin by describing shape matching to a single NURBS part. 
-Given a two different configurations of the same part (specified by the control points), shape matching computes a polynomial deformation which best aligns them.
+Given two different configurations of the same part (specified by the control points), shape matching computes a polynomial deformation that best aligns them.
 
-Let $\vc{q^0}$ be the initial control points of the part, provided by the modeller and Let $\vc{q}$ be a vector of modified control point values.
+Let $\vc{q^0}$ be the initial control points of the part, provided by the modeller, and $\vc{q}$ be a vector of modified control point values.
 We can compute the undeformed (or reference) position of any point on our part using $\refX\left(u,v\right) = \Jnurbs\left(u,v\right)\mathbf{q^0}$ and the corresponding
 deformed (world space) position as $\defX\left(u,v\right) = \Jnurbs\left(u,v\right)\mathbf{q}$.
 
@@ -117,17 +117,18 @@ We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1
    \Pcox^* = \arg\min_{\Pco,\tr} \int \left\lvert\left\lvert\Pmatx\Pcox - \Jnurbs\vc{q}\right\rvert\right\rvert^2_2 dudv,
 \end{equation} where we have suppressed the dependence of $\refX$ and $\Jnurbs$ on $u$ and $v$ for the sake of brevity.
 
-\dave{Ty: need some text to explain how we pick points on the nurbs surface.}
-\ty{Need to think a little more on how to write this. The main idea is that each surface has a knot vector and each Bspline covers a span of those knots. Therefore to guarantee we represent all control points for a surface, we uniformly sample $d+1$ points in each span, where $d$ is the NURBS surface}
 We discretize the shape matching energy and minimize by solving
 \begin{equation}
 \samp{\Pmat}^T\wt\samp{\Pmat}\Pcox = \samp{\Pmat}^T\wt\samp{\Jnurbs}\vc{q}.
 \label{eq:shapematch}
-\end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3k$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
+\end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3(k+1)$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
 $k$ is the number of  terms in the shape matching polynomial and $3nm$ is the number of NURBS control points. 
 $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmatxuv$ (resp. $\Jnurbs\left(u, v\right)$) at each
 quadrature point.
 $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
+
+Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank required to represent all control points. We achieve this by sampling over each knot span defined by the  B-splines, and find it effective to use the order of the NURBS as the number of quadrature points sampled in each knot span.
+\ty{the number of samples may be different if order in the u direction and v differ, but I figured it was best to keep this simple.}
 
 \paragraph*{Relationship to the Virtual Element Method}
 For a non-planar NURBS part, and given a sufficient number of quadrature points, ~\refeq{shapematch} will be well-posed allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
@@ -137,9 +138,9 @@ For a non-planar NURBS part, and given a sufficient number of quadrature points,
 This projection serves an identical purpose (and is mathematically equivalent up to choice of metric) to the projection operator used in VEM~\cite{10.1142/S021820251440003X}.
 VEM uses a single polynomial projection per polyhedral element to solve differential equations on complex volumetric meshes.
 We interpret shape matching as converting our NURBS part into a single Virtual Element suitable for elastodynamics simulation.
-Unfortunately a single polynomial deformation space will not be suitably expressive for even moderately complex models. 
+Unfortunately, a single polynomial deformation space will not be suitably expressive for even moderately complex models.
 Previous work~\cite{10.1145/1073204.1073216,10.1145/1275808.1276480} used additional lattices or partitions of the reference space to 
-increase the number of polynomials in the shape matching. Next we outline our meshless Shape Element Method which works directly on the NURBS
+increase the number of polynomials in the shape matching. Next we outline our meshless Shape Matching Element Method which works directly on the NURBS
 geometry itself.
 
 \section{Shape Matching Element Method}
@@ -147,9 +148,9 @@ geometry itself.
  Our kinematic mapping is a blended construction~\cite{10.1145/2614028.2615427,blendedFORKS2016} which we write as
 
  \begin{equation}
-    \defX\left(\refX\right) = \sum_{\prt_i\in\Prts} \bld_i\Pmatxi\Pi_i\vc{q}_i, 
+    \defX\left(\refX\right) = \sum_{\prt_i\in\Prts} \bldxi\Pmatxi\Pi_i\vc{q}_i, 
     \label{eq:kinematics}
- \end{equation} where $w_i$ $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
+ \end{equation} where $\bldxi$, $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
  part respectively.  
  
  \subsection*{Multiple Part Projection}
