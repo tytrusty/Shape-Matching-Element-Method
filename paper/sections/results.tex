@@ -8,16 +8,18 @@
   \label{tbl:perf}
   \begin{center}
   \begin{tabular}{l c c c c c c c c c c}
-   \textbf{Example} $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(GPa) & $\mu$ &\textbf{Sample Model}(s) & \textbf{Quadrature}(s)& \textbf{Weights}(s)& \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
+   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample Model}(s) & \textbf{Quadrature}(s)& \textbf{Weights}(s)& \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
    \hline 
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Cantilever}      & ? & ? & ? & ? & ? & ? & ? & ? & ? & ? \\
-   \textbf{Coffee mug}      & ?& ? & ? & ? & ? & ? & ? & ? & ? & ?  \\
-   \textbf{Rocket}          & ?& ? & 648 & ? & ? & ? & ? & ? & ? & ?\\
-   \textbf{Castle}          & ?& ? & ? & ? & ? & ? & ? & ? & ? & ?\\
-   \textbf{Chicken}        & ? & ? & ? & ? & ? & ? & ? & ? & ? & ?\\
-   \textbf{Starship}       & ? & ? & ? & ? & ? & ? & ? & ? & ? & ?\\
-   \textbf{Tire}           & ? & ? & ? & ? & ? & ? & ? & ? & ? & ?\\
+   \textbf{Cantilever (soft)}       & ? & Jelly & $1 \times 10^3$ & $1 \times 10^6$& 0.45 & ? & ? & ? & ? & ? \\
+   \textbf{Cantilever (stiff)}      & ? & Rubber & $1 \times 10^3$ & $5 \times 10^6$ & 0.45 & ? & ? & ? & ? & ? \\
+   \textbf{Coffee mug}              & ? & Jelly & $1 \times 10^3$ & $1 \times 10^4$ & 0.47 & ? & ? & ? & ? & ?  \\
+   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 \times 10^3$ & $7 \times 10^6$ & 0.4 & ? & ? & ? & ? & ? \\
+   \textbf{Rocket (stiff)}          & 648 & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & ? & ? & ? & ? & ? \\
+   \textbf{Castle}                  & ? & Jelly & $1.27 \times 10^3$ & $2 \times 10^3$ & 0.45 & ? & ? & ? & ? & ? \\
+   \textbf{Chicken}                 & ? & Rubber & $1.27 \times 10^3$ & $1 \times 10^4$ & 0.47 & ? & ? & ? & ? & ? \\
+   \textbf{Starship}                & ? & Steel & $8 \times 10^3$ & $2 \times 10^{11}$ & 0.32 & ? & ? & ? & ? & ? \\
+   \textbf{Tire}                    & ? & Rubber & $2 \times 10^3$ & $1 \times 10^6$ & 0.47 & ? & ? & ? & ? & ? & ?\\
    \hline
   \end{tabular}
   \end{center}
@@ -32,7 +34,7 @@
 
 %\dave{we should report which models we made ourselves}
 We implemented SEM in a combination of MATLAB and C++ using both GPToolbox~\cite{gptoolbox} and Bartels~\cite{bartels} for geometry processing and constitutive models 
-respectively. Benchmarks were performed using a  ~\dave{CPU} with \dave{xx}MB of RAM.
+respectively. Benchmarks were performed using a MacBook Pro with an Intel i5 2.3GHz processor, 16GB of RAM and an Intel Iris Plus Graphics 655 GPU.
 
 \reftbl{perf} shows the size of all our examples along with performance statistics and relevant parameters.
 Note that the individual parts of all models are \emph{not connected}, and no continuity constraints or constructive solid geometry operations have been applied. 
