@@ -1,10 +1,7 @@
 \section{Future Work and Conclusions}
-\dave{mention we focus on animation ... lots of work to validate this for engineering applications}
-We have presented the Shape Matching Element Method (SEM), the first completely meshless approach to direct simulation of NURBS models.
-Our approach is unique in its ability to infer volumetric shape from surface only models,
-including ones with intersecting geometry between parts and other defects common to non-engineering models.
-Our method allows simulation of such input directly with a variety of constitutive models and time integration schemes,
-and is compatible with standard methods for collision resolution. 
+We have presented the Shape Matching Element Method (SEM), the first completely meshless approach to direct simulation of curved surface models, made from NURBS primitives.
+Our approach is unique in its ability to infer volumetric shape from surface only input,
+including input with intersecting geometry between parts and other defects common to non-engineering models.
 We believe that SEM is a significant improvement over standard physics-based animation pipelines for NURBS models. 
 As evidence of the efficacy of our approach, the authors submit that many of the examples in this paper were constructed ourselves
 (since the standard graphics menagerie is not available as NURBS models). 
@@ -18,13 +15,15 @@ SEM removes this bottleneck entirely, providing a direct mapping from geometric 
 We believe SEM will enable simpler and more robust algorithms for  physics-based ML and 
 allow the application of such algorithms to a much broader class of problems. 
 
-SEM itself has much room for addition.
+SEM itself has much room for addition. 
 First, while we focus on NURBS surfaces here, the only part of SEM that is NURBS specific is the shape matching operation.
 We believe there is potential to allow mixed models (models which include polygonal meshes, particles, subdivision surfaces and NURBS)
 by extending the range of shape matching operations used by the algorithm. The shape matching operation itself could be improved to be material aware 
 (to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data). 
 It is also interesting to consider the relationship between our error term and the orthogonality constraint proposed by~\citet{Zhang:CompDynamics:2020}. 
 Their approach could be used to remove this parameter from the approach entirely.
+Finally, in this paper we have focused on applying SEM to physics-based animation, there is a significant amount of additional work needed to 
+extend SEM reliably into engineering applications.
 
 The Finite Element method took over  40 years to mature to its current state and to become the preeminent tool in physically-based animation.
 We hope that this is the beginning of a similar, exciting journey for SEM. 
