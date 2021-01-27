@@ -20,9 +20,9 @@ SEM consists of preprocessing and runtime simulation phases (~\refalg{sem_prepro
 In the \emph{preprocessing} stage we use raycasting to find quadrature points and weights for volumetric integration, as well as to compute part blending parameters. 
 Finally we construct local shape matching operators and construct the mass matrix for our problem. 
 
-At runtime we use standard time integration schemes to time step the system (we show linearly implicit, fully implicit, runge-kutta four). 
-These require us to evaluate the energy, gradient and Hessian (implicit only) which we do at the previously computed quadrature points. 
-For collisions we use penalty forces and apply them as external forces during integration.
+At runtime we use standard time integration schemes to time step the system. 
+This requires us to evaluate the energy, gradient and Hessian (implicit only) which we do at the previously computed quadrature points. 
+For collisions we use penalty forces and apply them as external forces during integration (though other methods could be used).
 
 \begin{algorithm}[h]
 	\begin{algorithmic}[1]
@@ -44,7 +44,7 @@ For collisions we use penalty forces and apply them as external forces during in
 		\Statex
 		
 		\State{// Create projection operator}
-		\State $\Pi \gets \text{ShapeMatching}(\vc{q}, \samp{\Jnurbs}, \wt, \XBs)$ \Comment{Section \ref{sec:shapematching}}
+		\State $\Pi \gets \text{ShapeMatching}(\vc{q}, \samp{\Jnurbs}, \st{\wt}, \XBs)$ \Comment{Section \ref{sec:shapematching}}
 		\Statex
 		
 		\State{// Form mass matrix and error hessian, respectively}
@@ -60,14 +60,12 @@ For collisions we use penalty forces and apply them as external forces during in
 \section{Geometric Model}
 \label{sec:geometric_model}
 
-Our algorithm acts on objects composed of multiple NURBS surfaces~\reffig{NURBS}.
-
-\begin{figure}
+Our algorithm acts on objects composed of multiple NURBS surfaces~(\reffig{NURBS}).
+\begin{figure}[h]
     \includegraphics[width=\columnwidth]{figures/nurbs_patch}
     \caption{A cubic NURBS patch with 16 control points.}
     \label{fig:NURBS}
 \end{figure}
-
 The three-dimensional position, $\defX$, of any point on a NURBS surface can be written as 
 \begin{equation}
 \label{eqn:nurbs_srf}
@@ -79,14 +77,14 @@ The three-dimensional position, $\defX$, of any point on a NURBS surface can be 
 where $u$ and $v$ $\in \real$ are the coordinates in the 2D parametric domain, $n$ and $m$ are the number of control points in the $u$ and $v$ directions, $\mathbf{q}_{ij}\in\real^3$ are the control points and $\phi_{ij}\left(u,v\right)\in\real$ are the NURBS
 basis functions given by 
 \begin{equation*}
-    \phi_{ij}\left(u,v\right) = \frac{w_{i,j}B_{ik}(u)B_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} w_{ij} B_{ik}(u)B_{jl}(v)},
-\end{equation*} where $B_{ik}$ (resp. $B_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$).
+    \phi_{ij}\left(u,v\right) = \frac{\omega_{i,j}\beta_{ik}(u)\beta_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} \omega_{ij} \beta_{ik}(u)\beta_{jl}(v)},
+\end{equation*} where $\beta_{ik}$ (resp. $\beta_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$).
 
 Exploiting linearity with respect to the control points, we can express this mapping as
 \begin{equation}
-    \defX\left(u,v\right) = \underbrace{\begin{pmatrix} \phi_{11}\left(u,v\right)\ident & \dots & \phi_{nn}\left(u,v\right)\ident \end{pmatrix}}_{\Jnurbs\left(u,v\right)}
+    \defX\left(u,v\right) = \underbrace{\begin{pmatrix} \phi_{11}\left(u,v\right)\ident & \dots & \phi_{nm}\left(u,v\right)\ident \end{pmatrix}}_{\Jnurbs\left(u,v\right)}
     \underbrace{\begin{pmatrix} \vc{q}_{11} \\ \vdots \\ \vc{q}_{nm}\end{pmatrix}}_{\vc{q}},
-\end{equation} where $\Jnurbs\left(u,v\right)$ is the NURBS Jacobian, $\ident$ is the $3\times3$ identity matrix and $\vc{q}$ is the vector of generalized coordinates~\dave{cite Lanczos}.
+\end{equation} where $\Jnurbs\left(u,v\right)$ is the NURBS Jacobian, $\ident$ is the $3\times3$ identity matrix and $\vc{q}$ is the vector of generalized coordinates~\cite{lanczos2012variational}
 The Shape Matching Element Method will follow from this kinematic description.
 
 \section{Shape Matching}
@@ -95,21 +93,21 @@ The Shape Matching Element Method will follow from this kinematic description.
 We begin by describing shape matching to a single NURBS part. 
 Given two different configurations of the same part (specified by the control points), shape matching computes a polynomial deformation that best aligns them.
 
-Let $\vc{q^0}$ be the initial control points of the part, provided by the modeller, and $\vc{q}$ be a vector of modified control point values.
+Let $\vc{q^0}$ be the initial control points of the part, provided by the modeler, and $\vc{q}$ be a vector of modified control point values.
 We can compute the undeformed (or reference) position of any point on our part using $\refX\left(u,v\right) = \Jnurbs\left(u,v\right)\mathbf{q^0}$ and the corresponding
 deformed (world space) position as $\defX\left(u,v\right) = \Jnurbs\left(u,v\right)\mathbf{q}$.
 
 We can define a polynomial deformation from $\refX = \begin{pmatrix} X & Y & Z \end{pmatrix}^T$ to $\defX$  as 
 \begin{equation}
     \defX\left(\refX\right) = 
-    \underbrace{\begin{pmatrix}
+    \underbrace{\begin{bmatrix}
     \mathbf{p}^T(\refX-\bar{\refX}) & \mathbf{0} & \mathbf{0} & 1 & 0 & 0\\
     \mathbf{0} & \mathbf{p}^T(\refX-\bar{\refX}) & \mathbf{0} & 0 & 1 & 0\\
     \mathbf{0} & \mathbf{0} & \mathbf{p}^T(\refX-\bar{\refX}) & 0 & 0 & 1\\
-    \end{pmatrix}}_{\Pmatx}
+    \end{bmatrix}}_{\Pmatx}
     \Pcox,
     \label{eq:projection}
-\end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (eg $\begin{pmatrix} X & Y & X\cdot Y & X\cdot X & Y\cdot Y \end{pmatrix}$ ),
+\end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (eg $\begin{bmatrix} X & Y & Z & X\cdot Y & X\cdot Z & Y\cdot Z& X\cdot X & Y\cdot Y & Z\cdot Z \end{bmatrix}$ ),
 $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are the coefficients for the 
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
 We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1073216}
@@ -140,7 +138,7 @@ VEM uses a single polynomial projection per polyhedral element to solve differen
 We interpret shape matching as converting our NURBS part into a single Virtual Element suitable for elastodynamics simulation.
 Unfortunately, a single polynomial deformation space will not be suitably expressive for even moderately complex models.
 Previous work~\cite{10.1145/1073204.1073216,10.1145/1275808.1276480} used additional lattices or partitions of the reference space to 
-increase the number of polynomials in the shape matching. Next we outline our meshless Shape Matching Element Method which works directly on the NURBS
+increase the number of polynomials in the shape matching. In contrast, our meshless Shape Matching Element Method which works directly on the NURBS
 geometry itself.
 
 \section{Shape Matching Element Method}
@@ -150,7 +148,7 @@ geometry itself.
  \begin{equation}
     \defX\left(\refX\right) = \sum_{\prt_i\in\Prts} \bldxi\Pmatxi\Pi_i\vc{q}_i, 
     \label{eq:kinematics}
- \end{equation} where $\bldxi$, $\Pmatx_i$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
+ \end{equation} where $\bldxi$, $\Pmatxi$, $\Pi_i$ and $\vc{q}_i$ are the blending weights, polynomial basis, projection operator and control points for the $i^{th}$
  part respectively.  
  
  \subsection*{Multiple Part Projection}
