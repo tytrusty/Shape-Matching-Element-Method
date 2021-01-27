@@ -11,7 +11,7 @@
 
 \begin{figure*}
   \includegraphics[width=\textwidth]{figures/chicken.pdf}
-  \caption{Chicken with seams}
+  \caption{Simulation of a chicken model with gaps between surfaces}
   \label{fig:chicken}
 \end{figure*}
 
@@ -21,7 +21,11 @@ No continuity constraints or constructive solid geometry operations have been ap
 to allow for seamless volumetric simulation. 
 Models were created using Autodesk Fusion 360 ~\dave{cite} and Rhinocerous 3D 7\dave{cite}.
 
-\dave{rendering we convert to triangle meshes, just didn't have a good path tracer lying around}
+For raycasting operations and rendering, we triangulate the NURBS surfaces, which only represents an implementation simplification. Our algorithm is not dependent on triangulating the boundary, and an ideally one would use a path tracer.
+
+
+\ty{Would be nice to mention TNURBS, which would give us a good reason to include the wrench (which i really wanna do). I doubt we have time to do a 3 point bending test, but a simple elastic wrench simulation would be easy to cook up}
+For handling trimmed NURBS surfaces, we augment our sampling of the surfaces by using raycasting integration in 2D. Trimmed NURBS may be defined by a boundary curve in the parametric space, so we raycast to find intersection intervals in the UV space on which quadrature points are generated. For rendering Trimmed NURBS, we discretize the the boundary curve as a polyline and use triangle ~\ty{cite} to form a boundary conforming triangulation. The vertices of this triangulation serve as fixed set of high resolution UV samples for constructing a render mesh.
 
 \begin{table*}[h]
   \caption{Performance of the Shape Matching Element Method on all Examples. \dave{need table that also reports material params/constitutive model or add it here}}
@@ -83,21 +87,22 @@ This implies that, with sparse weights, SEM can resolve these motions locally, l
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/patch_test.pdf}
-  \caption{2D examples (left) rigidly transform boundary and show that solving the static problem gives us rigid motion on the interior (right) isotropically scale boundary and show solving static problem gives us constant strain on the interior}
+  \caption{2D examples (left) undeformed model defined by four surface elements on the boundary (right) applying affine transformations to the boundary and show that solving the static problem gives rigid motion for rotation and constant strain for shearing and stretching}
   \label{fig:patchtest}
 \end{figure}
 
-Next we check the convergence of SEM with respect to linear, tetrahedral finite elements. \reffig{convergence} we compare identical cantileavered beams, simulated using 
-a Neohookean constitutive model (Young's Modulus \dave{??}, Poisson's Ratio \dave{??}) and implicit time integration with a timestep of $0.01$s. 
-We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of 6 independent NURBS patches show's good agreement with FEM.
+Next we check the convergence of SEM with respect to linear, tetrahedral finite elements. \reffig{convergence} we compare identical cantilevered beams, simulated using 
+a Neohookean constitutive model (Young's Modulus $0.001$ GPa, Poisson's Ratio 0.45) and implicit time integration with a timestep of $0.01$s. 
+We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of 24 independent NURBS patches shows good agreement with FEM. Each subdivision of the NURBS beam enables more complicated kinematics, but very few surface elements are needed to produce compelling results.
+
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/beams.pdf}
-  \caption{(left) high res FEM cantileavered bar (right) several simulations using more and more surface patches plus center of mass. Need to show beam is just  unattached patches}
+  \caption{(left) high res FEM cantilevered bar (right) several simulations using more and more surface.}
   \label{fig:convergence}
 \end{figure}
 
-We also demonstrate that our raycasting weights computation creates shape-aware output. Figure~\reffig{independence} shows that manipulating
-parts that are nearby, but separate  behave in an appropriately independent fashion. 
+We also demonstrate that our raycasting weight computation creates shape-aware output. Figure~\reffig{independence} shows that manipulating
+parts that are nearby but separate will behave in an appropriately independent fashion. 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/independent_movement}
   \caption{X shape and show arms of X move independently}
@@ -106,14 +111,14 @@ parts that are nearby, but separate  behave in an appropriately independent fash
 
 % relaxed modelling  constraints
 Here we demonstrate SEM's ability to work with poor models. \reffig{badmodels} shows simulations of two jelly coffee mugs. 
-The top row shows the result of a careless modeler who has deeply embedded the handle of the mug in the body in order to attach it, creating a large area of overlap.
-The bottom models has neglible overlap. 
+The top row shows a model with negligible overlap, whereas the bottom row shows the result of a careless modeller who has deeply embedded the handle of the mug in the body in order to attach it, creating a large area of overlap.
 In both cases SEM produces a plausible physically-based animation, without requiring additional model clean-up.
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/mug_overlap}
   \caption{Coffee mug with overlapping handle (top) row of models with increasing overlap (middle) single weight image showing behaviour in the overlapping region, (bottom) simulation result for each one}
   \label{fig:badmodels}
 \end{figure}
+Similarly, in \reffig{chicken} we show a simulation with gaps between surfaces. Despite the lack of explicit connectivity, the blending weights have the effect of implicitly enforcing connections at these seams. 
 
 %different material parameters / material models 
 We derive the equations of motion for SEM using a general elastic potential and so SEM supports arbitrary constitutive models. \reffig{materials} shows a 
@@ -134,7 +139,7 @@ SEM also supports objects made up of multiple materials, as the simulation of th
 
 
 %different surface reps
-Though we focus on NURBS surface representations, they only NURBS specific construction in the SEM method is the Jacobian\dave{ref}.
+Though we focus on NURBS surface representations, the only NURBS specific construction in the SEM method is the Jacobian\dave{ref}.
 Many other boundary representations admit a linear representation and are thus directly consumable by our method.
 \reffig{subd} shows an example of applying our SEM method to a subdivision model by making such a modification.
 \begin{figure}[h]
@@ -159,7 +164,7 @@ We show that the output of the SEM simulation is itself edible in a NURBS modell
 \end{figure}
 
 %show stoppers
-Finally we show the ability of SEM to handle complex simulations involving deformation, contact and friction~(\reffig{staypuft} and \reffig{f1})).
+Finally we show the ability of SEM to handle complex simulations involving deformation, contact and friction~(\reffig{staypuft} and \reffig{f1}).
 \begin{figure*}[htp]
   \includegraphics[width=\textwidth,height=3in]{example-image-a}
   \caption{sequence of frames from staypuft simulation}
