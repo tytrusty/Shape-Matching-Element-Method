@@ -201,7 +201,9 @@ SEM gracefully allows bounded discontinuities in simulation output to allow for 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
 
 In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
-In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. Our SEM successfully handles the stiff materials, complicated geometry and non-trivial collisions in the scene.
+In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. 
+This example shows the benefit of NURBS modeling, a relatively small number of primitives can represent a complex shape.
+SEM successfully handles the stiff materials, complicated geometry and non-trivial collisions in this scene.
 
 \begin{figure*}[htp]
   \includegraphics[width=\textwidth]{figures/astronauts.pdf}
