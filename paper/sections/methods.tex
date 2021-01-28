@@ -192,7 +192,7 @@ Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\r
 
 %%single projector for every object
 When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a sparse matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently to compute the projection 
-operator for the entire object $\Pi = U^{-1}B\vc{q}$. 
+operator for the entire object $\Pi = U^{-1}B$. 
 The structure of $U$ and $B$ ensures that $\Pi$ only couples objects which share deformation centers, which implies a sparse $\Pi$. 
 The per-part projection operators $\Pi_i$ correspond to blocks of rows of $\Pi$. 
 Coupling via the deformation origins ensures our method will reproduce rigid and linear deformations in regions around these points, while higher order 
@@ -365,7 +365,7 @@ We integrate physical quantities over our undeformed object using raycasting bas
 The key idea behind raycasting quadrature is to transform a domain integral of the form $I=\int_{\Omega} f(X,Y,Z) d\Omega$ to an easier form that enables us to select quadrature points in an entirely meshless manner. The first transformation is to convert the domain of the integral to an \textit{auxiliary domain}, $\Omega_R$ on which integration is easy to compute. In our case we take this domain to be an axis-aligned bounding box around our model, and rewrite integration as $I=\int_{\Omega_R} g(X,Y,Z) d\Omega_R$ where $g$ evaluates to zero outside of $\Omega$, but equals $f$ inside $\Omega$. Next we apply the Divergence theorem to rewrite our integral as
 \newcommand{\Zeta}{\mathrm{Z}}
 \begin{equation}
-\int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} g(\alpha, Y, Z) d\alpha)\right)\mathbf{n} d\Gamma.
+\int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} g(\alpha, Y, Z) d\alpha)\right)\mathbf{n} d\Gamma_R.
 \end{equation}
 where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ \dave{isn;t it a vector $(1,0,0)$ or something like that ? }in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral into an integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
 
