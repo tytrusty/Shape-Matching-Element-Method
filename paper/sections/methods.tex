@@ -13,12 +13,12 @@
 %\end{itemize}
 \section{Overview}
 The input to the Shape Matching Element Method (SEM)  is a NURBS \emph{boundary representation} of a volumetric object, along with a set of physical parameters 
-(density, constitutive model, model parameters etc). 
+(density, constitutive model, model parameters, etc). 
 The boundary representation is composed of one or more (not necessarily explicitly connected) NURBS surface primitives that we will call \emph{parts}.
 The output is an elastodynamic simulation. 
 SEM consists of preprocessing and runtime simulation phases (~\refalg{sem_preprocess}, ~\refalg{sem_simulation}) and at no point do we need to generate a volumetric mesh of the input. 
 In the \emph{preprocessing} stage we use raycasting to find quadrature points and weights for volumetric integration, as well as to compute part blending parameters. 
-Finally we construct local shape matching operators and construct the mass matrix for our problem. 
+Finally we construct local shape matching operators and the mass matrix for our problem. 
 
 At runtime we use standard time integration schemes to time step the system. 
 This requires us to evaluate the energy, gradient and Hessian (implicit only) which we do at the previously computed quadrature points. 
@@ -29,7 +29,7 @@ For collisions we use penalty forces and apply them as external forces during in
 		\Procedure{Preprocess}{$model$}
 		\State{// Get initial DOF and sample boundary  \Comment{Section \ref{sec:geometric_model}}}
 		\State $\vc{q} \gets \text{GetControlPoints}(model)$
-		\State $\samp{\Jnurbs}, \wt \gets \text{SampleNURBS}(model)$
+		\State $\samp{\Jnurbs}, \wt \gets \text{SampleNURBS}(model)$  \Comment{Section \ref{sec:shapematching}}
 		\State $\vc{x^0} \gets \wt \samp{\Jnurbs} \vc{q}$
         \Statex
       
@@ -77,8 +77,8 @@ The three-dimensional position, $\defX$, of any point on a NURBS surface can be 
 where $u$ and $v$ $\in \real$ are the coordinates in the 2D parametric domain, $n$ and $m$ are the number of control points in the $u$ and $v$ directions, $\mathbf{q}_{ij}\in\real^3$ are the control points and $\phi_{ij}\left(u,v\right)\in\real$ are the NURBS
 basis functions given by 
 \begin{equation*}
-    \phi_{ij}\left(u,v\right) = \frac{\omega_{i,j}\beta_{ik}(u)\beta_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} \omega_{ij} \beta_{ik}(u)\beta_{jl}(v)},
-\end{equation*} where $\beta_{ik}$ (resp. $\beta_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$).
+    \phi_{ij}\left(u,v\right) = \frac{\omega_{i,j}\beta_{ik}(u)\beta_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} \omega_{i,j} \beta_{ik}(u)\beta_{jl}(v)},
+\end{equation*} where $\beta_{ik}$ (resp. $\beta_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$) and $\omega_{i,j}$ is the NURBS weight.
 
 Exploiting linearity with respect to the control points, we can express this mapping as
 \begin{equation}
@@ -107,7 +107,7 @@ We can define a polynomial deformation from $\refX = \begin{pmatrix} X & Y & Z \
     \end{bmatrix}}_{\Pmatx}
     \Pcox,
     \label{eq:projection}
-\end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (eg $\begin{bmatrix} X & Y & Z & X\cdot Y & X\cdot Z & Y\cdot Z& X\cdot X & Y\cdot Y & Z\cdot Z \end{bmatrix}$ ),
+\end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (e.g., $\begin{bmatrix} X & Y & Z & X\cdot Y & X\cdot Z & Y\cdot Z& X\cdot X & Y\cdot Y & Z\cdot Z \end{bmatrix}$ ),
 $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are the coefficients for the 
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
 We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1073216}
@@ -120,7 +120,7 @@ We discretize the shape matching energy and minimize by solving
 \samp{\Pmat}^T\wt\samp{\Pmat}\Pcox = \samp{\Pmat}^T\wt\samp{\Jnurbs}\vc{q}.
 \label{eq:shapematch}
 \end{equation} Here $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is a $3s \times 3(k+1)$ (resp. $3s \times 3nm$) matrix where $s$ is the number of quadrature points, 
-$k$ is the number of  terms in the shape matching polynomial and $3nm$ is the number of NURBS control points. 
+$k$ is the number of  terms in the shape matching polynomial and $nm$ is the number of NURBS control points. 
 $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluations of $\Pmatxuv$ (resp. $\Jnurbs\left(u, v\right)$) at each
 quadrature point.
 $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
@@ -131,7 +131,7 @@ Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank re
 \nicetohave{now I do want that shape matching figure showing constant, linear and quadratic matching}
 
 \paragraph*{Relationship to the Virtual Element Method}
-For a non-planar NURBS part, and given a sufficient number of quadrature points, ~\refeq{shapematch} will be well-posed allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
+For a non-planar NURBS part, a sufficient number of quadrature points will make ~\refeq{shapematch} will be well-posed, allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
 \begin{equation*}
     \Pi = \left(\samp{\Pmat}^T\wt\samp{\Pmat}\right)^{-1}\samp{\Pmat}^T\wt\samp{\Jnurbs},
 \end{equation*} is a projection from the space of control points onto the space of polynomials. 
@@ -140,7 +140,7 @@ VEM uses a single polynomial projection per polyhedral element to solve differen
 We interpret shape matching as converting our NURBS part into a single Virtual Element suitable for elastodynamics simulation.
 Unfortunately, a single polynomial deformation space will not be suitably expressive for even moderately complex models.
 Previous work~\cite{10.1145/1073204.1073216,10.1145/1275808.1276480} used additional lattices or partitions of the reference space to 
-increase the number of polynomials in the shape matching. In contrast, our meshless Shape Matching Element Method which works directly on the NURBS
+increase the number of polynomials in the shape matching. In contrast, our meshless Shape Matching Element Method works directly on the NURBS
 geometry itself.
 
 \section{Shape Matching Element Method}
@@ -178,8 +178,8 @@ This can be repeated for polynomials of arbitrary high order, for instance here 
     \begin{split}
 \tr_i  & = \sum_{\prt_k \in \bar{\refX}_j} \underbrace{\frac{1}{\sigma_k}\mathbbm{1}^T\wt_k \samp{\Jnurbs}_k}_{B_{ik}}\vc{q}_k \\   
         \vc{c}_i^1 & = \smash{\underbrace{\left(\samp{\Pmat^1}^T\wt_i\samp{\Pmat^1}\right)}_{A^1_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^1}^T\wt_i\samp{\Jnurbs}_i}_{B^1_i}\vc{q}_i-\underbrace{\samp{\Pmat^1}^T\wt_i\mathbbm{1}}_{T^1_i}\tr_i\bigg)\\
-        \vc{c}_i^2 & = \smash{\underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg)
-    \end{split},
+        \vc{c}_i^2 & = \smash{\underbrace{\left(\samp{\Pmat^2}^T\wt_i\samp{\Pmat^2}\right)}_{A^2_i}}^{-1}\bigg(\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Jnurbs}_i}_{B^2_i}\vc{q}_i-\underbrace{\samp{\Pmat^2}^T\wt_i\samp{\Pmat^1}}_{D^2_i}\vc{c}_i^1 - \underbrace{\samp{\Pmat^2}^T\wt_i\mathbbm{1}}_{T^2_i}\tr_i\bigg),
+    \end{split}
     \label{eq:hfit} 
 \end{equation} where $\sigma_k=\sum_{\prt_k \in \bar{\refX}_j} \Tr \wt_k$ is the normalization constant for the $k^{th}$ part, $\Pmat^l$ contains only the monomial basis of order $l$,  $\samp{\Pmat^l}$ is the stacked evaluation of this matrix at the $s$ quadrature points and $\vc{c}^l_i$ are the corresponding coefficients. 
 Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\real^{3s\times3}$ is a matrix of stacked $3\times3$ identity matrices -- one for each quadrature point.
