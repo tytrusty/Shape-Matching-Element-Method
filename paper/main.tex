@@ -7,6 +7,7 @@
 
 \input{sections/pre.tex}
 
+\acmSubmissionID{230}
 \newcommand\myworries[1]{\textcolor{red}{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,10 +33,12 @@
 \end{teaserfigure}
 
 \begin{abstract}
-We introduce a new method for direct physics-based animation of volumetric curved models.  
-The Shape Matching Element Method is a completely meshless approach which is robust to gaps and overlaps in geometry, 
-is compatible with standard constitutive models and time  integration schemes, supports contact and frictional interactions 
-as well as direct editing of simulation output. 
+We introduce a new method for direct physics-based animation of volumetric curved models, represented using NURBS surfaces.  
+Our technical contribution is the Shape Matching Element Method (SEM).
+SEM is a completely meshless algorithm, the first to simultaneously 
+be robust to gaps and overlaps in geometry, 
+be compatible with standard constitutive models and time integration schemes, support contact and frictional interactions  
+and to preserve feature correspondence during simulation which enables editable simulated output. 
 We demonstrate the efficacy of our algorithm by producing compelling physics-based animations from a variety of curved input models.
 \end{abstract}
 
