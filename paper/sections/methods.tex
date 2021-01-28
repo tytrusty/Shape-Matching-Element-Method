@@ -211,7 +211,7 @@ terms help compensate for more local deformations.
 
 Our kinematic map~(\refeq{kinematics}) requires blending weights in order to homogenize our per-part representation. 
 Specifying weights manually would be antithetical to our goal of providing a seamless translation from surface representation to physics-based animation.
-Automatic  weight computation is well-studied (see ~\citet{10.1145/2766952,BBW:2011} and ~\citet{10.1145/2010324.1964968}) but typically requires solving 
+Automatic  weight computation is well-studied (see ~\citet{10.1145/2766952}, ~\citet{BBW:2011} and ~\citet{10.1145/2010324.1964968}), but typically requires solving 
 an optimization problem that itself relies on a volumetric discretization. 
 This can be avoided by using stochastic methods~\cite{Sawhney:2020:MCG} but these do not yet support the boundary conditions we require for our problem. 
 
@@ -220,7 +220,7 @@ These properties ensure that our simulation can properly represent translation a
 Additionally we would like our weights to be sparse both for performance reasons (leads to sparse matrices) and for expressivity (leads to locality of deformation). 
 
 While partition of unity and sparsity are straightforward to enforce, the overlapping and intersecting parts~(\reffig{badmodels}) often encountered in non-engineering models leads
-to a contradiction -- how can the blending functions be both one and zero at the points of overlap ? 
+to a contradiction --- how can the blending functions be both one and zero at the points of overlap? 
 Our solution is to allow weights to include bounded discontinuities at these points and it is these discontinuities that are difficult to enforce 
 with previous methods. 
 \dave{ideally need a didactic figure showing this}
@@ -230,23 +230,24 @@ the $i^{th}$ part, $\prt_i$, and $\refX_j\in\st{X}$.
 For each $\refX_j$ we find the nearest point on $\prt_i$, $\clst$.
 We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the nearest part, $\rhit$.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=3.33in]{figures/plot_distance_weight.pdf}
+    \caption{Distance weight as a function of primary and total ray length with cutoff distance 50.}
+    % \caption{We plot the distance weight with respect to the primary and total ray length. Here the cutoff distance is 50.
+    % }
+    \label{fig:plot_distance_weight}
+    \vspace{-5pt}
+\end{figure} 
+
 Using these two distances we define a linear \emph{distance weight} using the well-known ReLU function:
 \begin{equation}
-\theta_i = \max (1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0)
+\theta_i = \max \left(1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0\right)
 \text{,}
 \end{equation}
 where $\alpha$ is a distance cutoff parameter. 
 This distance weight~(\reffig{plot_distance_weight}) is the result of interpolating along the ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
 These weights obey the Kronecker delta property for all parts but do not partition unity which we repair using a post-normalization step. For non-planar surfaces, $\rhit$ may lie on the same part as $\clst$. For points inside closed periodic surfaces, it is critical that the weights equal one in this case, so we set $\theta_i = 1$.
-
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width=3.33in]{figures/plot_distance_weight.pdf}
-%     \caption{We plot the distance weight with respect to the primary and total ray length. Here the cutoff distance is 50.
-%     }
-%     \label{fig:plot_distance_weight}
-%     \vspace{-5pt}
-%   \end{figure} 
 
 %\begin{figure}
 %    \includegraphics[width=\columnwidth]{example-image-a}
@@ -267,15 +268,15 @@ $\sum_{i=1}^n\bld_i(\mathbf{X}_j) = 1$, and each $\bld_i \geq 0$, which we enfor
 
 where $\Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_n}\right)$. 
 
-\begin{wrapfigure}[11]{l}{0.31\columnwidth}
-    \begin{center}
-            %\vspace{-0.7cm}
-            %\hspace{-0.1cm}
-            \includegraphics[width=0.3\columnwidth]{figures/plot_distance_weight.pdf}
+% \begin{wrapfigure}[11]{l}{0.31\columnwidth}
+%     \begin{center}
+%             %\vspace{-0.7cm}
+%             %\hspace{-0.1cm}
+%             \includegraphics[width=0.3\columnwidth]{figures/plot_distance_weight.pdf}
             
-    \end{center}
-    \caption{ \label{fig:plot_distance_weight} Distance weight as a function of primary and total ray length with cutoff distance 50.}
-  \end{wrapfigure}
+%     \end{center}
+%     \caption{ \label{fig:plot_distance_weight} Distance weight as a function of primary and total ray length with cutoff distance 50.}
+%   \end{wrapfigure}
 
 
 This post-process ensures that our blending weights partition unity and are non-negative~(\reffig{distance_weight_puft}). 
@@ -299,7 +300,7 @@ Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the b
 Using raycasting to compute blending weights imbues our method with similar advantages to \citet{Sawhney:2020:MCG} (allowing us to 
 handle intersecting geometry, geometry with gaps and to perform constructive solid geometry operations on the fly),
 but allows us to use more general weighting functions and apply the appropriate behavior for intersecting parts.
-The price we pay is that our weights are not C0 continuous but rather Lipschitz smooth.
+The price we pay is that our weights are not $C^0$ continuous but rather Lipschitz smooth.
 Perturbations in the boundaries of parts can cause bounded jumps in our distance weights. 
 However, these jumps occupy an infinitesimal percentage of the volume of our object, and are easy to avoid when integrating
 physical quantities, leaving our simulation unaffected. 
@@ -366,18 +367,19 @@ The key idea behind raycasting quadrature is to transform a domain integral of t
 \begin{equation}
 \int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} g(\alpha, Y, Z) d\alpha)\right)\mathbf{n} d\Gamma.
 \end{equation}
-where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ \dave{isn;t it a vector $(1,0,0)$ or something like that ? }in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral two and integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
+where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ \dave{isn;t it a vector $(1,0,0)$ or something like that ? }in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral into an integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
 
-We make a minor modification this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces by performing 
+We make a minor modification to this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces, by performing 
 CSG unions while raycasting~\cite{ROTH1982109}. 
 The output of this raycasting procedure is a set of quadrature points $\st{X}$ and weights $\st{v}$ that we use for integration and also as input to our 
-deformation origin extraction~\refsec{origins} and blending weights computation~\refsec{weights}
+deformation origin extraction (~\refsec{origins}) and blending weights computation (~\refsec{weights})
 \reffig{raycasting} shows the convergence of this quadrature approach when used to compute the volume of a NURBS model. 
 In principle we could apply detail-aware sampling methods~\cite{DBLP:journals/tog/WangFP12} to improve the robustness of raycasting quadrature even further,
 but we found it unnecessary for the examples in this paper.
 \begin{figure}
     \includegraphics[width=\columnwidth]{figures/raycasting_quadrature}
-    \caption{Figure showing how raycasting quadrature works (top), convergence plot for volume integration (bottom}
+    \caption{When integrating physical quantities over the volumetric domain of an object, our raycasting quadrature is robust and converges to the groundtruth result as we increase the number of rays in use. }
+    % \caption{Figure showing how raycasting quadrature works (top), convergence plot for volume integration (bottom}
     \label{fig:raycasting}
 \end{figure}
 
@@ -388,7 +390,7 @@ The advantage of having a unified kinematic description~(\refeq{kinematics}) is 
 the pertinent equations of motion:
 \begin{equation*}
     \MM\ddot{\vc{q}} = \fo\left(\vc{q}\right) + \vc{f}_g + \fext,
-\end{equation*} where $\MM\in\real^{n\times n}$ is the mass matrix, $\ddot{\vc{q}}\in\real^{n}$ are the generalized accelerations, $\vc{q}\in\real^{n}$ is the stacked vector of surface control points, $\fo\in\real^{n}$ is the 
+\end{equation*} where $\MM\in\real^{n\times n}$ is the mass matrix, $\vc{q}\in\real^{n}$ is the stacked vector of surface control points, $\ddot{\vc{q}}\in\real^{n}$ is the generalized accelerations, $\fo\in\real^{n}$ is the 
 vector of internal forces, $\vc{f}_g\in\real^{n}$ are body forces such as gravity and $\fext\in\real^{n}$ are external forces such as those due to contact. 
 We use penalty springs~\cite{10.1145/1964921.1964932} to resolve contact, and the approach of \citet{10.1145/566654.566623} for approximating frictional effects. 
 Because SEM yields equations of motion in the standard form, it is compatible with any standard integration scheme, though in this submission we limit ourselves to
@@ -429,13 +431,13 @@ Implicit Euler.
 We can rewrite \refeq{kinematics} in matrix form as 
 
 \begin{equation}
-    \defX\left(\refX\right) = \shapef\left(\refX\right)\bldmat\Pi\vc{q},
+    \defX\left(\refX\right) = \underbrace{\shapef\left(\refX\right)\bldmat\Pi}_{\Jkin\left(\refX\right)}\vc{q},
 \end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, $m$ is number of 
-parts in the object, $\bldmat$ is the diagonal matrix of blending weights and $\Pi$ is the global projection operator.
+parts in the object, $\bldmat$ is the diagonal matrix of blending weights, $\Pi$ is the global projection operator and $\Jkin\left(\refX\right)$ is the kinematic Jacobian.
 
 The velocity of a point on the object is then  
 \begin{equation}
-        \vc{v}\left(\refX\right) = \underbrace{\shapef\left(\refX\right)\bldmat\Pi}_{\Jkin}\dot{\vc{q}},
+        \vc{v}\left(\refX\right) = \Jkin\left(\refX\right)\dot{\vc{q}},
     \end{equation} where $\Jkin\left(\refX\right)$ is the kinematic Jacobian and $\dot{\vc{q}}$ are the generalized velocities of the system.
 
 \subsection{Mass Matrix}
@@ -480,7 +482,7 @@ For physics-based animation, we find that it is sufficient to assume the blendin
 \subsection{Constitutive Models}
 Our algorithm supports arbitrary elastic constitutive models. 
 In this submission we focus on hyperelastic models~\cite{10.1145/2343483.2343501} wherein the potential energy stored by the object, per unit volume,
-is given by the strain energy density function $\psi\left(\defo\right)$, and its internal forces and stiffness are the negative gradient and hessian respectively. 
+is given by the strain energy density function $\psi\left(\defo\right)$, and its internal forces and stiffness are the negative gradient and Hessian respectively. 
 Evaluating and applying constitutive models of this form requires the ability to (1) evaluate the deformation gradient over the reference domain of the model and 
 (2) integrate the resulting constitutive properties. 
 SEM provides both features and thus support for such models.
