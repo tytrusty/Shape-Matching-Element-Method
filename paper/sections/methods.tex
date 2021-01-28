@@ -191,7 +191,7 @@ Finally, $\wt_i$ is the diagonal integration weight matrix and $\mathbbm{1}\in\r
 \end{figure}
 
 %%single projector for every object
-When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a sparse matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently to compute the projection 
+When assembled for all parts,~\refeq{hfit}, yields a block upper triangular matrix $U$ and a sparse matrix $B$ ~(\reffig{multiparts}) which can be used to efficiently compute the projection 
 operator for the entire object $\Pi = U^{-1}B$. 
 The structure of $U$ and $B$ ensures that $\Pi$ only couples objects which share deformation centers, which implies a sparse $\Pi$. 
 The per-part projection operators $\Pi_i$ correspond to blocks of rows of $\Pi$. 
@@ -432,7 +432,7 @@ We can rewrite \refeq{kinematics} in matrix form as
 
 \begin{equation}
     \defX\left(\refX\right) = \underbrace{\shapef\left(\refX\right)\bldmat\Pi}_{\Jkin\left(\refX\right)}\vc{q},
-\end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, $m$ is number of 
+\end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, $m$ is the number of 
 parts in the object, $\bldmat$ is the diagonal matrix of blending weights, $\Pi$ is the global projection operator and $\Jkin\left(\refX\right)$ is the kinematic Jacobian.
 
 The velocity of a point on the object is then  
