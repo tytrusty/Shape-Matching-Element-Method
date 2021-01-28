@@ -14,20 +14,20 @@ and don't work directly on curved surface representations such as NURBS.
 %- supports standard continuum mechanics constitutive models
 %- supports different time integrators (can show a few maybe linearly implicit, fully implicit and RK4 ?)
 
-For many physically-based animation tasks, it would be desirable to bypass volumetric meshing entirely and directly simulate the geometric model.
-An ideal approach would avoid meshing of any kind (no volumetric meshes or cutcells), support continuum mechanics type constitutive models 
+For many physics-based animation tasks, it would be desirable to bypass volumetric meshing entirely and directly simulate the geometric model.
+An ideal approach would avoid meshing of any kind (no volumetric meshes or cut-cells), support continuum mechanics-type constitutive models 
 and energies that have become standard in physics-based animation pipelines, be compatible with a wide range of time integration schemes and
 ensure that simulation output can be edited in the same modelling software used to create the input (important for post-processing). 
 Finally, our method should put only moderate constraints on input model quality to facilitate ease-of-use.
 
 \emph{Isogeometric Analysis}~\cite{10.1002/9780470749081.ch7} endeavors to perform simulation directly on the NURBS output from 
-Computer-Aided Design (CAD) software. Initial attempts used NURBS surfaces to represent the mid-surface of thin objects~\cite{10.1145/176579.176580}.
+Computer-Aided Design (CAD) software. Initial attempts used NURBS surfaces to represent the medial surface of thin objects~\cite{10.1145/176579.176580}.
 Volumetric simulations relied on volumetric NURBS~\cite{10.1007/978-3-642-03596-8_2} but were limited to a narrow class of geometries.
 Finite volume methods are applicable to more general geometries~\cite{HEINRICH20121645,10.1002/nme.2311} but require a volumetric mesh to be generated.
 Modern approaches are constructed around the extended finite element method which enriches the standard finite element basis with discontinuous basis functions
-to enable improved boundary handling~\cite{https://doi.org/10.1002/nme.3120,10.1007/s00466-013-0854-7,https://doi.org/10.1002/nme.4852,SAFDARI2016373,10.1145/3355089.3356576}. 
+to improve boundary handling~\cite{https://doi.org/10.1002/nme.3120,10.1007/s00466-013-0854-7,https://doi.org/10.1002/nme.4852,SAFDARI2016373,10.1145/3355089.3356576}. 
 These methods typically start with an easy-to-generate structured volumetric mesh (tetrahedral or hexahedral), ``cutting'' the NURBS geometric model against
-it to enable boundary handling (such a mesh is called a \emph{cutcell} mesh). 
+it to enable boundary handling (such a mesh is called a \emph{cut-cell} mesh). 
 Like volumetric meshing, this cutting operation can be difficult and our ideal method would avoid it. 
 Some cutcell algorithms assume engineering/manufacturing quality input, which puts tight requirements on input models~\cite{10.1145/3355089.3356576}.
 Finally these approaches require additional mechanisms to ensure that simulation results lie inside the shape space of the input model's primitives,
@@ -72,7 +72,7 @@ algorithms for skinning~\cite{skinningcourse:2014}.
 Our method is entirely meshless (requiring no volumetric meshes or cutcells) and is compatible with standard constitutive models and time integrators.
 It guarantees that simulation output is directly consumable by the input modelling software and can ingest models which include large gaps,
 intersections and disconnected primitives without additional user input. 
-These features mean that our algorithm is the first truly meshless approach for the direct simulation of curved surface, NURBS models for physics-based animation.
+These features mean that our algorithm is the first truly meshless approach for the direct simulation of curved surface, NURBS models in physics-based animation.
 
 %\subsection{Virtual Element and other Element Methods}
 %\begin{enumerate}
