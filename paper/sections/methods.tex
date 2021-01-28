@@ -232,8 +232,8 @@ We cast a ray from $\clst$, towards $\refX_j$ and find the intersection with the
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=3.33in]{figures/plot_distance_weight.pdf}
-    \caption{Distance weight as a function of primary and total ray length with cutoff distance 50.}
+    \includegraphics[width=3.33in]{figures/plot_distance_weight_both.pdf}
+    \caption{Distance weight as a function of primary and total ray length with cutoff distance 50 (left). Here we use different colors to denote different parts (right).}
     % \caption{We plot the distance weight with respect to the primary and total ray length. Here the cutoff distance is 50.
     % }
     \label{fig:plot_distance_weight}
@@ -245,7 +245,7 @@ Using these two distances we define a linear \emph{distance weight} using the we
 \theta_i = \max \left(1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0\right)
 \text{,}
 \end{equation}
-where $\alpha$ is a distance cutoff parameter. 
+where $\alpha$ is a distance cutoff parameter, $d_{\text{primary}}$ is the primary ray length and $d_{\text{total}}$ is the total ray length. 
 This distance weight~(\reffig{plot_distance_weight}) is the result of interpolating along the ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
 These weights obey the Kronecker delta property for all parts but do not partition unity which we repair using a post-normalization step. For non-planar surfaces, $\rhit$ may lie on the same part as $\clst$. For points inside closed periodic surfaces, it is critical that the weights equal one in this case, so we set $\theta_i = 1$.
 
