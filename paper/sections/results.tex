@@ -42,7 +42,8 @@ respectively. Benchmarks were performed using a MacBook Pro with an Intel i5 2.3
 \reftbl{perf} shows the size of all our examples along with performance statistics and relevant parameters.
 Note that the individual parts of all models are \emph{not connected}, and no continuity constraints or constructive solid geometry operations have been applied. 
 Rather, the SEM approach implicitly couples the boundary parts together to allow for seamless volumetric simulation. 
-Models were created using Autodesk Fusion 360 \cite{AutodeskFusion360} and Rhinocerous 3D 7 \cite{mcneel-rhinoceros}.
+Models were created using Autodesk Fusion 360 \cite{AutodeskFusion360} and Rhinocerous 3D 7 \cite{mcneel-rhinoceros}. 
+Please see the supplemental video for more animation results.
   
 For raycasting operations and rendering we rely on Embree~\cite{10.1145/2601097.2601199} and Blender~\cite{blender}, and triangulate the NURBS surfaces, which only represents an implementation simplification. 
 Our core algorithm is not dependent on triangulating the boundary, and an ideal alternative would be using a path tracer that directly accepts NURBS geometry.
@@ -195,7 +196,8 @@ In \reffig{staypuft} we show two astronauts in jaunty space suits collide in zer
 SEM gracefully allows bounded discontinuities in simulation output to allow for rich motion. 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
 
-In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way.
+In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
+In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. Our SEM successfully handles the stiff materials, complicated geometry and non-trivial collisions in the scene.
 
 \begin{figure*}[htp]
   \includegraphics[width=\textwidth]{figures/astronauts.pdf}

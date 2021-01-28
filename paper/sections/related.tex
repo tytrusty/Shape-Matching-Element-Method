@@ -29,7 +29,7 @@ to improve boundary handling~\cite{https://doi.org/10.1002/nme.3120,10.1007/s004
 These methods typically start with an easy-to-generate structured volumetric mesh (tetrahedral or hexahedral), ``cutting'' the NURBS geometric model against
 it to enable boundary handling (such a mesh is called a \emph{cut-cell} mesh). 
 Like volumetric meshing, this cutting operation can be difficult and our ideal method would avoid it. 
-Some cutcell algorithms assume engineering/manufacturing quality input, which puts tight requirements on input models~\cite{10.1145/3355089.3356576}.
+Some cut-cell algorithms assume engineering/manufacturing quality input, which puts tight requirements on input models~\cite{10.1145/3355089.3356576}.
 Finally these approaches require additional mechanisms to ensure that simulation results lie inside the shape space of the input model's primitives,
 which increases the complexity. 
 
@@ -51,7 +51,7 @@ engineering~\cite{10.1145/1028523.1028542,https://doi.org/10.1002/fld.1650200824
 These methods support more advanced constitutive models and integration schemes but often require background integration meshes, limit themselves to low order deformation functions 
 and lose the direct connection with
 modelling geometry. 
-Like cutcell-based, Isogeometric Analysis approaches, additional constraints must be added to ensure that simulation output can be represented by the input model.
+Like cut-cell-based, Isogeometric Analysis approaches, additional constraints must be added to ensure that simulation output can be represented by the input model.
 Given this, we conclude that there is no existing algorithm that meets our desiderata for success. 
 
 Our algorithm takes the Shape Matching approach as inspiration, but rather than follow the PBD formalism, we interpret Shape Matching as a 
@@ -69,7 +69,7 @@ In this paper we develop a new Shape Matching-based, Virtual Element Method whic
 with NURBS input geometry rather than piecewise linear surfaces. 
 Furthermore, we improve the expressivity of the VEM basis by using a shape blending approach inspired by
 algorithms for skinning~\cite{skinningcourse:2014}.
-Our method is entirely meshless (requiring no volumetric meshes or cutcells) and is compatible with standard constitutive models and time integrators.
+Our method is entirely meshless (requiring no volumetric meshes or cut-cells) and is compatible with standard constitutive models and time integrators.
 It guarantees that simulation output is directly consumable by the input modelling software and can ingest models which include large gaps,
 intersections and disconnected primitives without additional user input. 
 These features mean that our algorithm is the first truly meshless approach for the direct simulation of curved surface, NURBS models in physics-based animation.
