@@ -24,7 +24,7 @@ options.mu = mu;
 % cutoff_distance=cutoff_heuristic(part, 0.9);
 options.distance_cutoff = 1.1;%1.2%0.9;%0.7; % 0.75 use 5 for a single com;
 
-options.save_obj = true;
+options.save_obj = false;
 
 options.k_stability = 1e9; %3e7
 
@@ -50,5 +50,5 @@ options.collision_plane_z = -7;
 options.initial_velocity = [5 0 -5];
 options.save_output=0;
 
-vem_tmp_sim(part, options);
+vem_sim_tire(part, options);
 end

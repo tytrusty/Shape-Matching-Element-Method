@@ -42,7 +42,7 @@ options.distance_cutoff = cutoff_distance;
 % options.distance_cutoff=0.2;
 options.save_obj = true;
 options.save_obj_path = 'output/puft_with_puft/';
-options.k_stability = 1e7;%1e10;
+options.k_stability = 3e7;%1e10;
 
 % options.collision_ratio = 4e-1;
 options.collision_ratio = 5e4;

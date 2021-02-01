@@ -1,4 +1,4 @@
-function vem_simulate_nurbs_constraint(parts, varargin)
+function vem_simulate_nurbs(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -16,10 +16,16 @@ function vem_simulate_nurbs_constraint(parts, varargin)
     addParameter(p, 'sample_interior', 1);
     addParameter(p, 'distance_cutoff', 20);
     addParameter(p, 'enable_secondary_rays', true);
-    addParameter(p, 'fitting_mode', 'global');
+    addParameter(p, 'fitting_mode', 'hierarchical');
     addParameter(p, 'plot_points', false);
     addParameter(p, 'plot_com', true);
-    addParameter(p, 'com_threshold', 100);
+    addParameter(p, 'initial_velocity', [0 0 0]);
+    addParameter(p, 'x_samples', 5);
+    addParameter(p, 'y_samples', 9);
+    addParameter(p, 'z_samples', 9);
+    addParameter(p, 'f_external', [0 0 0]);
+    addParameter(p, 'f_external_time', 1000);
+    addParameter(p, 'save_obj_path', 'output/obj/');
 
     parse(p,varargin{:});
     config = p.Results;
@@ -37,23 +43,26 @@ function vem_simulate_nurbs_constraint(parts, varargin)
 
     % Assembles global generalized coordinates
     [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
-
-    % Generating centers of mass. Temporary method!
-    [x0_coms, com_cluster, com_map] = generate_com(parts, x0, E, ...
-        config.com_threshold, n);
-    
-    if config.plot_com
-        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
-                        '.','Color','g','MarkerSize',20);
-        hold on;
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%
     
     % Initial deformed positions and velocities
     x = x0;
-    qdot=zeros(size(q));
+%     qdot=zeros(size(q));
+     qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
     % Setup pinned vertices constraint matrix
+    x_beg = 0;
+    x_end = 0;
+    for i = 1: numel(parts)
+        if parts{i}.srf.color(1) == 1
+        	x_end = x_beg + size(parts{i}.x0,2);
+            x_beg = x_beg + 1;
+            break;
+        end
+        x_beg = x_beg + size(parts{i}.x0,2);
+    end
+    
+%     pin_I = x_beg:3:x_end;
+    pin_I = x_beg:3:x_end;
     pin_I = config.pin_function(x0);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
@@ -63,7 +72,8 @@ function vem_simulate_nurbs_constraint(parts, varargin)
     
     % Sampling points used to compute energies.
     if config.sample_interior
-        [V, vol] = raycast_quadrature(parts, [3 3], 10);
+        yz_samples = [config.y_samples config.z_samples];
+        [V, vol] = raycast_quadrature(parts, yz_samples, config.x_samples);
     else
     	V=x0;
         vol=ones(size(V,2),1);
@@ -78,20 +88,24 @@ function vem_simulate_nurbs_constraint(parts, varargin)
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
         
-    % Gravity force vector.
-  	f_gravity = repmat([0 0 config.gravity], size(x0,2),1)';
-    f_gravity = config.dt*P*f_gravity(:);
-
-    % Shape Matrices
-    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
-
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
-                             
+    
+    % Generate centers of mass.
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    if config.plot_com
+        com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
+                        '.','Color','g','MarkerSize',20);
+        hold on;
+    end
+    
+    % Shape Matrices
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, config.order, config.fitting_mode);
+
     % Build Monomial bases for all quadrature points
     [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
     [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
@@ -109,6 +123,32 @@ function vem_simulate_nurbs_constraint(parts, varargin)
     % projection operator (c are polynomial coefficients)
     [dF_dc, dF_dc_S] = vem_dF_dc(V, x0_coms, w, w_I, com_map, config.order, k);
 
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 0 config.gravity]', config.rho*vol, Y, Y_S);
+    f_gravity = config.dt*P*(L' * dg_dc);
+    
+    % Optional external force vector
+    dext_dc = vem_ext_force(config.f_external', config.rho*vol, Y, Y_S);
+    f_external = config.dt*P*(L' * dext_dc); 
+    
+    dg_dc = zeros(d*(k*n + size(x0_coms,2)),1);
+        for i=1:size(V,2)
+    %         if V(1,i) < 0 && V(3,i) < 1 
+            if  V(3,i) > 6
+                plot3(V(1,i),V(2,i),V(3,i),'.','Color','b','MarkerSize',20); hold on;
+%                 grav = [1 0 -10];
+                grav = [-6 0 0];
+                dg_dc = dg_dc + (config.rho*vol(i)*grav*Y{i}*Y_S{i})';
+            end
+            if  V(3,i) < 5
+                plot3(V(1,i),V(2,i),V(3,i),'.','Color','g','MarkerSize',20); hold on;
+%                 grav = [1 0 -10];
+                grav = [8 0 0];
+                dg_dc = dg_dc + (config.rho*vol(i)*grav*Y{i}*Y_S{i})';
+            end
+        end
+        f_gumbo = config.dt*P*(L' * dg_dc);
+        
     % Compute mass matrices
     ME = vem_error_matrix(Y0, Y0_S, L, d);
     M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
@@ -118,9 +158,10 @@ function vem_simulate_nurbs_constraint(parts, varargin)
     % save('saveME.mat','ME');
     % M = matfile('saveM.mat').M;
     % ME = matfile('saveME.mat').ME;
-   
+           obj_fn = config.save_obj_path + "cmp4.iges";
+           nurbs_write_iges(q,parts,obj_fn);
     ii=1;
-    for t=0:config.dt:30
+    for t=0:config.dt:500
         tic
 
         % Preparing input for stiffness matrix mex function.
@@ -140,7 +181,7 @@ function vem_simulate_nurbs_constraint(parts, varargin)
 
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
-
+        
         % Computing force dV/dq for each point.
         % TODO: move this to C++ :)
         for i = 1:m
@@ -153,7 +194,7 @@ function vem_simulate_nurbs_constraint(parts, varargin)
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
-        end
+        end        
         dV_dq = L' * dV_dq;
         
         % Error correction force
@@ -163,16 +204,12 @@ function vem_simulate_nurbs_constraint(parts, varargin)
         % Force from potential energy.
         f_internal = -config.dt*P*dV_dq;
         
-        
-%         lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-%         rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error);
-%         qdot = lhs \ rhs;
-        opts = optimoptions('quadprog','Display','off');
-        H = J' * (P*(M - config.dt*config.dt*K)*P') * J;
-        f = J' * (P*M*P'*J*qdot + f_internal + f_gravity);
-        Aeq = J'*(P*ME*P') * J;
-        beq = zeros(size(qdot));
-        qdot = quadprog(H,-f,[],[], Aeq, beq, [],[],qdot,opts);
+        % Computing linearly-implicit velocity update
+        % Note: I believe i'm forgetting the error matrix stiffness matrix
+        %       but I don't wanna break things so I haven't added it yet.
+        lhs = J' * (P*(M - config.dt*config.dt*K)*P') * J;
+        rhs = J' * (P*M*P'*J*qdot + f_internal + f_gravity + f_error + f_gumbo);
+        qdot = lhs \ rhs;
 
         % Update position
         q = q + config.dt*qdot;
@@ -201,12 +238,24 @@ function vem_simulate_nurbs_constraint(parts, varargin)
         end
         drawnow
         
+        if config.save_obj
+            obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".obj";
+            nurbs_write_obj(q,parts,obj_fn,ii);
+        end
+        
+        if config.save_iges
+            obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".iges";
+            nurbs_write_iges(q,parts,obj_fn);
+        end
+
         if config.save_output
-            fn=sprintf('output/img/simulate_quadprog_%03d.png',ii);
+            fn=sprintf('output/img/simulate_beem_%03d.png',ii);
             saveas(fig,fn);
         end
         ii=ii+1
         toc
     end
+    obj_fn = config.save_obj_path + "cmp4.iges";
+           nurbs_write_iges(q,parts,obj_fn);
 end
 
