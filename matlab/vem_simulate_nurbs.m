@@ -92,8 +92,8 @@ function vem_simulate_nurbs(parts, varargin)
         com_cluster, config.order, config.fitting_mode);
 
     % Build Monomial bases for all quadrature points
-    [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
-    [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
+    [Y,Y_S,C_I] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
+    [Y0,Y0_S,C0_I] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
 
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -117,8 +117,9 @@ function vem_simulate_nurbs(parts, varargin)
     f_external = config.dt*P*(L' * dext_dc); 
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, Y0_S, L, d);
-    M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
+    ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, n);
+    M = vem_mass_matrix(Y, L, config.rho .* vol, w_I, C_I, d, k, n);
+    
     M = (M + config.k_stability*ME); % sparse?
 
     ii=1;

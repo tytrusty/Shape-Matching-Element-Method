@@ -7,7 +7,6 @@
 //#include <vem3d_neohookean_dq2.h>
 #include <d2psi_neohookean_dF2.h> // TODO remove and replace with neohookean dq2
 
-
 namespace sim {
 
 template<typename DerivedRet, typename DerivedC, typename DerivedVol, typename DerivedParam>

@@ -13,12 +13,13 @@ YM = 1e6; %in Pascals
 pr =  0.45;
 [lambda, mu] = emu_to_lame(YM, pr);
 options.order = 2;
-% options.rho = 1e-1;
 options.rho = 1e3;
 options.gravity = -10;
 options.pin_function = @pin_function;
 options.lambda = lambda;
 options.mu = mu;
+options.k_stability=YM;
+options.distance_cutoff=cutoff_heuristic(part, 0.9);
 
 % vem_simulate_nurbs_newtons(part, options);
 vem_simulate_nurbs(part, options);

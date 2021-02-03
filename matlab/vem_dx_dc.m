@@ -1,9 +1,10 @@
-function [Y,S] = vem_dx_dc(x, x_coms, w, W_I, com_map, order, k)
+function [Y,S,C_I] = vem_dx_dc(x, x_coms, w, W_I, com_map, order, k)
     d = size(x,1);
     n = size(x,2);
     
     Y = cell(n,1);
     S = cell(n,1);
+    C_I = cell(n,1);
     
     for ii=1:n
         m = numel(W_I{ii});
@@ -38,6 +39,7 @@ function [Y,S] = vem_dx_dc(x, x_coms, w, W_I, com_map, order, k)
         end
         Y{ii} = Yi;
         S{ii} = sparse(S_i);
+        C_I{ii} = C;
     end
 end
 

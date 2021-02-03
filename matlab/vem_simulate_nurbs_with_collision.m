@@ -85,14 +85,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % Lame parameters concatenated.
     params = [config.mu * 0.5, config.lambda * 0.5];
     params = repmat(params,size(V,2),1);
-        
-    % Gravity force vector.
-  	% f_gravity = repmat([0 0 config.rho*config.gravity], size(x0,2),1)';
-    % f_gravity = config.dt*P*f_gravity(:);
-    
-    % Undeformed Center of mass
-    x0_com = mean(x0,2);
-    
+
     % Compute Shape weights
     [w, w_I] = nurbs_blending_weights(parts, V', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
@@ -112,8 +105,8 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         com_cluster, config.order, config.fitting_mode);
     
     % Build Monomial bases for all quadrature points
-    [Y,Y_S] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
-    [Y0,Y0_S] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
+    [Y,Y_S,com_I] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
+    [Y0,Y0_S,C0_I] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
     
     % Fixed x values.
     x_fixed = zeros(size(x0));
@@ -145,8 +138,9 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     config.rho(bottom_ids) = 6e3;   % you can make it denser too
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, Y0_S, L, d);
-    M = vem_mass_matrix(Y, Y_S, L, config.rho .* vol);
+    ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, n);
+    M = vem_mass_matrix(Y, L, config.rho .* vol, w_I, com_I, d, k, n);
+
     M = (M + config.k_stability*ME); % sparse?
     % Save & load these matrices for large models to save time.
     % save('saveM.mat','M');
@@ -158,7 +152,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     [verts,faces] = triangulate_iges(parts);
     collision_ratio = config.collision_ratio;
     face_normal = normals(verts, faces);
-    writeOBJ('./test.obj', verts, faces, [], zeros(size(faces,1),3), face_normal, zeros(size(faces,1),3));
+    %writeOBJ('./test.obj', verts, faces, [], zeros(size(faces,1),3), face_normal, zeros(size(faces,1),3));
     
     if config.collision_with_other
       collide_iges_file = 'puft_full_simpler.iges';
@@ -248,8 +242,14 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
                                       size(x0_coms,2));
+                                  figure(2);spy(K);
+        K0=K;
+        % K2=sparse(K);
         K = L' * K * L;
         
+                                    figure(3);spy(K);
+                                    figure(4);spy(L);
+                                    
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
         
