@@ -3,21 +3,22 @@ function vem_sim_2d
 
     % Simulation parameters
     dt = 0.01;      	% timestep
-    C = 0.5 * 170;   	% Lame parameter 1
-    D = 0.5 * 1500;   	% Lame parameter 2
-    gravity = -100;     % gravity strength
-    k_error = 100000;   % Stiffness for VEM stability term
+    gravity = -10;     % gravity strength
+    k_stability = 1e5;   % Stiffness for VEM stability term
+    YM = 1e5; %in Pascals
+    pr =  0.45;
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1;            % density
+    rho = 1e2 ;            % density
 	d = 2;              % dimension (2 or 3)
     save_output = 0;    % (0 or 1) whether to output images of simulation
+    vol = 0.04;
     
     % The number of elements in the monomial basis.
     % -- example: Draft equation 1 is second order with k == 5
     k = basis_size(d, order);
     
     % Load a basic square mesh
-    [V,F] = readOBJ('models/plane.obj');
+    [V,F] = readOBJ('models/obj/plane.obj');
     V = V(:,1:2);
     
     % Get boundary edges. The points on each edge will be our nodal
@@ -38,7 +39,7 @@ function vem_sim_2d
     % Todo -- only use cells for all edge stuff
     E = cell(size(F,1),1);
     for i =1:size(F,1)
-       E{i} = F(i,:);
+       E{i} = F(i,:)';
     end
 
     % Simpler cube example.
@@ -48,7 +49,7 @@ function vem_sim_2d
     [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
     V = [X(:) Y(:)];
     
-    shapes_per_line = 1;
+    shapes_per_line = 4;
      
     % Generates line segment samples along a specified line.
     function s=sample_func(a,b)
@@ -67,8 +68,9 @@ function vem_sim_2d
     xd = sample_func(x0(:,4),x0(:,1));
     x0 = [xa xb xc xd];
     E = reshape(1:size(x0,2), 2, []);
-    E = num2cell(E', 2);
-
+    F = E';
+    E = num2cell(E, 1)';
+        
     % min_I = find(x0(2,:) == max(x0(2,:))); % pin top side
     % min_I = find(x0(1,:) == min(x0(1,:))); % pin left side
     min_I = [1]; % Pinning the top left corner.
@@ -106,109 +108,82 @@ function vem_sim_2d
     % Constraint matrix for boundary conditions.
     P = fixed_point_constraint_matrix(x0',sort(min_I)');
     
-    % Gravity force vector.
-  	f_gravity = repmat([0 gravity], size(x0,2),1)';
-    f_gravity = dt*P*f_gravity(:);
+    % Lame parameters concatenated.
+    [lambda, mu] = emu_to_lame(YM, pr);
+    params = [mu * 0.5, lambda * 0.5];
+    params = repmat(params,size(V,1),1);
     
-    % Undeformed Center of mass
-    % -- Draft equation (4)
-    x0_com = mean(x0,2);
+    % Compute Shape weights0.8
+    [w,w_I] = blending_weights_2d(V, x0', F, 1);
+    [w0,w0_I] = blending_weights_2d(x0', x0', F, 1);
+    
+    % Generate centers of mass.
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, numel(E));
+    com_plt = plot(x0_coms(1,:),x0_coms(2,:), '.','Color','g','MarkerSize',20);
+    hold on;
     
     % Build shape matching matrices
-    %
-    % In Shape matching paper, the projection operator is defined as
-    % A = A_pq * A_qq (Shape matching equation 7)
-    % The 'p' part is the only part that changes during simulation,
-    % so we instead write A = PB where P = [p_1 p_2 ... p_n].
-    %
-    % Note: each shape (edge in this case) has its own 'B' matrix
-    %       because each shape has its own projection operator.
-    L = compute_shape_matrices(x0, x0_com, E, order);
+    L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
+        com_cluster, order, 'hierarchical');
     
-    % Build Monomial bases for quadrature points (Q) and boundary
-    % points (Q0). 
-    % -- Draft equation (1)
-    % -- Shape matching section 4.3
-    Y = monomial_basis_matrix(V', x0_com, order, k);
-    Y0 = monomial_basis_matrix(x0, x0_com, order, k);
-    
-    % For each sampled point, compute the weighting with respect to all
-    % shapes.
-    % -- Draft Equation (3)
-    w = compute_projected_weights(x0, E, V');
-    w_x = compute_projected_weights(x0, E, x0);
-    [W, ~, W_S] = build_weight_matrix(w, d, k, 'Truncate', false);
-    [W0, ~, W0_S] = build_weight_matrix(w_x, d, k, 'Truncate', false);
-    
-    % Forming gradient of monomial basis with respect to X (undeformed)
-    % -- Draft Equation (13)
-    dM_dX = monomial_basis_grad(V', x0_com, order);
-        
+    % Build weighted monomial bases
+    [Y,Y_S,C_I] = vem_dx_dc(V', x0_coms, w, w_I, com_map, order, k);
+    [Y0,Y0_S,C0_I] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, order, k);
+
     % Computing each gradient of deformation gradient with respect to
     % projection operator (c are polynomial coefficients)
-    dF_dc = vem_dF_dc(dM_dX, W);
-    
-    % Computing mass matrices
-    ME = vem_error_matrix(Y0, W0, W0_S, L);
-    M = vem_mass_matrix(Y, W, W_S, L);
-    M = sparse((rho*M + k_error*ME));
+    [dF_dc, dF_dc_S] = vem_dF_dc(V', x0_coms, w, w_I, com_map, order, k);
+
+    % Gravity force vector.
+    dg_dc = vem_ext_force([0 gravity]', repmat(rho .* vol, size(V,1),1), Y, Y_S);
+    f_gravity = dt*P*(L' * dg_dc);
+
+    % Compute mass matrices
+%     ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, numel(E));
+%     M = vem_mass_matrix(Y, L, rho .* vol, w_I, C_I, d, k, numel(E));
+    ME = vem_error_matrix_matlab(Y0, Y0_S, L, d);
+    M = vem_mass_matrix_matlab(Y, Y_S, L, repmat(rho .* vol, size(V,1),1));
+    M = (M + k_stability*ME); % sparse?
 
     ii=1;
-    for t=0:dt:30
+    for t=0:dt:300
         b = [];
         for i=1:numel(E)
-            b = [b x(:,E{i}) - x0_com];
+            b = [b x(:,E{i})];
         end
         b = b(:);
         
         % Solve for polynomial coefficients (projection operators).
         c = L * b;
-        
-        % Extract deformed center of mass translation.
-        p = c(end-d+1:end);
-        x_com = x0_com + p;
 
         % force vector
-        dV_dq = zeros(d*(k*numel(E) + 1),1); 
+        dV_dq = zeros(d*(k*numel(E) + size(x0_coms,2)),1); 
         
         % stiffness matrix
-        K = zeros(d*(k*numel(E) + 1), d*(k*numel(E) + 1));
-        
-        % New deformed positions of quadrature points.
-        % (only for visualization)
-        Points = zeros(size(V'));
+        K = zeros(d*(k*numel(E) + size(x0_coms,2)), d*(k*numel(E) + size(x0_coms,2)));
         
         % Computing force and stiffness contributions
         for i = 1:m
-            dMi_dX = squeeze(dM_dX(i,:,:));
-           
-            % Deformation Gradient (Draft equation 13)
-            F = dMi_dX * W{i} * W_S{i} * c;
+            % Deformation Gradient
+            F = dF_dc{i} * dF_dc_S{i} * c;
             F = reshape(F,d,d);
             
-            % Computing new world position of this point.
-            Yi = squeeze(Y(i,:,:))*W{i}*W_S{i}; % weighed monomial basis
-            Points(:,i) = Yi * c + x_com;
+            V(i,:) = Y{i} * Y_S{i} * c;
             
-            % Force vector contribution
-            dV_dF = neohookean_dF(F,C,D);
-            dV_dq = dV_dq + W_S{i}' * dF_dc{i}' * dV_dF;
-            
+            % Force vector
+            dV_dF = neohookean_dF(F, params(i,1), params(i,2));
+            dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF .* vol;
+%             
             % Stiffness matrix contribution
-            d2V_dF2 = neohookean_dF2(F,C,D);
-            K = K - W_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * W_S{i};
+            d2V_dF2 = neohookean_dF2(F, params(i,1), params(i,2));
+            K = K - dF_dc_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * dF_dc_S{i} .* vol;
         end
         K = L' * K * L;
         dV_dq = L' * dV_dq;
-
+        
         % Error correction force
-        x_error = x(:);
-        x_error(1:2:end) = x_error(1:2:end) - x_com(1);
-        x_error(2:2:end) = x_error(2:2:end) - x_com(2);
-
-        % should just do xx(1:d:end) - x_com?
-        f_error = - 2 * ME * x_error;
-        f_error = k_error*(dt * P * f_error);
+        f_error = - 2 * ME * x(:);
+        f_error = k_stability*(dt * P * f_error(:));
         
         % Force from potential energy.
         f_internal = -dt*P*dV_dq;
@@ -229,8 +204,8 @@ function vem_sim_2d
             E_lines{i}.YData = x(2,E{i});
         end
      
-        X_plot.XData = Points(1,:);
-        X_plot.YData = Points(2,:);
+        X_plot.XData = V(:,1);
+        X_plot.YData = V(:,2);
         drawnow
         
         if save_output

@@ -87,7 +87,7 @@ function [x_coms, com_cluster, com_map] = generate_com(x0, E, w, n)
         
         active_coms = unique(com_map);
         com_cluster = cell(numel(active_coms), 1);
-        x_coms = zeros(3,numel(active_coms));
+        x_coms = zeros(size(x0,1),numel(active_coms));
 
         for i = 1:numel(active_coms)
             % Find all parts use in computing this center of mass and

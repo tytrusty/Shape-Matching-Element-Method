@@ -11,7 +11,7 @@ function patch_test_2d
     k = basis_size(d, order);
     
     % Load a basic square mesh
-    [V,F,UV,TF] = readOBJ('models/plane.obj');
+    [V,F,UV,TF] = readOBJ('models/obj/plane.obj');
     F0=F;
     V0=V;
     z = V(:,3);
@@ -91,7 +91,7 @@ function patch_test_2d
     end
     b = b(:);
     c = L * b;
-    
+    x0=x0'
     function [a,w] = weights(X)
         dE = (V0(F(:,2),:) - V0(F(:,1),:));
         norm2_dE = sum(dE.*dE, 2);
@@ -111,8 +111,8 @@ function patch_test_2d
         for jj=1:size(F,1)
 
             %nearest point on i^th edge of j^th point (column)
-            VE_X = (dEdotdV(jj,:).*dE(jj,1) + V0(F(jj,1),1))';
-            VE_Y = (dEdotdV(jj,:).*dE(jj,2) + V0(F(jj,1),2))';
+            VE_X = (dEdotdV(jj,:).*dE(jj,1) + x0(F(jj,1),1))';
+            VE_Y = (dEdotdV(jj,:).*dE(jj,2) + x0(F(jj,1),2))';
 
             %build ray from nearest point to i^th point 
             R_X = X(:,1) - VE_X;
@@ -125,8 +125,8 @@ function patch_test_2d
             det_A = 1./(-R_Y.*dE_X + R_X.*dE_Y);
 
             %coefficient along the plane
-            B_X = X(:,1) - V0(F(:,1),1)';
-            B_Y = X(:,2) - V0(F(:,1),2)';
+            B_X = X(:,1) - x0(F(:,1),1)';
+            B_Y = X(:,2) - x0(F(:,1),2)';
 
             first_row = -R_Y.*B_X + R_X.*B_Y;
             second_row = dE_X.*B_Y - dE_Y.*B_X;
