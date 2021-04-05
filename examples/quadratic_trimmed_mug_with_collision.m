@@ -5,7 +5,7 @@ function pinned_ids = pin_function(x)
 end
 
 % iges_file = 'mug_complex4_bad.igs';
-iges_file = 'mug_complex4.igs';
+iges_file = 'mug_complex.iges';
 
 part = nurbs_from_iges(iges_file);
 
