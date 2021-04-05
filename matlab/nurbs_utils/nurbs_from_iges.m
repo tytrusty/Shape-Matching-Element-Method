@@ -2,14 +2,14 @@ function [nurbs_objects] = nurbs_from_iges(filename, sample_density)
     if nargin < 2
         sample_density=2;
     end
-%     nurbs_object = {};
     data=iges2matlab(filename);
 
     % TODO: need to return weights of each sample on the surface.
     enable_trimming = 1;
     use_triangle = 1;
     generate_hires = 1;
-    trimmed_hires_res = 3;
+%     trimmed_hires_res = 3;
+    trimmed_hires_res = 10;
     nurbs_objects = nurbs_sample(data, enable_trimming, sample_density);
     disp('Done Generating samples');
 
@@ -21,9 +21,9 @@ function [nurbs_objects] = nurbs_from_iges(filename, sample_density)
         [p, J] = nurbs_coords(srf.nurbs, nurbs_objects{i}.UV);
         J = permute(J,[3 2 1]);
 
-        Ji = J(:,:)';
-        JJ = Ji'*Ji;
-        cond(JJ)
+        %Ji = J(:,:)';
+        %JJ = Ji'*Ji;
+        %cond(JJ) % check conditioning if things are singular
 
         nurbs_objects{i}.p = p;
         nurbs_objects{i}.pdot=zeros(size(p));

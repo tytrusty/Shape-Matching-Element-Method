@@ -7,11 +7,13 @@ for ii=1:numel(data)
 	if data{ii}.type == 128
         data{ii}.is_trimmed = 0;
        
-        s = sample_spline(data{ii}.s, data{ii}.m1, sample_density);
-        t = sample_spline(data{ii}.t, data{ii}.m2, sample_density);
+        [s,ws] = sample_spline(data{ii}.s, data{ii}.m1, sample_density);
+        [t,wt] = sample_spline(data{ii}.t, data{ii}.m2, sample_density);
         [U,V] = meshgrid(s,t);
         UV = [U(:) V(:)]';
+        W = ws'*wt;
         data{ii}.UV = UV;
+        data{ii}.W = W(:);
             
         nsurfaces = nsurfaces + 1;
 	end
@@ -55,6 +57,7 @@ function process_untrimmed()
     for i=1:numel(data)   
         if data{i}.type == 128 && ~data{i}.is_trimmed
             uv_struct.UV = data{i}.UV;
+            uv_struct.W = data{i}.W;
             uv_struct.surf_ptr = i;
             uv_struct.is_trimmed = 0;
             surfaces{ii} = uv_struct;

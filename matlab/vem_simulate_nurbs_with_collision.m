@@ -234,7 +234,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
                                       size(x0_coms,2));
-
+        K = L' * K * L;
 %         K = J' * (P * (L' * K * L) * P') * J;
 %           figure(3);spy(K);
 
