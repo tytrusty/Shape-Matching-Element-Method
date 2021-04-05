@@ -53,7 +53,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     parts=nurbs_plot(parts);
 
     % Assembles global generalized coordinates
-    [J, hires_J, q, E, x0] = nurbs_assemble_coords(parts);
+    [J, hires_J, q, E, x0, S] = nurbs_assemble_coords(parts);
     
     % Initial deformed positions and velocities
     x = x0;
@@ -91,9 +91,9 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     [w0, w0_I] = nurbs_blending_weights(parts, x0', config.distance_cutoff, ...
         'Enable_Secondary_Rays', config.enable_secondary_rays);
-    
+
     % Generate centers of mass.
-    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n, parts);
     if config.plot_com
         com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
                         '.','Color','g','MarkerSize',20);
@@ -102,8 +102,8 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     
     % Shape Matrices
     L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
-    
+        com_cluster, config.order, config.fitting_mode, S);
+
     % Build Monomial bases for all quadrature points
     [Y,Y_S,com_I] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
     [Y0,Y0_S,C0_I] = vem_dx_dc(x0, x0_coms, w0, w0_I, com_map, config.order, k);
@@ -128,14 +128,6 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
     % Optional external force vector
     dext_dc = vem_ext_force(config.f_external', config.rho*vol, Y, Y_S);
     f_external = config.dt*P*(L' * dext_dc); 
-    
-    % Add these lines before mass matrix computation
-    bottom_ids = find(V(3,:) < 0.1); % set this number to top z value of the bottom area
-    YM = 1e10; pr = 0.4; % make it stiff than towers
-    [lambda, mu] = emu_to_lame(YM, pr);
-    new_lame = repmat([mu * 0.5  lambda * 0.5], numel(bottom_ids),1);
-    params(bottom_ids,:) = new_lame;
-    config.rho(bottom_ids) = 6e3;   % you can make it denser too
 
     % Compute mass matrices
     ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, n);
@@ -242,14 +234,10 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
         % Stiffness matrix (mex function)
         K = -vem3dmesh_neohookean_dq2(c, vol, params, dF_dc, w_I, k, n, ...
                                       size(x0_coms,2));
-                                  figure(2);spy(K);
-        K0=K;
-        % K2=sparse(K);
-        K = L' * K * L;
-        
-                                    figure(3);spy(K);
-                                    figure(4);spy(L);
-                                    
+
+%         K = J' * (P * (L' * K * L) * P') * J;
+%           figure(3);spy(K);
+
         % Force vector
         dV_dq = zeros(d*(k*n + size(x0_coms,2)),1);
         
@@ -264,6 +252,7 @@ function vem_simulate_nurbs_with_collision_new(parts, varargin)
             
             % Force vector
             dV_dF = neohookean_tet_dF(F, params(i,1), params(i,2));
+%             dV_dF = SNH_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF * vol(i);
         end
         dV_dq = L' * dV_dq;

@@ -1,4 +1,4 @@
-function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mode)
+function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mode, W)
     
     % TOOODO --- appears problematic that we have multiple center of masses
 
@@ -43,9 +43,8 @@ function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mod
         col_idx = col_idx + k * d;
     end
     
-    
-    fprintf('A matrix: nrows=%d ncols=%d rank=%d\n', ...
-        size(A,1), size(A,2), rank(A));
+%     fprintf('A matrix: nrows=%d ncols=%d rank=%d\n', ...
+%         size(A,1), size(A,2), rank(A));
 
     ATA = A'*A;
     ATA(end-d+1:end,1:end-d) = 0; % applying center of mass constraint
@@ -57,24 +56,25 @@ function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mod
         L = zeros(d*(k*numel(E) + numel(cluster)), numel(x0));
         
         % Forming T&S matrices
-        S=sparse(zeros(n,d*numel(cluster)));
+        S=sparse(zeros(d*n,d*numel(cluster)));
         T=zeros(d*numel(cluster),n);
- 
+
         % Setting constant term solutions for each center of mass as
         % the mean of their adjacent points.
         for i=1:numel(cluster)
             for j=1:d
                 row = d*(i-1)+j;
                 cols = d*(cluster{i}-1)+j;
-                T(row,cols) = 1/numel(cluster{i});
-                
+                col_vals=W(sub2ind(size(W),cols,cols));
+                N = sum(col_vals);
+                T(row,cols) = col_vals/N;
                 
                 row = d*k*numel(E) + d*(i-1)+j;
                 cols = d*(cluster{i}-1)+j;
-                L(row,cols) = 1/numel(cluster{i});
+                L(row,cols) = col_vals/N;
             end
         end
-        
+    
         % Forming selection matrices for each shape.
         for i=1:numel(E)
         	m = numel(E{i});
@@ -103,7 +103,7 @@ function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mod
         end
 
         A_lin = A(:,linear_cols);
-        L_lin = (A_lin'*A_lin) \ (A_lin' * (I - S*T));
+        L_lin = (A_lin'*W*A_lin) \ (A_lin' * W *(I - S*T));
         L(linear_cols,:) = L_lin;
 
         if order == 2
@@ -124,8 +124,8 @@ function L = compute_shape_matrices(x0, x0_coms, com_map, E, cluster, order, mod
             end
 
             A_quad = A(:,quad_cols);
-            rhs = A_quad' * (I - S * T -  A_lin*L_lin);
-            L_quad = (A_quad'*A_quad) \ rhs;
+            rhs = A_quad' * W * (I - S * T -  A_lin*L_lin);
+            L_quad = (A_quad'* W * A_quad) \ rhs;
             L(quad_cols,:) = L_quad;
         end
         

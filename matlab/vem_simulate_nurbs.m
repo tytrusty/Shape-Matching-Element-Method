@@ -42,13 +42,25 @@ function vem_simulate_nurbs(parts, varargin)
     parts=nurbs_plot(parts);
 
     % Assembles global generalized coordinates
-    [J, ~, q, E, x0] = nurbs_assemble_coords(parts);
+    [J, ~, q, E, x0, S] = nurbs_assemble_coords(parts);
     
     % Initial deformed positions and velocities
     x = x0;
     qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
     pin_I = config.pin_function(x0);
+%   	x_beg = 0;
+%     x_end = 0;
+%     for i = 1: numel(parts)
+%         if parts{i}.srf.color(1) == 1
+%         	x_end = x_beg + size(parts{i}.x0,2);
+%             x_beg = x_beg + 1;
+%             break;
+%         end
+%         x_beg = x_beg + size(parts{i}.x0,2);
+%     end
+%     pin_I = x_beg:3:x_end;
+%     
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plotting pinned vertices.
@@ -80,7 +92,7 @@ function vem_simulate_nurbs(parts, varargin)
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     
     % Generate centers of mass.
-    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n);
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n,parts);
     if config.plot_com
         com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
                         '.','Color','g','MarkerSize',20);
@@ -89,7 +101,7 @@ function vem_simulate_nurbs(parts, varargin)
     
     % Shape Matrices
     L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, config.order, config.fitting_mode);
+        com_cluster, config.order, config.fitting_mode, S);
 
     % Build Monomial bases for all quadrature points
     [Y,Y_S,C_I] = vem_dx_dc(V, x0_coms, w, w_I, com_map, config.order, k);
