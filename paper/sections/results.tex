@@ -2,43 +2,86 @@
 \section{Results and Discussion}
 
 \begin{table*}[h]
+  \setlength{\tabcolsep}{3pt}
   \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical parameters are
   reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio.
   \textbf{Sample} is the time taken to sample and construct $\samp{\Jnurbs}$ and $\samp{\Pmatx}$, \textbf{Quad} is the time taken to generate quadrature points via raycasting,
-  \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator and  \textbf{Step} is the average time required to step the simulation (not including collision detection).
+  \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator, \textbf{Step} is the average time required to step the simulation (not including collision detection)
+  \revise{and \textbf{Nnz} is the ratio of nonzeros to the total number of elements in the stiffness matrix. }
   \revise{We use linearly implicit time integration on all examples and thus the number of step per frame is 1 in the simulation.}
   }
   \label{tbl:perf}
   \begin{center}
-  \begin{tabular}{l c c c c c c c c c c}
-   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s)& \textbf{Step}(s)\\
+  \begin{tabular}{l c c c c c c c c c c c}
+   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s) & \textbf{Step}(s) & \revise{\textbf{Nnz}(\%)} \\
    \hline 
-   \rowcolor[HTML]{DAE8FC} 
+   \rowcolor[HTML]{DAE8FC}
    %\textbf{Cantilever (soft)}       & 564 & Jelly & $1 e^3$ & $1e^6$& 0.45 & $2.53 e^{-2}$ & $4.45 e^{-3}$ & $4.78 e^{-1}$ & $1.86 e^{-1}$ & $1.20 e^{0}$ \\
    %\textbf{Cantilever (stiff)}      & 564 & Rubber & $1 e^3$ & $5 e^6$ & 0.45 & $2.48 e^{-2}$ & $6.37 e^{-3}$ & $5.10 e^{-1}$ & $1.68 e^{-1}$ & $1.19 e^{0}$ \\
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 e^3$ & $7 e^6$ & 0.40 & $2.83 e^{-2}$ & $5.62 e^{-3}$ & $5.58 e^{-1}$ & $6.83 e^{-2}$ & $1.26 e^{0}$ \\
-   \textbf{Rocket (stiff)}          & 648 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $2.56 e^{-2}$ & $5.97 e^{-3}$ & $4.59 e^{-1}$ & $3.48 e^{-2}$ & $9.99 e^{-2}$ \\
+   \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 e^3$ & $7 e^6$ & 0.40 & $2.83 e^{-2}$ & $5.62 e^{-3}$ & $5.58 e^{-1}$ & $6.83 e^{-2}$ & $1.26 e^{0}$ & \revise{100} \\
+   \textbf{Rocket (stiff)}          & 648 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $2.56 e^{-2}$ & $5.97 e^{-3}$ & $4.59 e^{-1}$ & $3.48 e^{-2}$ & $9.99 e^{-2}$ & \revise{100} \\
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Starship}                & 750 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $6.78 e^{-2}$ & $1.52 e^{-2}$ & $8.50 e^{-1}$ & $9.52 e^{-2}$ & $6.95 e^{-1}$ \\
-   \textbf{Lamppost}                & 942 & Rubber & $3 e^3$ & $1 e^6$ & 0.40 & $1.28 e^{-1}$ & $1.27 e^{-2}$ & $1.89 e^{0}$ & $1.07 e^{0}$ & $2.22 e^{0}$ \\
+   \textbf{Starship}                & 750 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $6.78 e^{-2}$ & $1.52 e^{-2}$ & $8.50 e^{-1}$ & $9.52 e^{-2}$ & $6.95 e^{-1}$ & \revise{100} \\
+   \textbf{Lamppost}                & 942 & Rubber & $3 e^3$ & $1 e^6$ & 0.40 & $1.28 e^{-1}$ & $1.27 e^{-2}$ & $1.89 e^{0}$ & $1.07 e^{0}$ & $2.22 e^{0}$ & \revise{56.38} \\
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Tire}                    & 1404 & Rubber/Steel & $2 e^3$/$3 e^3$ & $1 e^6$/$7 e^9$ & 0.47/0.35 & $1.74 e^{-1}$ & $1.32 e^{-2}$ & $1.82 e^{0}$ & $6.79 e^{-1}$ & $1.28 e^{1}$ \\
-   \textbf{Chicken}                 & 1773 & Jelly & $1.27 e^3$ & $1 e^4$ & 0.47 & $9.19 e^{-1}$ & $2.31 e^{-2}$ & $3.38 e^{0}$ & $1.91 e^{0}$ & $1.08 e^{1}$ \\
+   \textbf{Tire}                    & 1404 & Rubber/Steel & $2 e^3$/$3 e^3$ & $1 e^6$/$7 e^9$ & 0.47/0.35 & $1.74 e^{-1}$ & $1.32 e^{-2}$ & $1.82 e^{0}$ & $6.79 e^{-1}$ & $1.28 e^{1}$ & \revise{92.5} \\
+   \textbf{Chicken}                 & 1773 & Jelly & $1.27 e^3$ & $1 e^4$ & 0.47 & $9.19 e^{-1}$ & $2.31 e^{-2}$ & $3.38 e^{0}$ & $1.91 e^{0}$ & $1.08 e^{1}$ & \revise{100} \\
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Coffee mug (soft)}       & 1800 & Jelly & $1 e^3$ & $1 e^4$ & 0.47 & $4.18 e^{-1}$ & $2.87 e^{-2}$ & $3.77 e^{0}$ & $2.08 e^{0}$ & $1.19 e^{1}$  \\ 
-   \textbf{Coffee mug (stiff)}      & 1800 & Rubber & $1 e^3$ & $4 e^7$ & 0.40 & $4.15 e^{-2}$ & $1.17 e^{-2}$ & $6.86 e^{-1}$ & $1.09 e^{-1}$ & $5.00 e^{-1}$  \\ 
+   \textbf{Coffee mug (soft)}       & 1800 & Jelly & $1 e^3$ & $1 e^4$ & 0.47 & $4.18 e^{-1}$ & $2.87 e^{-2}$ & $3.77 e^{0}$ & $2.08 e^{0}$ & $1.19 e^{1}$ & \revise{100} \\ 
+   \textbf{Coffee mug (stiff)}      & 1800 & Rubber & $1 e^3$ & $4 e^7$ & 0.40 & $4.15 e^{-2}$ & $1.17 e^{-2}$ & $6.86 e^{-1}$ & $1.09 e^{-1}$ & $5.00 e^{-1}$  & \revise{81.42} \\ 
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Castle}                  & 1872 & Jelly & $1.27 e^3$ & $2 e^3$ & 0.45 & $4.84 e^{-1}$ & $1.44 e^{-2}$ & $1.52 e^{0}$ & $5.78 e^{-1}$ & $8.02 e^{0}$ \\
-   \textbf{Grumpy}                  & 2010 & Jelly & $1 e^3$ & $1 e^4$ & 0.40 & $2.92 e^{-1}$ & $1.23 e^{-2}$ & $2.29 e^{0}$ & $2.89 e^{0}$ & $6.02 e^{0}$  \\    
+   \textbf{Castle}                  & 1872 & Jelly & $1.27 e^3$ & $2 e^3$ & 0.45 & $4.84 e^{-1}$ & $1.44 e^{-2}$ & $1.52 e^{0}$ & $5.78 e^{-1}$ & $8.02 e^{0}$ & \revise{100} \\
+   \textbf{Grumpy}                  & 2010 & Jelly & $1 e^3$ & $1 e^4$ & 0.40 & $2.92 e^{-1}$ & $1.23 e^{-2}$ & $2.29 e^{0}$ & $2.89 e^{0}$ & $6.02 e^{0}$ & \revise{84.15} \\    
    \rowcolor[HTML]{DAE8FC} 
-   \textbf{Astronaut (soft)}        & 3609 & Rubber &  $1.27 e^3$  & $1 e^6$  & 0.47 & $2.47 e^{0}$ & $6.71 e^{-2}$ & $1.13 e^{1}$ & $1.09 e^{1}$ & $1.41 e^{1}$ \\
+   \textbf{Astronaut (soft)}        & 3609 & Rubber &  $1.27 e^3$  & $1 e^6$  & 0.47 & $2.47 e^{0}$ & $6.71 e^{-2}$ & $1.13 e^{1}$ & $1.09 e^{1}$ & $1.41 e^{1}$ & \revise{49.04} \\
+   \revise{\textbf{Squid}}          & \revise{4347} & \revise{Jelly} & \revise{ $1 e^3$ } & \revise{$2 e^4$ } & \revise{0.40} & \revise{$4.48 e^{-1}$} & \revise{$2.47 e^{-2}$} & \revise{$1.54 e^{1}$} & \revise{$4.48 e^{1}$} & \revise{$6.73 e^{0}$} & \revise{25.47} \\
    \rowcolor[HTML]{DAE8FC} 
    \hline
   \end{tabular}
   \end{center}
   
   \end{table*}
+
+% \begin{table*}[h]
+%   \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical parameters are
+%   reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio.
+%   \textbf{Sample} is the time taken to sample and construct $\samp{\Jnurbs}$ and $\samp{\Pmatx}$, \textbf{Quad} is the time taken to generate quadrature points via raycasting,
+%   \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator and  \textbf{Step} is the average time required to step the simulation (not including collision detection).
+%   \revise{We use linearly implicit time integration on all examples and thus the number of step per frame is 1 in the simulation.}
+%   }
+%   \label{tbl:perf}
+%   \begin{center}
+%   \begin{tabular}{l c c c c c c c c c c}
+%    \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s)& \textbf{Step}(s) \\
+%    \hline 
+%    \rowcolor[HTML]{DAE8FC}
+%    %\textbf{Cantilever (soft)}       & 564 & Jelly & $1 e^3$ & $1e^6$& 0.45 & $2.53 e^{-2}$ & $4.45 e^{-3}$ & $4.78 e^{-1}$ & $1.86 e^{-1}$ & $1.20 e^{0}$ \\
+%    %\textbf{Cantilever (stiff)}      & 564 & Rubber & $1 e^3$ & $5 e^6$ & 0.45 & $2.48 e^{-2}$ & $6.37 e^{-3}$ & $5.10 e^{-1}$ & $1.68 e^{-1}$ & $1.19 e^{0}$ \\
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Rocket (soft)}           & 648 & Rubber & $1.27 e^3$ & $7 e^6$ & 0.40 & $2.83 e^{-2}$ & $5.62 e^{-3}$ & $5.58 e^{-1}$ & $6.83 e^{-2}$ & $1.26 e^{0}$ \\
+%    \textbf{Rocket (stiff)}          & 648 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $2.56 e^{-2}$ & $5.97 e^{-3}$ & $4.59 e^{-1}$ & $3.48 e^{-2}$ & $9.99 e^{-2}$ \\
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Starship}                & 750 & Steel & $8 e^3$ & $2 e^{11}$ & 0.32 & $6.78 e^{-2}$ & $1.52 e^{-2}$ & $8.50 e^{-1}$ & $9.52 e^{-2}$ & $6.95 e^{-1}$ \\
+%    \textbf{Lamppost}                & 942 & Rubber & $3 e^3$ & $1 e^6$ & 0.40 & $1.28 e^{-1}$ & $1.27 e^{-2}$ & $1.89 e^{0}$ & $1.07 e^{0}$ & $2.22 e^{0}$ \\
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Tire}                    & 1404 & Rubber/Steel & $2 e^3$/$3 e^3$ & $1 e^6$/$7 e^9$ & 0.47/0.35 & $1.74 e^{-1}$ & $1.32 e^{-2}$ & $1.82 e^{0}$ & $6.79 e^{-1}$ & $1.28 e^{1}$ \\
+%    \textbf{Chicken}                 & 1773 & Jelly & $1.27 e^3$ & $1 e^4$ & 0.47 & $9.19 e^{-1}$ & $2.31 e^{-2}$ & $3.38 e^{0}$ & $1.91 e^{0}$ & $1.08 e^{1}$ \\
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Coffee mug (soft)}       & 1800 & Jelly & $1 e^3$ & $1 e^4$ & 0.47 & $4.18 e^{-1}$ & $2.87 e^{-2}$ & $3.77 e^{0}$ & $2.08 e^{0}$ & $1.19 e^{1}$  \\ 
+%    \textbf{Coffee mug (stiff)}      & 1800 & Rubber & $1 e^3$ & $4 e^7$ & 0.40 & $4.15 e^{-2}$ & $1.17 e^{-2}$ & $6.86 e^{-1}$ & $1.09 e^{-1}$ & $5.00 e^{-1}$  \\ 
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Castle}                  & 1872 & Jelly & $1.27 e^3$ & $2 e^3$ & 0.45 & $4.84 e^{-1}$ & $1.44 e^{-2}$ & $1.52 e^{0}$ & $5.78 e^{-1}$ & $8.02 e^{0}$ \\
+%    \textbf{Grumpy}                  & 2010 & Jelly & $1 e^3$ & $1 e^4$ & 0.40 & $2.92 e^{-1}$ & $1.23 e^{-2}$ & $2.29 e^{0}$ & $2.89 e^{0}$ & $6.02 e^{0}$  \\    
+%    \rowcolor[HTML]{DAE8FC} 
+%    \textbf{Astronaut (soft)}        & 3609 & Rubber &  $1.27 e^3$  & $1 e^6$  & 0.47 & $2.47 e^{0}$ & $6.71 e^{-2}$ & $1.13 e^{1}$ & $1.09 e^{1}$ & $1.41 e^{1}$ \\
+%    \textbf{Squid}                   & 4347 & Rubber &  $1 e^3$  & $2 e^4$  & 0.40 & $4.48 e^{-1}$ & $2.47 e^{-2}$ & $1.54 e^{1}$ & $4.48 e^{1}$ & $6.73 e^{0}$ \\
+%    \rowcolor[HTML]{DAE8FC} 
+%    \hline
+%   \end{tabular}
+%   \end{center}
+  
+%   \end{table*}
 
 %\dave{we should show the nurbs model in rhino/fusion for every example, maybe an exploded view as well}
 
@@ -50,7 +93,8 @@
 We implemented SEM using a combination of MATLAB and C++ using both GPToolbox~\cite{gptoolbox} and Bartels~\cite{bartels} for geometry processing and constitutive models 
 respectively. Benchmarks were performed using a MacBook Pro with an Intel i5 2.3GHz processor, 16GB of RAM and an Intel Iris Plus Graphics 655 GPU.
 
-\reftbl{perf} shows the size of all our examples along with performance statistics and relevant parameters.
+\reftbl{perf} shows the size of all our examples along with performance statistics and relevant parameters. 
+\revise{We also plot the sparsity patterns of several stiffness matrices in our examples in \reffig{stiffness_sparsity}. }
 Note that the individual parts of all models are \emph{not connected}, and no continuity constraints or constructive solid geometry operations have been applied. 
 Rather, the SEM approach implicitly couples the boundary parts together to allow for seamless volumetric simulation. 
 We use quadratic deformation for all the animation results, except the rocket (stiff) and starship which use linear deformation.
@@ -102,6 +146,12 @@ For handling trimmed NURBS surfaces, we augment our sampling of the surfaces by 
   \label{fig:patchtest}
 \end{figure}
 
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/stiffness_sparsity.pdf}
+  \caption{\revise{Our stiffness matrices can be sparse, while the corresponding matrix has to be dense in the traditional Boundary Element Method \cite{ArtDefo1999}. 
+  Sparsity of our stiffness matrix is primarily determined by weight sparsity (number of non-zero weights at a given quadrature point) and polynomial order. }}
+  \label{fig:stiffness_sparsity}
+\end{figure}
 
 We first validate the physical plausibility of our method using a small 2D patch test~(\reffig{patchtest}). 
 Here the test object is a square made of four edges (not joined at the corners) simulated using linear polynomials with a single deformation center.
