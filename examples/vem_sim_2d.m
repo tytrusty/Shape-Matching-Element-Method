@@ -4,11 +4,11 @@ function vem_sim_2d
     % Simulation parameters
     dt = 0.01;      	% timestep
     gravity = -10;     % gravity strength
-    k_stability = 1e5;   % Stiffness for VEM stability term
+    k_stability = 1e6;   % Stiffness for VEM stability term
     YM = 1e5; %in Pascals
     pr =  0.45;
     order = 1;          % (1 or 2) linear or quadratic deformation
-    rho = 1e2 ;            % density
+    rho = 4e2 ;            % density
 	d = 2;              % dimension (2 or 3)
     save_output = 0;    % (0 or 1) whether to output images of simulation
     vol = 0.04;
@@ -49,7 +49,7 @@ function vem_sim_2d
     [X,Y] = meshgrid(linspace(0,2,num_verts), linspace(0,2,num_verts));
     V = [X(:) Y(:)];
     
-    shapes_per_line = 4;
+    shapes_per_line = 3;
      
     % Generates line segment samples along a specified line.
     function s=sample_func(a,b)
@@ -122,9 +122,10 @@ function vem_sim_2d
     com_plt = plot(x0_coms(1,:),x0_coms(2,:), '.','Color','g','MarkerSize',20);
     hold on;
     
+    S = eye(numel(x0));
     % Build shape matching matrices
     L = compute_shape_matrices(x0, x0_coms, com_map, E, ...
-        com_cluster, order, 'hierarchical');
+        com_cluster, order, 'hierarchical', S);
     
     % Build weighted monomial bases
     [Y,Y_S,C_I] = vem_dx_dc(V', x0_coms, w, w_I, com_map, order, k);
@@ -139,10 +140,8 @@ function vem_sim_2d
     f_gravity = dt*P*(L' * dg_dc);
 
     % Compute mass matrices
-%     ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, numel(E));
-%     M = vem_mass_matrix(Y, L, rho .* vol, w_I, C_I, d, k, numel(E));
-    ME = vem_error_matrix_matlab(Y0, Y0_S, L, d);
-    M = vem_mass_matrix_matlab(Y, Y_S, L, repmat(rho .* vol, size(V,1),1));
+    ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, numel(E));
+    M = vem_mass_matrix(Y, L, repmat(rho .* vol, size(V,1),1), w_I, C_I, d, k, numel(E));
     M = (M + k_stability*ME); % sparse?
 
     ii=1;
@@ -173,7 +172,7 @@ function vem_sim_2d
             % Force vector
             dV_dF = neohookean_dF(F, params(i,1), params(i,2));
             dV_dq = dV_dq +  dF_dc_S{i}' * dF_dc{i}' * dV_dF .* vol;
-%             
+             
             % Stiffness matrix contribution
             d2V_dF2 = neohookean_dF2(F, params(i,1), params(i,2));
             K = K - dF_dc_S{i}' * dF_dc{i}' * d2V_dF2 * dF_dc{i} * dF_dc_S{i} .* vol;
@@ -203,6 +202,10 @@ function vem_sim_2d
             E_lines{i}.XData = x(1,E{i});
             E_lines{i}.YData = x(2,E{i});
         end
+        
+        x_coms = c(d*k*numel(E) + 1:end); % extract centers of mass
+        com_plt.XData = x_coms(1:d:end);
+        com_plt.YData = x_coms(2:d:end);
      
         X_plot.XData = V(:,1);
         X_plot.YData = V(:,2);

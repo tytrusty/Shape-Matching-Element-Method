@@ -1,9 +1,10 @@
-function [J,hires_J,q,E,x] = nurbs_assemble_coords(parts)
+function [J,hires_J,q,E,x,S] = nurbs_assemble_coords(parts)
 
     x = zeros(3,0);
     q_size = 0;
     J_size = 0;
     hires_J_size = 0;
+    S=[];
 
     % build global position vectors
     for i=1:numel(parts)
@@ -13,11 +14,18 @@ function [J,hires_J,q,E,x] = nurbs_assemble_coords(parts)
         hires_J_size = hires_J_size + size(parts{i}.hires_J,2) * size(parts{i}.hires_J,3);
         idx2=q_size;
         
+        % need to repeat each weight 3x t account for d=3
+        Si = [parts{i}.W parts{i}.W parts{i}.W]';
+        S = [S; Si(:)];
+
         % indices into global configuration vector
         parts{i}.idx1=idx1;
         parts{i}.idx2=idx2;
     end
     
+    % create sparse diagonal weight matrix
+    S=spdiags(S,0,numel(S),numel(S));
+
     q = zeros(q_size,1);
     J = zeros(J_size,q_size);
     hires_J = zeros(hires_J_size,q_size);

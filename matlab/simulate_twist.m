@@ -1,4 +1,4 @@
-function vem_simulate_nurbs(parts, varargin)
+function simulate_twist(parts, varargin)
     % Simulation parameter parsing
     p = inputParser;
     addParameter(p, 'dt', 0.01);                % timestep
@@ -39,6 +39,7 @@ function vem_simulate_nurbs(parts, varargin)
     % Read in NURBs 
     fig=figure(1);
     clf;
+%     [plt,plt_AO]=nurbs_pretty_plot(parts);
     parts=nurbs_plot(parts);
 
     % Assembles global generalized coordinates
@@ -48,23 +49,29 @@ function vem_simulate_nurbs(parts, varargin)
     x = x0;
     qdot = reshape(repmat(config.initial_velocity, size(q,1)/3, 1)', [], 1);
     
-    pin_I = config.pin_function(x0);
-%   	x_beg = 0;
-%     x_end = 0;
-%     for i = 1: numel(parts)
-%         if parts{i}.srf.color(1) == 1
-%         	x_end = x_beg + size(parts{i}.x0,2);
-%             x_beg = x_beg + 1;
-%             break;
-%         end
-%         x_beg = x_beg + size(parts{i}.x0,2);
-%     end
-%     pin_I = x_beg:3:x_end;
-%     
+%     pin_I = config.pin_function(x0);
+  	x_beg = 0;
+    pin_I = [];
+    rot_I = [];
+    for i = 1: numel(parts)
+        if parts{i}.srf.color(1) == 1
+            i
+        	x_end = x_beg + size(parts{i}.x0,2);
+            x_beg = x_beg + 1;
+            pin_I = [pin_I x_beg:3:x_end];
+            %break;
+            if isempty(rot_I)
+                rot_I = pin_I;
+            end
+        end
+        x_beg = x_beg + size(parts{i}.x0,2) - 1;
+    end
+    
+    rot_c = mean(x(:,rot_I),2);
     P = fixed_point_constraint_matrix(x0',sort(pin_I)');
     
     % Plotting pinned vertices.
-    X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
+%     X_plot=plot3(x(1,pin_I),x(2,pin_I),x(3,pin_I),'.','Color','red','MarkerSize',20);
     hold on;
     
     % Sampling points used to compute energies.
@@ -92,7 +99,7 @@ function vem_simulate_nurbs(parts, varargin)
         'Enable_Secondary_Rays', config.enable_secondary_rays);
     
     % Generate centers of mass.
-    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n,parts);
+    [x0_coms, com_cluster, com_map] = generate_com(x0, E, w, n, parts);
     if config.plot_com
         com_plt = plot3(x0_coms(1,:),x0_coms(2,:),x0_coms(3,:), ...
                         '.','Color','g','MarkerSize',20);
@@ -135,7 +142,9 @@ function vem_simulate_nurbs(parts, varargin)
     M = (M + config.k_stability*ME); % sparse?
 
     ii=1;
-    for t=0:config.dt:500
+    img_ii=1;
+    obj_ii=1;
+    for t=0:config.dt:30
         tic
 
         % Preparing input for stiffness matrix mex function.
@@ -187,34 +196,45 @@ function vem_simulate_nurbs(parts, varargin)
 
         % Update position
         q = q + config.dt*qdot;
-        x = reshape(P'*J*q,3,[]) + x_fixed;
-
+        x_fixed_rot = x_fixed;
+        rot_t=0.25;
+        x_fixed_rot(2,rot_I) = 0.5+(x_fixed(2,rot_I)-rot_c(2))*cosd(rot_t*ii) -  (x_fixed(3,rot_I)-rot_c(2))*sind(rot_t*ii);
+        x_fixed_rot(3,rot_I) = 0.5+(x_fixed(2,rot_I)-rot_c(3))*sind(rot_t*ii) +  (x_fixed(3,rot_I)-rot_c(3))*cosd(rot_t*ii);
+        x = reshape(P'*J*q,3,[]) + x_fixed_rot;
+%         X_plot.YData=x_fixed_rot(2,pin_I);
+%         X_plot.ZData=x_fixed_rot(3,pin_I);
+        rot_t*ii
         % Update NURBs plots
         x_idx=0;
-        for i=1:numel(parts)
-            x_sz = size(parts{i}.x0,2);
-            xi = x(:,x_idx+1:x_idx+x_sz);
-            parts{i}.plt.Vertices =xi';
-            x_idx = x_idx+x_sz;
-        end
         
-        if config.plot_com
-            x_coms = c(d*k*n + 1:end); % extract centers of mass
-            com_plt.XData = x_coms(1:d:end);
-            com_plt.YData = x_coms(2:d:end);
-            com_plt.ZData = x_coms(3:d:end);
-        end
+%         plt.Vertices=x';
+%         plt_AO=apply_ambient_occlusion(plt,'AddLights',false,'AO',plt_AO);
+
+%         for i=1:numel(parts)
+%             x_sz = size(parts{i}.x0,2);
+%             xi = x(:,x_idx+1:x_idx+x_sz);
+%             parts{i}.plt.Vertices =xi';
+%             x_idx = x_idx+x_sz;
+%         end
+%         
+%         if config.plot_com
+%             x_coms = c(d*k*n + 1:end); % extract centers of mass
+%             com_plt.XData = x_coms(1:d:end);
+%             com_plt.YData = x_coms(2:d:end);
+%             com_plt.ZData = x_coms(3:d:end);
+%         end
+%         
+%         if config.plot_points
+%             V_plot.XData = V(1,:);
+%             V_plot.YData = V(2,:);
+%             V_plot.ZData = V(3,:);
+%         end
+%         drawnow
         
-        if config.plot_points
-            V_plot.XData = V(1,:);
-            V_plot.YData = V(2,:);
-            V_plot.ZData = V(3,:);
-        end
-        drawnow
-        
-        if config.save_obj
-            obj_fn = config.save_obj_path + "part_" + int2str(ii) + ".obj";
-            nurbs_write_obj(q,parts,obj_fn,ii);
+        if config.save_obj && mod(ii,4)==0
+            obj_fn = config.save_obj_path + "part_" + int2str(obj_ii) + ".obj";
+            nurbs_write_obj(q,parts,obj_fn,obj_ii);
+            obj_ii = obj_ii + 1;
         end
         
         if config.save_iges
@@ -222,9 +242,10 @@ function vem_simulate_nurbs(parts, varargin)
             nurbs_write_iges(q,parts,obj_fn);
         end
 
-        if config.save_output
-            fn=sprintf('output/img/simulate_beem_%03d.png',ii);
+        if config.save_output && mod(ii,4)==0
+            fn=sprintf('output/img/simulate_beem_%03d.png',img_ii);
             saveas(fig,fn);
+            img_ii = img_ii + 1;
         end
         ii=ii+1
         toc

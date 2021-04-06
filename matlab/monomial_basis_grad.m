@@ -27,15 +27,6 @@ function dM_dX = monomial_basis_grad(x, x_com, order)
             end
         end
         dM_dX(ii,:,:) = dMi_dX;
-
-%         for i = 1:d
-%             for j = 1:d
-%                 row = d*(i-1)+j;
-%                 cols = k*(j-1)+1:k*j;
-%                 dM_dX(ii, row, cols) = dMi_dX(:,i)';
-%             end
-%         end
-            
     end
 end
 

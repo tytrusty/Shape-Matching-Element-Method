@@ -1,4 +1,4 @@
-function [x_coms, com_cluster, com_map] = generate_com(x0, E, w, n)
+function [x_coms, com_cluster, com_map] = generate_com(x0, E, w, n, parts)
     one_com = false; % set true if you just want one com %todo make param
     
     if (~one_com)
@@ -96,7 +96,14 @@ function [x_coms, com_cluster, com_map] = generate_com(x0, E, w, n)
             com_cluster{i} = vertcat(E{part_idx});
             
             % Output initial (undeformed) center of mass position.
-            x_coms(:,i) = mean(x0(:,com_cluster{i}),2);
+            ids= find(part_idx);
+            xcomi = zeros(3,1);
+            wsum = 0;
+            for j=1:numel(ids)
+               xcomi = xcomi + sum(parts{ids(j)}.x0 .* parts{ids(j)}.W',2);
+               wsum = wsum + sum(parts{ids(j)}.W);
+            end
+            x_coms(:,i) = xcomi ./ wsum;
 
             % Find parts that use this center of mass as their element's
             % center of mass and update their com_map index.
