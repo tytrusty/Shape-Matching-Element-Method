@@ -73,9 +73,9 @@ plot(dofs, time2,'LineWidth',2);
 xlabel('DOFs');
 ylabel('time (s)');
 title('Total time in seconds');
-figure(6)
-area(dofs, [time1 time2],'LineWidth',2, 'EdgeAlpha',0.0);
-xlabel('DOFs');
-ylabel('time (s)');
-title('Total time in seconds');
+% figure(6)
+% area(dofs, [time1 time2],'LineWidth',2, 'EdgeAlpha',0.0);
+% xlabel('DOFs');
+% ylabel('time (s)');
+% title('Total time in seconds');
 end
