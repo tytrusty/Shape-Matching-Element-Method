@@ -76,9 +76,10 @@ The three-dimensional position, $\defX$, of any point on a NURBS surface can be 
 \end{equation}
 where $u$ and $v$ $\in \real$ are the coordinates in the 2D parametric domain, $n$ and $m$ are the number of control points in the $u$ and $v$ directions, $\mathbf{q}_{ij}\in\real^3$ are the control points and $\phi_{ij}\left(u,v\right)\in\real$ are the NURBS
 basis functions given by 
+\revise{
 \begin{equation*}
-    \phi_{ij}\left(u,v\right) = \frac{\omega_{i,j}\beta_{ik}(u)\beta_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} \omega_{i,j} \beta_{ik}(u)\beta_{jl}(v)},
-\end{equation*} where $\beta_{ik}$ (resp. $\beta_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$) and $\omega_{i,j}$ is the NURBS weight.
+    \phi_{ij}\left(u,v\right) = \frac{\omega_{i,j}\beta_{ik}(u)\beta_{jl}(v)}{\sum_{r=1}^{n}\sum_{s=1}^{m} \omega_{r,s} \beta_{rk}(u)\beta_{sl}(v)},
+\end{equation*}} where $\beta_{ik}$ (resp. $\beta_{jl}$) is the $i^{th}$ ($j^{th}$) B-spline basis of order $k$ ($l$) and $\omega_{i,j}$ is the NURBS weight.
 
 Exploiting linearity with respect to the control points, we can express this mapping as
 \begin{equation}
@@ -98,16 +99,17 @@ We can compute the undeformed (or reference) position of any point on our part u
 deformed (world space) position as $\defX\left(u,v\right) = \Jnurbs\left(u,v\right)\mathbf{q}$.
 
 We can define a polynomial deformation from $\refX = \begin{pmatrix} X & Y & Z \end{pmatrix}^T$ to $\defX$  as 
+\revise{
 \begin{equation}
     \defX\left(\refX\right) = 
     \underbrace{\begin{bmatrix}
-    \mathbf{p}^T(\refX-\bar{\refX}) & \mathbf{0} & \mathbf{0} & 1 & 0 & 0\\
-    \mathbf{0} & \mathbf{p}^T(\refX-\bar{\refX}) & \mathbf{0} & 0 & 1 & 0\\
-    \mathbf{0} & \mathbf{0} & \mathbf{p}^T(\refX-\bar{\refX}) & 0 & 0 & 1\\
+    \mathbf{p}(\refX-\bar{\refX})^T & \mathbf{0} & \mathbf{0} & 1 & 0 & 0\\
+    \mathbf{0} & \mathbf{p}(\refX-\bar{\refX})^T & \mathbf{0} & 0 & 1 & 0\\
+    \mathbf{0} & \mathbf{0} & \mathbf{p}(\refX-\bar{\refX})^T & 0 & 0 & 1\\
     \end{bmatrix}}_{\Pmatx}
     \Pcox,
     \label{eq:projection}
-\end{equation} where $\mathbf{p}^T\left(\refX\right)$ is the polynomial basis vector \newline (e.g., $\begin{bmatrix} X & Y & Z & X\cdot Y & X\cdot Z & Y\cdot Z& X\cdot X & Y\cdot Y & Z\cdot Z \end{bmatrix}$ ),
+\end{equation} where $\mathbf{p}\left(\refX\right)^T$} is the polynomial basis vector \newline (e.g., $\begin{bmatrix} X & Y & Z & X\cdot Y & X\cdot Z & Y\cdot Z& X\cdot X & Y\cdot Y & Z\cdot Z \end{bmatrix}$ ),
 $\bar{\refX}$ is an a priori chosen origin around which to deform, $\Pco$ are the coefficients for the 
 non-constant part of the polynomial and $\tr$ is the translation of the deformation origin. 
 We can compute the shape matching deformation by solving~\cite{10.1145/1073204.1073216}
@@ -131,7 +133,7 @@ Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank re
 \nicetohave{now I do want that shape matching figure showing constant, linear and quadratic matching}
 
 \paragraph*{Relationship to the Virtual Element Method}
-For a non-planar NURBS part, a sufficient number of quadrature points will make ~\refeq{shapematch} will be well-posed, allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
+For a non-planar NURBS part, a sufficient number of quadrature points \revise{will make ~\refeq{shapematch} well-posed}, allowing us to write: $\Pcox^* = \Pi\vc{q}$ where
 \begin{equation*}
     \Pi = \left(\samp{\Pmat}^T\wt\samp{\Pmat}\right)^{-1}\samp{\Pmat}^T\wt\samp{\Jnurbs},
 \end{equation*} is a projection from the space of control points onto the space of polynomials. 
@@ -364,9 +366,11 @@ We integrate physical quantities over our undeformed object using raycasting bas
 \dave{Ty: a bit more here, show the transformation of the integral via divergence theorem then show the final discrete version. Clearly define the quadrature rules.}
 The key idea behind raycasting quadrature is to transform a domain integral of the form $I=\int_{\Omega} f(X,Y,Z) d\Omega$ to an easier form that enables us to select quadrature points in an entirely meshless manner. The first transformation is to convert the domain of the integral to an \textit{auxiliary domain}, $\Omega_R$ on which integration is easy to compute. In our case we take this domain to be an axis-aligned bounding box around our model, and rewrite integration as $I=\int_{\Omega_R} g(X,Y,Z) d\Omega_R$ where $g$ evaluates to zero outside of $\Omega$, but equals $f$ inside $\Omega$. Next we apply the Divergence theorem to rewrite our integral as
 \newcommand{\Zeta}{\mathrm{Z}}
+
 \begin{equation}
-\int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} g(\alpha, Y, Z) d\alpha)\right)\mathbf{n} d\Gamma_R.
+\int_{\Omega_R} g(X,Y,Z) d\Omega_R = \int_{\Gamma_R}\left(\int_{X_1}^{X_2} \revise{g(\alpha, Y, Z) d\alpha}\right)\mathbf{n} d\Gamma_R.
 \end{equation}
+
 where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ and $X_1$ and $X_2$ represent the minimum and maximum values of the box along the $x$-axis. With this form, all we require to evaluate the outer integral is to integrate over the $y$-$z$ plane located at $X_1$. With this simple form, the normal term may be excluded as it always equals $1$ \dave{isn;t it a vector $(1,0,0)$ or something like that ? }in the case of an axis-aligned bounding box. Finally, raycasting is used to evaluate the line integral along the x-axis. From here, we find all the intersection intervals where the ray is inside $\Omega$, and select quadrature points uniformly along this interval. Thus, this transformation from the original volume integral into an integral over a $y$-$z$ plane plus axis-aligned rays enables us to integrate the volumes of our NURBS models in a completely meshless approach.
 
 We make a minor modification to this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces, by performing 
@@ -432,8 +436,8 @@ We can rewrite \refeq{kinematics} in matrix form as
 
 \begin{equation}
     \defX\left(\refX\right) = \underbrace{\shapef\left(\refX\right)\bldmat\Pi}_{\Jkin\left(\refX\right)}\vc{q},
-\end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, $m$ is the number of 
-parts in the object, $\bldmat$ is the diagonal matrix of blending weights, $\Pi$ is the global projection operator and $\Jkin\left(\refX\right)$ is the kinematic Jacobian.
+\end{equation} where $\shapef\in\real^{3\times n} = \begin{bmatrix}P_1\left(\refX\right) \dots P_m\left(\refX\right)\end{bmatrix}$, \revise{$n$ is of size $3(km + |\XBs|)$ with $k$ being the number of terms in each polynomial, $m$ is the number of parts, and $|\XBs|$ is the number of deformation origins. \ty{previously said:$m$ is the number of 
+parts in the object}} $\bldmat$ is the diagonal matrix of blending weights, $\Pi$ is the global projection operator and $\Jkin\left(\refX\right)$ is the kinematic Jacobian.
 
 The velocity of a point on the object is then  
 \begin{equation}
