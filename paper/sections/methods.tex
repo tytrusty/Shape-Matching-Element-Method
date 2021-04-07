@@ -449,8 +449,9 @@ The velocity of a point on the object is then
 
 We derive the mass matrix for our system from the definition of kinetic energy:
 \begin{equation}
-    T = \frac{1}{2}\dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega}\bldmat\left(\refX\right)^T\shapef\left(\refX\right)^T\shapef\left(\refX\right)\bldmat\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}},
+    T = \frac{1}{2}\dot{\vc{q}}^T\underbrace{\Pi^T\int_{\Omega} \revise{\rho}\bldmat\left(\refX\right)^T\shapef\left(\refX\right)^T\shapef\left(\refX\right)\bldmat\left(\refX\right)d\Omega\Pi}_{\MM}\dot{\vc{q}}.
 \end{equation}
+
 % \begin{equation}
 % T = \frac{1}{2}\int_{ \Omega} \rho \dot{\mathbf{x}}^T\dot{\mathbf{x}} d\Omega
 % \text{,}

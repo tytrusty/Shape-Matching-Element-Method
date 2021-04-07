@@ -4,7 +4,7 @@
 \begin{table*}[h]
   \setlength{\tabcolsep}{3pt}
   \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical parameters are
-  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and $\mu$ is the Poisson's ratio.
+  reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and \revise{$\nu$} is the Poisson's ratio.
   \textbf{Sample} is the time taken to sample and construct $\samp{\Jnurbs}$ and $\samp{\Pmatx}$, \textbf{Quad} is the time taken to generate quadrature points via raycasting,
   \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator, \textbf{Step} is the average time required to step the simulation (not including collision detection)
   \revise{and \textbf{Nnz} is the ratio of nonzeros to the total number of elements in the stiffness matrix. }
@@ -13,7 +13,7 @@
   \label{tbl:perf}
   \begin{center}
   \begin{tabular}{l c c c c c c c c c c c}
-   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & $\mu$ &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s) & \textbf{Step}(s) & \revise{\textbf{Nnz}(\%)} \\
+   \textbf{Example} & $|\vc{q}|$ & \textbf{Material}&  $\rho$(kg/m$^3$) & \textbf{E}(Pa) & \revise{$\nu$} &\textbf{Sample}(s) & \textbf{Quad}(s)& \textbf{Weights}(s) & \textbf{Build $\Pi$}(s) & \textbf{Step}(s) & \revise{\textbf{Nnz}(\%)} \\
    \hline 
    \rowcolor[HTML]{DAE8FC}
    %\textbf{Cantilever (soft)}       & 564 & Jelly & $1 e^3$ & $1e^6$& 0.45 & $2.53 e^{-2}$ & $4.45 e^{-3}$ & $4.78 e^{-1}$ & $1.86 e^{-1}$ & $1.20 e^{0}$ \\
@@ -109,11 +109,6 @@ An ideal alternative would be adopting the implicit representation of the surfac
 \nicetohave{Would be nice to mention TNURBS, which would give us a good reason to include the wrench (which i really wanna do). I doubt we have time to do a 3 point bending test, but a simple elastic wrench simulation would be easy to cook up}
 For handling trimmed NURBS surfaces, we augment our sampling of the surfaces by using raycasting integration in 2D. Trimmed NURBS may be defined by a boundary curve in the parametric space, so we raycast to find intersection intervals in the UV space on which quadrature points are generated. For rendering Trimmed NURBS, we discretize the the boundary curve as a polyline and use triangle \cite{shewchuk96b, SHEWCHUK200221} to form a boundary conforming triangulation. The vertices of this triangulation serve as fixed set of high resolution UV samples for constructing a render mesh.
 
-\begin{figure}[h]
-  \includegraphics[width=\columnwidth]{figures/scalability.pdf}
-  \caption{\revise{As a more extreme example of the shape-aware property of our algorithm, we simulate a falling octopus, and observe the 8 limbs moving independently.}}
-  \label{fig:scalability}
-\end{figure}
 
 %% Results that relate to preprocessing
 % weights are good
@@ -181,7 +176,7 @@ In \reffig{convergence}, we compare the static configurations of identical canti
   \label{fig:plot_beam_deflection}
 \end{figure}
 
-We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of 24 independent NURBS patches, shows good agreement with FEM. Each subdivision of the NURBS beam enables more complicated kinematics, 
+We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of \revise{22} independent NURBS patches, shows good agreement with FEM. Each subdivision of the NURBS beam enables more complicated kinematics, 
 but very few surface elements are needed to produce compelling results.
 
 
@@ -191,6 +186,24 @@ but very few surface elements are needed to produce compelling results.
   \label{fig:convergence}
 \end{figure}
 
+\revise{Additionally, we perform a twisting beam experiment on the 22 part beam model. Despite the relatively small number of NURBS patches, we see in \reffig{beam_twist} that the quadratic polynonmials permit complex deformation.}
+
+
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/beam_twist.pdf}
+  \caption{\revise{With the left end of the beam held fixed, we show the result of rotating the right end of the 22 part beam up to 360 degrees.}}
+  \label{fig:beam_twist}
+\end{figure}
+
+
+\revise{We perform a basic scalability test shown in \reffig{scalability} by iteratively adding more degrees of freedom to a model and measuring average runtime of a simulation step, and report the ratio of number of nonzeros in the stiffness matrix. We begin with a unit cube composed of 6 parts and on each iteration we extend the cube, adding 4 more parts. The raycasting quadrature is updated on each
+iteration so that a constant number of samples (45 in this case) lie in each cube. This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
+
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/scalability.pdf}
+  \caption{\revise{As a more extreme example of the shape-aware property of our algorithm, we simulate a falling octopus, and observe the 8 limbs moving independently.}}
+  \label{fig:scalability}
+\end{figure}
 
 We also show that our raycasting weight computation is able to create shape-aware output. \reffig{independence} shows that manipulating
 parts that are nearby but separated will behave in an appropriately independent fashion. Our grumpy model is capable of extending 
@@ -279,17 +292,12 @@ Finally we show a few additional examples, highlighting the ability of SEM to ha
 In \reffig{staypuft} we show two astronauts in jaunty space suits collide in zero gravity. 
 SEM gracefully allows bounded discontinuities in simulation output to allow for rich motion. 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
+\revise{In \reffig{octopus} we demonstrate the shape-aware nature of our algorithm on a  stable Neo-Hookean ~\cite{SNHkim} simulation of an octopus, and observe independent motion for each limb.}
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/octopus.pdf}
   \caption{\revise{As a more extreme example of the shape-aware property of our algorithm, we simulate a falling octopus, and observe the 8 limbs moving independently. Self-collision is not accounted for here.}}
   \label{fig:octopus}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[width=\columnwidth]{figures/beam_twist.pdf}
-  \caption{\revise{With the left end of the beam held fixed, we show the result of rotating the right end of the 22 part beam up to 360 degrees.}}
-  \label{fig:twist}
 \end{figure}
 
 In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
