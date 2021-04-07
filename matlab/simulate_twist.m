@@ -136,10 +136,12 @@ function simulate_twist(parts, varargin)
     f_external = config.dt*P*(L' * dext_dc); 
 
     % Compute mass matrices
-    ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, n);
-    M = vem_mass_matrix(Y, L, config.rho .* vol, w_I, C_I, d, k, n);
-    
-    M = (M + config.k_stability*ME); % sparse?
+%     ME = vem_error_matrix(Y0, L, w0_I, C0_I, d, k, n);
+%     M = vem_mass_matrix(Y, L, config.rho .* vol, w_I, C_I, d, k, n);
+    % make sure matlab/deprecated is on your path to use these versions
+    M = vem_mass_matrix_matlab(Y, Y_S, L, config.rho .* vol);
+    ME = vem_error_matrix_matlab(Y0, Y0_S, L, d);
+    M = (M + config.k_stability*ME);
 
     ii=1;
     img_ii=1;
@@ -210,12 +212,12 @@ function simulate_twist(parts, varargin)
 %         plt.Vertices=x';
 %         plt_AO=apply_ambient_occlusion(plt,'AddLights',false,'AO',plt_AO);
 
-%         for i=1:numel(parts)
-%             x_sz = size(parts{i}.x0,2);
-%             xi = x(:,x_idx+1:x_idx+x_sz);
-%             parts{i}.plt.Vertices =xi';
-%             x_idx = x_idx+x_sz;
-%         end
+        for i=1:numel(parts)
+            x_sz = size(parts{i}.x0,2);
+            xi = x(:,x_idx+1:x_idx+x_sz);
+            parts{i}.plt.Vertices =xi';
+            x_idx = x_idx+x_sz;
+        end
 %         
 %         if config.plot_com
 %             x_coms = c(d*k*n + 1:end); % extract centers of mass
@@ -229,7 +231,7 @@ function simulate_twist(parts, varargin)
 %             V_plot.YData = V(2,:);
 %             V_plot.ZData = V(3,:);
 %         end
-%         drawnow
+        drawnow
         
         if config.save_obj && mod(ii,4)==0
             obj_fn = config.save_obj_path + "part_" + int2str(obj_ii) + ".obj";
