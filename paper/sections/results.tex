@@ -291,6 +291,7 @@ Finally we show a few additional examples, highlighting the ability of SEM to ha
 In \reffig{staypuft} we show two astronauts in jaunty space suits collide in zero gravity. 
 SEM gracefully allows bounded discontinuities in simulation output to allow for rich motion. 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
+\revise{Our soft enforcement of part connectivity at boundaries is a result of weighting function attributing equal weight values to equidistant parts. This equal weighting induces elastic forces that attempt to enforce continuity. In our examples this only introduces minor artifacts affecting the rendering, but this may be addressed using a separate rendering mesh or by using a representation with explicit connectivity.}
 \revise{In \reffig{octopus} we demonstrate the shape-aware nature of our algorithm on a  stable Neo-Hookean ~\cite{SNHkim} simulation of an octopus, and observe independent motion for each limb.}
 
 \begin{figure}[h]
