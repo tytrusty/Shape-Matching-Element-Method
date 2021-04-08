@@ -198,7 +198,9 @@ but very few surface elements are needed to produce compelling results.
 \end{figure}
 
 
-\revise{We perform a basic scalability test shown in \reffig{scalability} by iteratively adding more degrees of freedom to a model and measuring average runtime of a simulation step, and report the ratio of number of nonzeros in the stiffness matrix. We begin with a unit cube composed of 6 parts and on each iteration we extend the cube, adding 4 more parts. The raycasting quadrature is updated on each iteration so that a constant number of samples (45 in this case) lie in each cube. This represents a best case scenario in which sparsity is maximized as the number of degrees of freedom increases. As performance is tied to sparsity of the stiffness matrix, we see reasonable growth in the reported times, despite minimal effort on optimizing performance. This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
+\revise{\reffig{scalability} shows a scalability study in which a  unit cube, composed of 6 parts, is extended by appending 4 more parts at a time.
+Note that our algorithm scales similarly to standard high-order finite element approaches due to the compact support of our weight functions. 
+This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/scalability.pdf}

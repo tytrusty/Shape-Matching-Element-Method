@@ -34,7 +34,12 @@ Finally these approaches require additional mechanisms to ensure that simulation
 which increases the complexity. 
 
 \revise{
-\emph{Embedded Methods} are a popular technique in computer graphics in which complex geometry is embedded in a coarse mesh that guides the simulation. The early work of ~\cite{10.5555/1009379.1009573} proposed a method for volumetric simulation of surface meshes by embedding the surface in a background cubic mesh may be seen as an alternative strategy to ours. However, producing an embedded mesh introduces a number of challenges since the coarse mesh's topology must mirror that of the embedded surface, which necessitates complex hierarchical methods like that of ~\cite{10.1145/1531326.1531358}. Also like in IGA methods, many methods rely on cut cells to conform to the boundary, requiring complicated geometric operations. Furthermore when the DOFs do not lie on the boundary, complex methods such as Nitsche's Method ~\cite{Nitsche1971berEV} are required for handling Dirichlet boundary conditions. By making use of an entirely meshless pipeline and operating directly on the input curves, we avoid much of these difficulties in embedded methods.
+\emph{Embedded Methods} attempt to sidestep many of these issues by enclosing complex surface geometry inside a simulation coarse mesh~\cite{10.5555/1009379.1009573}. 
+However, producing an appropriate mesh embedding introduces a number of challenges since the coarse mesh's connectivity must mirror that of the embedded surface.
+This necessitates the use of complex hierarchical methods like that of~\citet{10.1145/1531326.1531358}, which themselves require the user to correctly intuit an appropriate ultimate grid resolution.
+Alternately one can introduce cut cell~\cite{Tao:Mandoline:2019} or extended Finite Element~\cite{10.1145/3355089.3356576} approaches which bring with them complicated geometric operations. 
+Furthermore when the DOFs do not lie on the boundary, methods such as Nitsche's Method ~\cite{Nitsche1971berEV} are required for handling Dirichlet boundary conditions. 
+Our method inherits shape connectivity directly from the boundary input, avoiding these difficulties entirely.
 }
 
 \emph{Shape Matching} is a meshless approach to physics-based animation~\cite{10.1145/1073204.1073216,10.1145/2019406.2019438} and geometry processing~\cite{10.1111/j.1467-8659.2012.03171.x}

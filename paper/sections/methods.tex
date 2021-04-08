@@ -200,7 +200,9 @@ The per-part projection operators $\Pi_i$ correspond to blocks of rows of $\Pi$.
 Coupling via the deformation origins ensures our method will reproduce rigid and linear deformations in regions around these points, while higher order 
 terms help compensate for more local deformations.
 
-\dave{should have done Chebyshev shape matching to ensure higher order terms are orthogonal which would gaurantee exact reconstruction}
+\revise{Note that hierarchical is not guaranteed to find the optimal polynomial fit and potentially risks overfitting to low-order terms.
+        However we find that it provides qualitatively resonable results and avoids much of the dense matrix arithmatic and singular value decompositions 
+        of alternative methods such as the Moore-Penorse inverse or QR factorization.} 
 
 \subsection{Meshless Blending Weight Computation}
 \label{sec:weights}
@@ -246,6 +248,7 @@ Using these two distances we define a linear \emph{distance weight} using the we
 \begin{equation}
 \theta_i = \max \left(1.0 - \frac{d_{\text{primary}}}{\min (d_{\text{total}}, \alpha)}, 0.0\right)
 \text{,}
+\label{eq:RELU}
 \end{equation}
 where $\alpha$ is a distance cutoff parameter, $d_{\text{primary}}$ is the primary ray length and $d_{\text{total}}$ is the total ray length. 
 This distance weight~(\reffig{plot_distance_weight}) is the result of interpolating along the ray from $\clst$ to $\rhit$ (or a fixed point that depends on $\alpha$). 
@@ -302,8 +305,7 @@ Finally, the distance cutoff $\alpha$ allows us to control the sparsity of the b
 Using raycasting to compute blending weights imbues our method with similar advantages to \citet{Sawhney:2020:MCG} (allowing us to 
 handle intersecting geometry, geometry with gaps and to perform constructive solid geometry operations on the fly),
 but allows us to use more general weighting functions and apply the appropriate behavior for intersecting parts.
-The price we pay is that our weights are not $C^0$ continuous but rather Lipschitz smooth.
-Perturbations in the boundaries of parts can cause bounded jumps in our distance weights. 
+The price we pay is that our weights are not $C^0$ continuous but rather contain bounded jumps. 
 However, these jumps occupy an infinitesimal percentage of the volume of our object, and are easy to avoid when integrating
 physical quantities, leaving our simulation unaffected. 
 
@@ -358,6 +360,10 @@ This amounts to minimizing the following integer linear program:
 where $\mathbf{f}$ and $\mathbf{c}$ are the edge flow and cost values, respectively, assembled into vectors, and $A_{\text{cons}}$ forms the set of constraints satisfying the flow conservation constraint. 
 We solve this using the dual simplex solver in MATLAB.
 %\ty{we use the default in intlinprog, which should be dual-simplex} We choose $\XBs$ to be all the deformation origin candidates in $A$ that have an outgoing flow of at least $1$. 
+
+\revise{Note that this approach yields compactly supported weight functions due to the cut-off parameter~(Eq.~8). 
+Depending on this value, we obtain a range of system matrix sparsity patterns -- from fully dense to block sparse~(Fig.~9). 
+Importantly, unlike other boundary-only approaches, our method is not guaranteed to produce dense system matrices.}
 
 \subsection{Meshless Integration}
 \label{sec:quadrature}
