@@ -165,7 +165,7 @@ This implies that, with sparse weights, SEM can resolve these motions locally, l
 
 We demonstrate \emph{qualitative} convergence of SEM with respect to linear tetrahedral finite elements when increasing the number of patches in use.
 In \reffig{convergence}, we compare the static configurations of identical cantilevered beams, simulated using a Neohookean constitutive model (Young's Modulus $=$ $0.001$ GPa, Poisson's Ratio $=$ $0.45$). 
-\revise{We further perform basic \emph{quantitative} comparison against FEM by measuring the maximum deflection of the beam as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the maximum beam deflection of the SEM beams is reported as a percentage of the FEM beam's maximum deflection. The parameters of the experiment match that of the previous qualitative test.} 
+\revise{We further perform a basic \emph{quantitative} comparison against FEM by measuring the maximum deflection of the beam as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the maximum beam deflection of the SEM beams is reported as a percentage of the FEM beam's maximum deflection. The parameters of the experiment match that of the previous qualitative test.} 
 
 %\begin{wrapfigure}{l}{0.5\columnwidth}
 %    	\includegraphics{figures/deflection.pdf}
@@ -199,8 +199,7 @@ but very few surface elements are needed to produce compelling results.
 
 
 \revise{\reffig{scalability} shows a scalability study in which a  unit cube, composed of 6 parts, is extended by appending 4 more parts at a time.
-Note that our algorithm scales similarly to standard high-order finite element approaches due to the compact support of our weight functions. 
-This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
+Note that our algorithm scales similarly to standard high-order finite element approaches due to the compact support of our weight functions.}
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/scalability.pdf}
@@ -302,7 +301,7 @@ Finally we show a few additional examples, highlighting the ability of SEM to ha
 In \reffig{staypuft} we show two astronauts in jaunty space suits collide in zero gravity. 
 SEM gracefully allows bounded discontinuities in simulation output to allow for rich motion. 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
-\revise{Our soft enforcement of part connectivity at boundaries is a result of weighting function attributing equal weight values to equidistant parts. This equal weighting induces elastic forces that attempt to enforce continuity. In our examples this only introduces minor artifacts affecting the rendering, but this may be addressed using a separate rendering mesh or by using a representation with explicit connectivity.}
+\revise{Our soft enforcement of part connectivity at boundaries is a result of the weighting function attributing equal weight values to equidistant parts. This equal weighting induces elastic forces that attempt to enforce continuity. In our examples, these discontinuities only introduce minor artifacts affecting the rendering, but this may be addressed using a separate render mesh or by using a representation with explicit connectivity.}
 
 In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
 In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. 
