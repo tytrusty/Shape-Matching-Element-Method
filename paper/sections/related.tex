@@ -33,6 +33,10 @@ Some cut-cell algorithms assume engineering/manufacturing quality input, which p
 Finally these approaches require additional mechanisms to ensure that simulation results lie inside the shape space of the input model's primitives,
 which increases the complexity. 
 
+\revise{
+\emph{Embedded Methods} are a popular technique in computer graphics in which complex geometry is embedded in a coarse mesh that guides the simulation. The early work of ~\cite{10.5555/1009379.1009573} proposed a method for volumetric simulation of surface meshes by embedding the surface in a background cubic mesh may be seen as an alternative strategy to ours. However, producing an embedded mesh introduces a number of challenges since the coarse mesh's topology must mirror that of the embedded surface, which necessitates complex hierarchical methods like that of ~\cite{10.1145/1531326.1531358}. Also like in IGA methods, many methods rely on cut cells to conform to the boundary, requiring complicated geometric operations. Furthermore when the DOFs do not lie on the boundary, complex methods such as Nitsche's Method ~\cite{Nitsche1971berEV} are required for handling Dirichlet boundary conditions. By making use of an entirely meshless pipeline and operating directly on the input curves, we avoid much of these difficulties in embedded methods.
+}
+
 \emph{Shape Matching} is a meshless approach to physics-based animation~\cite{10.1145/1073204.1073216,10.1145/2019406.2019438} and geometry processing~\cite{10.1111/j.1467-8659.2012.03171.x}
 built around shape registration. The algorithm has been extended from volumetric triangle mesh input to cloth~\cite{10.2312/PE/vriphys/vriphys08/039-046}, to particles~\cite{10.1145/1964921.1964987}
 and even to visual geometry for video games~\cite{10.1145/2994258.2994260}. 
