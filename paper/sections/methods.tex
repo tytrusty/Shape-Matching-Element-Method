@@ -127,7 +127,7 @@ $\samp{\Pmat}$ (resp. $\samp{\Jnurbs}$) is constructed by stacking the evaluatio
 quadrature point.
 $\wt$ is a diagonal, $3s \times 3s$ matrix of integration weights.
 
-Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank required to represent all control points. We achieve this by sampling over each knot span defined by the  B-splines, and find it effective to use the order of the NURBS as the number of quadrature points sampled in each knot span.
+Quadrature points are selected so that $\samp{\Jnurbs}$ is of sufficient rank required to represent all control points. We achieve this by sampling over each knot span defined by the  B-splines, and find it effective to use the order of the NURBS as the number of quadrature points sampled in each knot span. \revise{Positions and weights of the quadrature points in each span are chosen using Gauss-Lobatto quadrature}
 \ty{the number of samples may be different if order in the u direction and v differ, but I figured it was best to keep this simple.}
 
 \nicetohave{now I do want that shape matching figure showing constant, linear and quadratic matching}

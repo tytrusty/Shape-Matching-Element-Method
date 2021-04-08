@@ -165,7 +165,7 @@ This implies that, with sparse weights, SEM can resolve these motions locally, l
 
 We demonstrate \emph{qualitative} convergence of SEM with respect to linear tetrahedral finite elements when increasing the number of patches in use.
 In \reffig{convergence}, we compare the static configurations of identical cantilevered beams, simulated using a Neohookean constitutive model (Young's Modulus $=$ $0.001$ GPa, Poisson's Ratio $=$ $0.45$). 
-\revise{We further perform a basic \emph{quantitative} comparison against FEM by measuring the maximum deflection of the beam as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the maximum beam deflection of the SEM beams is reported as a percentage of the FEM beam's maximum deflection. The parameters of the experiment match that of the previous qualitative test.} 
+\revise{We further perform a basic \emph{quantitative} comparison against FEM by measuring the deflection of the beam at resting position as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the beam deflection of the SEM beams is reported as a percentage of the FEM beam's deflection.} 
 
 %\begin{wrapfigure}{l}{0.5\columnwidth}
 %    	\includegraphics{figures/deflection.pdf}
@@ -178,7 +178,7 @@ In \reffig{convergence}, we compare the static configurations of identical canti
   \label{fig:plot_beam_deflection}
 \end{figure}
 
-We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of \revise{22} independent NURBS patches, shows good agreement with FEM. Each subdivision of the NURBS beam enables more complicated kinematics, 
+We use SEM with quadratic polynomials for this test and observe that our SEM simulation, made of \revise{26} independent NURBS patches, shows good agreement with FEM. Each subdivision of the NURBS beam enables more complicated kinematics, 
 but very few surface elements are needed to produce compelling results.
 
 
@@ -188,12 +188,12 @@ but very few surface elements are needed to produce compelling results.
   \label{fig:convergence}
 \end{figure}
 
-\revise{Additionally, we perform a twisting beam experiment on the 22 part beam model. Despite the relatively small number of NURBS patches, we see in \reffig{beam_twist} that the quadratic polynonmials permit complex deformation.}
+\revise{Additionally, we perform a twisting beam experiment on a 22 part beam model. Despite the relatively small number of NURBS patches, we see in \reffig{beam_twist} that the quadratic polynonmials permit complex deformation.}
 
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/beam_twist.pdf}
-  \caption{\revise{With the left end of the beam held fixed, we show the result of rotating the right end of the 22 part beam up to 360 degrees.}}
+  \caption{\revise{With the left end of the beam held fixed, we show the result of rotating the right end of a 22 part beam up to 360 degrees.}}
   \label{fig:beam_twist}
 \end{figure}
 
