@@ -172,7 +172,7 @@ In \reffig{convergence}, we compare the static configurations of identical canti
 %\end{wrapfigure}
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/deflection_full.pdf}
-	\caption{\revise{Te maximum beam deflection, as a percentage of the FEM beam's maximum deflection, is shown to converge to the FEM result as we add more parts along the beam.}}
+	\caption{\revise{Te maximum beam deflection, as a percentage of the FEM beam's maximum deflection, is shown to converge to the FEM result as we subdivide the beam.\ty{currently a very blank figure, which I dont mind, but could consider adding inset beam pictures to give an idea of how this experiment works}}}
   \label{fig:plot_beam_deflection}
 \end{figure}
 
@@ -196,12 +196,11 @@ but very few surface elements are needed to produce compelling results.
 \end{figure}
 
 
-\revise{We perform a basic scalability test shown in \reffig{scalability} by iteratively adding more degrees of freedom to a model and measuring average runtime of a simulation step, and report the ratio of number of nonzeros in the stiffness matrix. We begin with a unit cube composed of 6 parts and on each iteration we extend the cube, adding 4 more parts. The raycasting quadrature is updated on each
-iteration so that a constant number of samples (45 in this case) lie in each cube. This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
+\revise{We perform a basic scalability test shown in \reffig{scalability} by iteratively adding more degrees of freedom to a model and measuring average runtime of a simulation step, and report the ratio of number of nonzeros in the stiffness matrix. We begin with a unit cube composed of 6 parts and on each iteration we extend the cube, adding 4 more parts. The raycasting quadrature is updated on each iteration so that a constant number of samples (45 in this case) lie in each cube. This represents a best case scenario in which sparsity is maximized as the number of degrees of freedom increases. As performance is tied to sparsity of the stiffness matrix, we see reasonable growth in the reported times, despite minimal effort on optimizing performance. This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/scalability.pdf}
-  \caption{\revise{As a more extreme example of the shape-aware property of our algorithm, we simulate a falling octopus, and observe the 8 limbs moving independently.}}
+  \caption{\revise{Here we progressively add more degrees of freedom to a beam by iteratively inserting 4 part sections, extending the beam in the $x$-axis direction at each step. On the left we report the number of non-zeros as a percentage of the total number of elements in the stiffness matrix (nnz$\%$)}. The right plot shows the average runtime of a simulation step as the number of degrees of freedom increases.}
   \label{fig:scalability}
 \end{figure}
 
