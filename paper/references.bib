@@ -917,3 +917,45 @@ articleno = {12},
 numpages = {15},
 keywords = {Physically-based simulation, elasticity}
 }
+
+@inproceedings{10.5555/1009379.1009573,
+author = {Muller, Matthias and Teschner, Matthias and Gross, Markus},
+title = {Physically-Based Simulation of Objects Represented by Surface Meshes},
+year = {2004},
+isbn = {0769521711},
+publisher = {IEEE Computer Society},
+address = {USA},
+abstract = {Objects and scenes in virtual worlds such as 3-d computergames are typically represented by polygonal surfacemeshes. On the other hand, physically-based simulationsof deformations or fracture effects require volumetricrepresentations such as tetrahedral meshes. Inthis paper we propose techniques to generate volumetricmeshes dynamically for objects represented by surfacemeshes allowing the simulation of physical effects suchas motion, deformation and fracture.We use the Finite Element Method based on cubicalelements of uniform size. Regular cube meshes have severaladvantages over geometrically more complex representations.Because of their simplicity, cube meshes canbe generated quickly by voxelizing objects while neithergeometry nor stiffness information needs to be stored explicitly.The low memory consumption makes physically-basedanimation possible for large scenes even on gameconsoles. We animate the original high resolution surfacemesh by coupling it to the underlying volumetric mesh.This way, the regular structure of the volumetric meshis hidden from the user. We also propose a technique tofracture the surface mesh along with the cube mesh whichkeeps the surface watertight and results in realistic fracturepatterns.},
+booktitle = {Proceedings of the Computer Graphics International},
+pages = {26–33},
+numpages = {8},
+keywords = {Physically Based Animation, Finite Element Method, Fracture, Deformation},
+series = {CGI '04}
+}
+@article{Nitsche1971berEV,
+  title={{\"U}ber ein Variationsprinzip zur L{\"o}sung von Dirichlet-Problemen bei Verwendung von Teilr{\"a}umen, die keinen Randbedingungen unterworfen sind},
+  author={Joachim Nitsche},
+  journal={Abhandlungen aus dem Mathematischen Seminar der Universit{\"a}t Hamburg},
+  year={1971},
+  volume={36},
+  pages={9-15}
+}
+@article{10.1145/1531326.1531358,
+author = {Nesme, Matthieu and Kry, Paul G. and Je\v{r}\'{a}bkov\'{a}, Lenka and Faure, Fran\c{c}ois},
+title = {Preserving Topology and Elasticity for Embedded Deformable Models},
+year = {2009},
+issue_date = {August 2009},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {28},
+number = {3},
+issn = {0730-0301},
+url = {https://doi.org/10.1145/1531326.1531358},
+doi = {10.1145/1531326.1531358},
+abstract = {In this paper we introduce a new approach for the embedding of linear elastic deformable models. Our technique results in significant improvements in the efficient physically based simulation of highly detailed objects. First, our embedding takes into account topological details, that is, disconnected parts that fall into the same coarse element are simulated independently. Second, we account for the varying material properties by computing stiffness and interpolation functions for coarse elements which accurately approximate the behaviour of the embedded material. Finally, we also take into account empty space in the coarse embeddings, which provides a better simulation of the boundary. The result is a straightforward approach to simulating complex deformable models with the ease and speed associated with a coarse regular embedding, and with a quality of detail that would only be possible at much finer resolution.},
+journal = {ACM Trans. Graph.},
+month = jul,
+articleno = {52},
+numpages = {9},
+keywords = {heterogeneous materials, finite element method, embedded deformation, animation, simulation}
+}
