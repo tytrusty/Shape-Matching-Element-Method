@@ -204,18 +204,25 @@ This experiment was performed using a AMD Ryzen 2600 with 16GB of RAM}
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/scalability.pdf}
-  \caption{\revise{Here we progressively add more degrees of freedom to a beam by iteratively inserting 4 part sections, extending the beam in the $x$-axis direction at each step. On the left we report the number of non-zeros as a percentage of the total number of elements in the stiffness matrix (nnz$\%$)}. The right plot shows the average runtime of a simulation step as the number of degrees of freedom increases.}
+  \caption{\revise{Here we progressively add more degrees of freedom to a beam by iteratively inserting 4 part sections, extending the beam in the $x$-axis direction at each step. On the left we report the number of non-zeros as a percentage of the total number of elements in the stiffness matrix (nnz$\%$). The right plot shows the average runtime of a simulation step as the number of degrees of freedom increases.}}
   \label{fig:scalability}
 \end{figure}
 
-We also show that our raycasting weight computation is able to create shape-aware output. \reffig{independence} shows that manipulating
+We also show that our raycasting weight computation is able to create shape-aware output. \reffig{independence} and \reffig{octopus} show that manipulating
 parts that are nearby but separated will behave in an appropriately independent fashion. Our grumpy model is capable of extending 
-its leg without causing unrealistic deformations in the plant foot.
+its leg without causing unrealistic deformations in the plant foot, and our octopus model shows independent motion of all eight limbs upon contact with the ground.
+
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/independent_movement}
   \caption{Our raycasting weight computation produces shape-aware blending weights. Here the locality of our blending weights allows the two legs of the grumpy model to move independently. }
   \label{fig:independence}
+\end{figure}
+
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/octopus.pdf}
+  \caption{\revise{We simulate a falling octopus, and observe the 8 limbs moving independently. Self-collision is not accounted for here.}}
+  \label{fig:octopus}
 \end{figure}
 
 % relaxed modelling constraints
@@ -296,13 +303,6 @@ In \reffig{staypuft} we show two astronauts in jaunty space suits collide in zer
 SEM gracefully allows bounded discontinuities in simulation output to allow for rich motion. 
 This is similar to Discontinous Galerkin approaches but in SEM this behavior emerges from the kinematic model, rather than from additional flux terms~\cite{kaufmann2009flexible}.
 \revise{Our soft enforcement of part connectivity at boundaries is a result of weighting function attributing equal weight values to equidistant parts. This equal weighting induces elastic forces that attempt to enforce continuity. In our examples this only introduces minor artifacts affecting the rendering, but this may be addressed using a separate rendering mesh or by using a representation with explicit connectivity.}
-\revise{In \reffig{octopus} we demonstrate the shape-aware nature of our algorithm on a  stable Neo-Hookean ~\cite{SNHkim} simulation of an octopus, and observe independent motion for each limb.}
-
-\begin{figure}[h]
-  \includegraphics[width=\columnwidth]{figures/octopus.pdf}
-  \caption{\revise{As a more extreme example of the shape-aware property of our algorithm, we simulate a falling octopus, and observe the 8 limbs moving independently. Self-collision is not accounted for here.}}
-  \label{fig:octopus}
-\end{figure}
 
 In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
 In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. 
