@@ -165,7 +165,7 @@ This implies that, with sparse weights, SEM can resolve these motions locally, l
 
 We demonstrate \emph{qualitative} convergence of SEM with respect to linear tetrahedral finite elements when increasing the number of patches in use.
 In \reffig{convergence}, we compare the static configurations of identical cantilevered beams, simulated using a Neohookean constitutive model (Young's Modulus $=$ $0.001$ GPa, Poisson's Ratio $=$ $0.45$). 
-\revise{We further perform a basic \emph{quantitative} comparison against FEM by measuring the deflection of the beam at resting position as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the beam deflection of the SEM beams is reported as a percentage of the FEM beam's deflection.} 
+\revise{We further perform a basic \emph{quantitative} comparison against FEM by measuring the deflection of the beam at its resting position as we increase the number of patches along the beam. In \reffig{plot_beam_deflection}, the deflection of the SEM beams is reported as a percentage of the FEM beam's deflection.} 
 
 %\begin{wrapfigure}{l}{0.5\columnwidth}
 %    	\includegraphics{figures/deflection.pdf}
@@ -174,7 +174,7 @@ In \reffig{convergence}, we compare the static configurations of identical canti
 %\end{wrapfigure}
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/deflection_full.pdf}
-	\caption{\revise{Te maximum beam deflection, as a percentage of the FEM beam's maximum deflection, is shown to converge to the FEM result as we subdivide the beam.\ty{currently a very blank figure, which I dont mind, but could consider adding inset beam pictures to give an idea of how this experiment works}}}
+	\caption{\revise{The SEM beam deflection is plotted as a percentage of the FEM beam's deflection when the beam is at rest. As we subdivide the SEM beam, its deflection converges to the FEM beam's deflection. \ty{currently a very blank figure, which I dont mind, but could consider adding inset beam pictures to give an idea of how this experiment works}}}
   \label{fig:plot_beam_deflection}
 \end{figure}
 
@@ -203,7 +203,7 @@ Note that our algorithm scales similarly to standard high-order finite element a
 
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/scalability.pdf}
-  \caption{\revise{Here we progressively add more degrees of freedom to a beam by iteratively inserting 4 part sections, extending the beam in the $x$-axis direction at each step. On the left we report the number of non-zeros as a percentage of the total number of elements in the stiffness matrix (nnz$\%$). The right plot shows the average runtime of a simulation step as the number of degrees of freedom increases.}}
+  \caption{\revise{Here we progressively add more degrees of freedom to a beam by iteratively inserting 4 part sections, extending the beam in the $x$-axis direction at each step. On the left we report the number of non-zeros as a percentage of the total number of elements in the stiffness matrix (Nnz$\%$). The right plot shows the average runtime of a simulation step as the number of degrees of freedom increases.}}
   \label{fig:scalability}
 \end{figure}
 
