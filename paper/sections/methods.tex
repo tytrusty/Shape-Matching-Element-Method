@@ -362,7 +362,7 @@ We solve this using the dual simplex solver in MATLAB.
 %\ty{we use the default in intlinprog, which should be dual-simplex} We choose $\XBs$ to be all the deformation origin candidates in $A$ that have an outgoing flow of at least $1$. 
 
 \revise{Note that this approach yields compactly supported weight functions due to the cut-off parameter~(Eq.~8). 
-Depending on this value, we obtain a range of system matrix sparsity patterns -- from fully dense to block sparse~(Fig.~9). 
+Depending on this value, we obtain a range of system matrix sparsity patterns -- from fully dense to block sparse~(\reffig{stiffness_sparsity}). 
 Importantly, unlike other boundary-only approaches, our method is not guaranteed to produce dense system matrices.}
 
 \subsection{Meshless Integration}
