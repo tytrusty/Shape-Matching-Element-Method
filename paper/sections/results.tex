@@ -103,6 +103,13 @@ We use quadratic deformation for all the animation results, except the rocket (s
 Models were created using Autodesk Fusion 360 \cite{AutodeskFusion360} and \revise{Rhinoceros} 3D 7 \cite{mcneel-rhinoceros}. 
 Please see the supplemental video for more animation results.
   
+\begin{figure}[h]
+  \includegraphics[width=\columnwidth]{figures/stiffness_sparsity.pdf}
+  \caption{\revise{Our stiffness matrices can be sparse, while the corresponding matrix has to be dense in the traditional Boundary Element Method \cite{ArtDefo1999}. 
+  Sparsity of our stiffness matrix is primarily determined by weight sparsity (number of non-zero weights at a given quadrature point) and polynomial order. }}
+  \label{fig:stiffness_sparsity}
+\end{figure}
+
 For raycasting operations and rendering we rely on Embree~\cite{10.1145/2601097.2601199} and Blender~\cite{blender}, and triangulate the NURBS surfaces, which only represents an implementation simplification. 
 Our core algorithm is not dependent on triangulating the boundary, and an ideal alternative would be using a path tracer that directly accepts NURBS geometry.
 For collision detection and handling, for simplicity we use the triangulation to detect inter-penetrations at each iteration, and attempt to move the collided vertex out of its collision surface using a spring-like penalty force, similar to \cite{10.1145/3355089.3356486, 10.1145/2010324.1964932}.
@@ -149,12 +156,7 @@ For handling trimmed NURBS surfaces, we augment our sampling of the surfaces by 
   \label{fig:patchtest}
 \end{figure}
 
-\begin{figure}[h]
-  \includegraphics[width=\columnwidth]{figures/stiffness_sparsity.pdf}
-  \caption{\revise{Our stiffness matrices can be sparse, while the corresponding matrix has to be dense in the traditional Boundary Element Method \cite{ArtDefo1999}. 
-  Sparsity of our stiffness matrix is primarily determined by weight sparsity (number of non-zero weights at a given quadrature point) and polynomial order. }}
-  \label{fig:stiffness_sparsity}
-\end{figure}
+
 
 We first validate the physical plausibility of our method using a small 2D patch test~(\reffig{patchtest}). 
 Here the test object is a square made of four edges (not joined at the corners) simulated using linear polynomials with a single deformation center.
@@ -207,9 +209,9 @@ Note that our algorithm scales similarly to standard high-order finite element a
   \label{fig:scalability}
 \end{figure}
 
-We also show that our raycasting weight computation is able to create shape-aware output. \reffig{independence} and \reffig{octopus} show that manipulating
+We also show that our raycasting weight computation is able to create shape-aware output. \reffig{independence} and \revise{\reffig{octopus} show that manipulating
 parts that are nearby but separated will behave in an appropriately independent fashion. Our grumpy model is capable of extending 
-its leg without causing unrealistic deformations in the plant foot, and our octopus model shows independent motion of all eight limbs upon contact with the ground.
+its leg without causing unrealistic deformations in the plant foot, and our octopus model shows independent motion of all eight limbs upon contact with the ground.}
 
 
 \begin{figure}[h]
