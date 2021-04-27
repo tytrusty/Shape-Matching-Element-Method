@@ -1,4 +1,4 @@
-\documentclass[acmtog, anonymous=true,review=true, nonacm, balance = false]{acmart}
+\documentclass[acmtog, anonymous=false, review=false, balance=false]{acmart}
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -6,6 +6,9 @@
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
 \input{sections/pre.tex}
+
+\setcopyright{acmlicensed}\acmJournal{TOG}
+\acmYear{2021}\acmVolume{40}\acmNumber{4}\acmArticle{69}\acmMonth{8} \acmDOI{10.1145/3450626.3459772}
 
 \acmSubmissionID{230}
 \newcommand\myworries[1]{\textcolor{red}{#1}}
@@ -24,29 +27,17 @@
 \title{The Shape Matching Element Method: Direct Animation of Curved Surface Models}
 
 \author{Ty Trusty}
-\affiliation{%
- \institution{University of Toronto}
- \streetaddress{40 St. George Street}
- \city{Toronto}
- \state{ON}
- \country{Canada}
- \postcode{M5S 2E4}
-}
+
 \email{trusty@cs.toronto.edu}
 %
 \author{Honglin Chen}
-\affiliation{%
-  \institution{University of Toronto}
-  \streetaddress{40 St. George Street}
-  \city{Toronto}
-  \state{ON}
-  \country{Canada}
-  \postcode{M5S 2E4}
-}
+
 \email{chl9797@cs.toronto.edu}
 %
 %
 \author{David I.W. Levin}
+\email{diwlevin@cs.toronto.edu}
+
 \affiliation{%
  \institution{University of Toronto}
  \streetaddress{40 St. George Street}
@@ -55,8 +46,31 @@
  \country{Canada}
  \postcode{M5S 2E4}
 }
-\email{diwlevin@cs.toronto.edu}
 
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10010147</concept_id>
+       <concept_desc>Computing methodologies</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10010147.10010371.10010352.10010379</concept_id>
+       <concept_desc>Computing methodologies~Physical simulation</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies}
+\ccsdesc[500]{Computing methodologies~Physical simulation}
+
+%
+% End generated code
+%
+
+
+\keywords{Physically-based animation, NURBS simulation, Meshless simulation, Lagrangian Mechanics}
 
 
 %% A "teaser" image appears between the author and affiliation

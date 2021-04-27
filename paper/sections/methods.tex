@@ -13,10 +13,10 @@
 %\end{itemize}
 \section{Overview}
 The input to the Shape Matching Element Method (SEM)  is a NURBS \emph{boundary representation} of a volumetric object, along with a set of physical parameters 
-(density, constitutive model, model parameters, etc). 
+(density, constitutive model, model parameters, etc.). 
 The boundary representation is composed of one or more (not necessarily explicitly connected) NURBS surface primitives that we will call \emph{parts}.
 The output is an elastodynamic simulation. 
-SEM consists of preprocessing and runtime simulation phases (~\refalg{sem_preprocess}, ~\refalg{sem_simulation}) and at no point do we need to generate a volumetric mesh of the input. 
+SEM consists of preprocessing and runtime simulation phases (\refalg{sem_preprocess}, ~\refalg{sem_simulation}) and at no point do we need to generate a volumetric mesh of the input. 
 In the \emph{preprocessing} stage we use raycasting to find quadrature points and weights for volumetric integration, as well as to compute part blending parameters. 
 Finally we construct local shape matching operators and the mass matrix for our problem. 
 
@@ -215,7 +215,7 @@ terms help compensate for more local deformations.
 
 Our kinematic map~(\refeq{kinematics}) requires blending weights in order to homogenize our per-part representation. 
 Specifying weights manually would be antithetical to our goal of providing a seamless translation from surface representation to physics-based animation.
-Automatic  weight computation is well-studied (see ~\citet{10.1145/2766952}, ~\citet{BBW:2011} and ~\citet{10.1145/2010324.1964968}), but typically requires solving 
+Automatic  weight computation is well-studied (see ~\cite{10.1145/2766952}, ~\cite{BBW:2011} and ~\cite{10.1145/2010324.1964968}), but typically requires solving 
 an optimization problem that itself relies on a volumetric discretization. 
 This can be avoided by using stochastic methods~\cite{Sawhney:2020:MCG} but these do not yet support the boundary conditions we require for our problem. 
 
@@ -270,7 +270,6 @@ $\sum_{i=1}^n\bld_i(\mathbf{X}_j) = 1$, and each $\bld_i \geq 0$, which we enfor
                   &   \sum_i^n w_i = 1                      \\
 \end{aligned}
 \end{equation}
-
 where $\Theta(\mathbf{X}) = \text{diag}\left( \frac{1}{\theta_1},\frac{1}{\theta_2},\dots,\frac{1}{\theta_n}\right)$. 
 
 % \begin{wrapfigure}[11]{l}{0.31\columnwidth}
@@ -320,13 +319,13 @@ physical quantities, leaving our simulation unaffected.
 % (5) what's the algorith,
 % (6) add proofs/diagrams/figures that show we satisfy (2). }
 Each part, $\prt_i$, must be associated with a single deformation origin, $\bar{\refX}_j$, and each origin is computed as the centroid of the set of parts with which it is associated. 
-While we constrain a part to be paired with only one deformation origin, an origin may be associated any number of parts. 
+While we constrain a part to be paired with only one deformation origin, an origin may be associated with any number of parts. 
 
 %of the blending weights. Intuitively, this means that for a region in which weights are high for a subset of parts, the origin of deformation should be centered in this region.
 
 \begin{figure}[h]
     \includegraphics[width=\columnwidth]{figures/origin_network}
-    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each parts origin association. \dave{make it clear edges of triangle are sep. parts, add capacities and costs}}
+    \caption{Example structure for the network flow selection of deformation origins with a shape consisting of three parts. Red arrows indicate each part's origin association. \dave{make it clear edges of triangle are sep. parts, add capacities and costs}}
     \label{fig:network_flow} 
 \end{figure}
 
@@ -351,7 +350,7 @@ This cost penalizes heavily ``connected'' origin candidates, encouraging sparsit
 This amounts to minimizing the following integer linear program:
 \begin{equation}
 \begin{aligned}
-\mathbf{f} =  \arg\min_{\mathbf{f}} \quad & \mathbf{c}^T \mathbf{f}    \\
+\mathbf{f} =  \argmin_{\mathbf{f}} \quad & \mathbf{c}^T \mathbf{f}    \\
 \textrm{s.t.} \quad & A_{\text{cons}} \mathbf{f} = 0  \\
                   & f_i \in \integer \mbox{ }, \forall i	\\
                   & 0 \leq f_i \leq u_i
@@ -382,7 +381,7 @@ where $\Gamma_R$ is the boundary of the bounding box with normals $\mathbf{n}$ a
 We make a minor modification to this procedure to handle common geometric pathologies encountered in NURBS modelling, such as overlapping surfaces, by performing 
 CSG unions while raycasting~\cite{ROTH1982109}. 
 The output of this raycasting procedure is a set of quadrature points $\st{X}$ and weights $\st{v}$ that we use for integration and also as input to our 
-deformation origin extraction (~\refsec{origins}) and blending weights computation (~\refsec{weights})
+deformation origin extraction (\refsec{origins}) and blending weights computation (\refsec{weights})
 \reffig{raycasting} shows the convergence of this quadrature approach when used to compute the volume of a NURBS model. 
 In principle we could apply detail-aware sampling methods~\cite{DBLP:journals/tog/WangFP12} to improve the robustness of raycasting quadrature even further,
 but we found it unnecessary for the examples in this paper.

@@ -19,10 +19,10 @@ SEM itself has much room for improvement.
 First, while we focus on NURBS surfaces here, the only part of SEM that is NURBS specific is the shape matching operation.
 We believe there is potential to allow mixed models (models which include polygonal meshes, particles, subdivision surfaces and NURBS)
 by extending the range of shape matching operations used by the algorithm. The shape matching operation itself could be improved to be material-aware 
-(to better handle heterogenous materials) or to be robust to noisy data (allowing direct simulation of scanned data).
+(to better handle heterogeneous materials) or to be robust to noisy data (allowing direct simulation of scanned data).
 \revise{In future work we also intend to explore using robust solvers or orthogonal bases for the shape matching step itself.} \ty{more can be said here I suppose. I tried pinv() on the beam, which surprisingly worked, but it's just unpredictable since it should still fail on my very basic 2D box example. Haven't done much experimentation beyond this though, so I just write future work}
 It is also interesting to consider the relationship between our error term and the orthogonality constraint proposed by~\citet{Zhang:CompDynamics:2020}. 
-Their approach could be used to remove this parameter from SEM entirely.
+Their approach could be used to remove this term from SEM entirely.
 Finally, in this paper we have focused on applying SEM to physics-based animation, and there is a significant amount of additional work needed to 
 extend SEM reliably into engineering applications.
 

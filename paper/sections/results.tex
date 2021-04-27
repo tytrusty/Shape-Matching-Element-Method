@@ -3,7 +3,7 @@
 
 \begin{table*}[h]
   \setlength{\tabcolsep}{3pt}
-  \caption{Performance of, and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical parameters are
+  \caption{Performance and parameters for the Shape Matching Element Method on all examples. All wall-clock timings are reported in seconds, physical parameters are
   reported with appropriate units. $\rho$ is the applied density, \textbf{E} is the  Young's Modulus and \revise{$\nu$} is the Poisson's ratio.
   \textbf{Sample} is the time taken to sample and construct $\samp{\Jnurbs}$ and $\samp{\Pmatx}$, \textbf{Quad} is the time taken to generate quadrature points via raycasting,
   \textbf{Weights} is the time to compute blending weights, \textbf{Build $\Pi$} is the time to build the projection operator, \textbf{Step} is the average time required to step the simulation (not including collision detection)
@@ -190,7 +190,7 @@ but very few surface elements are needed to produce compelling results.
   \label{fig:convergence}
 \end{figure}
 
-\revise{Additionally, we perform a twisting beam experiment on a 22 part beam model. Despite the relatively small number of NURBS patches, we see in \reffig{beam_twist} that the quadratic polynonmials permit complex deformation.}
+\revise{Additionally, we perform a twisting beam experiment on a 22 part beam model. Despite the relatively small number of NURBS patches, we see in \reffig{beam_twist} that the quadratic polynomials permit complex deformation.}
 
 
 \begin{figure}[h]
@@ -261,7 +261,7 @@ In both cases intuitive and visually pleasing results are created wherein the tr
   \label{fig:rocket}
 \end{figure*}
 
-SEM also supports the simulation of objects made up of heterogenous materials. By specifying different material properties inside nested 
+SEM also supports the simulation of objects made up of heterogeneous materials. By specifying different material properties inside nested 
 parts we are able to simulate a drag racing wheel with a metal hub and soft rubber tread~(\reffig{tire}).
 
 \begin{figure}[h]
@@ -291,7 +291,7 @@ parts we are able to simulate a drag racing wheel with a metal hub and soft rubb
 
 %editing example
 For downstream applications, the output of  SEM simulation is itself editable in a NURBS modelling program (see \reffig{edit}). 
-This can be useful for visual effects pipelines, allowing artists to easily post process animations using the same tools in which they were created.
+This can be useful for visual effects pipelines, allowing artists to easily post-process animations using the same tools in which they were created.
 \begin{figure}[h]
   \includegraphics[width=\columnwidth]{figures/export_iges.pdf}
   \caption{Here we show the output of an SEM animation loaded into Rhinoceros 3D 7 for additional editing.\ty{note: initial version of figure. Currently remaking it :)}}
@@ -307,7 +307,7 @@ This is similar to Discontinous Galerkin approaches but in SEM this behavior eme
 
 In \reffig{teaser} we directly simulate the NURBS surface model of a bouncy castle under a periodic wind force. 
 In \reffig{starship} we show an animation of the Space-V starship landing on Mars in a graceful way. 
-This example shows the benefit of NURBS modeling, a relatively small number of primitives can represent a complex shape.
+This example shows the benefit of NURBS modeling: a relatively small number of primitives can represent a complex shape.
 SEM successfully handles the stiff materials, complicated geometry and non-trivial collisions in this scene.
 
 \begin{figure*}[htp]
