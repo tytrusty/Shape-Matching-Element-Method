@@ -1,8 +1,8 @@
-# Shape Matching Virtual Element Method
-
-For continuum mechanics simulation of boundary only representations!
+# Shape Matching Element Method
 
 vem_sim_2d is a minimal example that *should* only depend on gptoolbox... So see if that runs!
+
+[Project Page](https://www.dgp.toronto.edu/projects/shape-matching-element-method/) 
 
 ### External Dependencies  ###
 1. [GPToolbox](https://github.com/alecjacobson/gptoolbox) 
