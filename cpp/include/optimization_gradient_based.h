@@ -83,18 +83,10 @@ namespace sim {
 
             //compute hessian
             H(tmp_H, x);
-
-            // std::cout << "before solve " << std::endl;
-
-            // std::cout << "H = " << tmp_H.block(0, 0, 10, 10) << std::endl;
-            // std::cout << "g = " << tmp_g << std::endl;
              
             //compute search direction
             tmp_d = tmp_H.colPivHouseholderQr().solve(-tmp_g);
-            // std::cout << "tmp_d:  " << tmp_d.segment(0, 6) << std::endl;
-            // std::cout << "after solve " << std::endl;
             double relative_error = (tmp_H*tmp_d - (-tmp_g)).norm() / (-tmp_g).norm(); // norm() is L2 norm
-            // std::cout << "relative_error = " << relative_error << std::endl;
             if (relative_error > 1.0) {
                 std::cout<<"Computing search direction failed in newtons method \n";
                 exit(1);

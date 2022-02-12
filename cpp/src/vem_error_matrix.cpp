@@ -10,7 +10,6 @@ void sim::vem_error_matrix(Eigen::MatrixXx<DerivedRet> &g,
 	const EigenVectorList<int>& C_I,
 	int d, int k, int n) {
 
-	std::cout << "ysize: " << Y.size() << std::endl;
 	int sz = L.cols();
 
 	Eigen::MatrixXd tmp1;

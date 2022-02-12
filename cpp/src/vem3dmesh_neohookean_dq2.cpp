@@ -27,14 +27,10 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 	using namespace std::chrono;
 
 	for (int i = 0; i < dF_dc.size(); ++i) {
-		//std::cout << "i: " << i << std::endl;
 		Eigen::MatrixXx<DerivedParam> CD = params.row(i);
 
 		Eigen::Matrix<DerivedC, 9, 9> d2psi_dF2;
 
-		//high_resolution_clock::time_point t0 = high_resolution_clock::now();
-
-		// TODO move this to separate file
 		Eigen::Matrix<DerivedC, 9, 1> F_flat; 
 		F_flat.setZero();
 		for (int j = 0; j < W_I[i].size(); ++j) {
@@ -43,17 +39,9 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 		}
 		Eigen::Matrix3d F = unflatten<3, 3>(F_flat);
 
-		//high_resolution_clock::time_point t1 = high_resolution_clock::now();
-
-		//std::cout << "F: " << F << std::endl;
 		d2psi_neohookean_dF2(d2psi_dF2, F, CD);
-		//std::cout << "d2psi: " << i << ": \n" << d2psi_dF2 << std::endl;
-
-		//high_resolution_clock::time_point t2 = high_resolution_clock::now();
 
 		Eigen::MatrixXx<DerivedRet> tmp = dF_dc[i].transpose() * d2psi_dF2 * dF_dc[i] * volume(i);
-
-		//high_resolution_clock::time_point t3 = high_resolution_clock::now();
 
 		// Assembly
 		int kd = 3 * k;
@@ -70,18 +58,7 @@ void sim::vem3dmesh_neohookean_dq2(Eigen::MatrixXx<DerivedRet> &g,
 			}
 		}
 
-		//high_resolution_clock::time_point t4 = high_resolution_clock::now();
-		//duration<double> time_span0 = duration_cast<duration<double>>(t1 - t0);
-		//duration<double> time_span1 = duration_cast<duration<double>>(t2 - t1);
-		//duration<double> time_span2 = duration_cast<duration<double>>(t3 - t2);
-		//duration<double> time_span3 = duration_cast<duration<double>>(t4 - t3);
-		//time_0 += time_span0.count();
-		//time_1 += time_span1.count();
-		//time_2 += time_span2.count();
-		//time_3 += time_span3.count();
 	}
-	//std::cout << " Time F: " << time_0 << " Time Stiffness: " << time_1 << " Time Stiffness mult: " << time_2 << " Time Assemble: " << time_3 << std::endl;
-
 }
 
 #include <iostream>
